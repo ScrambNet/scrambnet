@@ -1,8 +1,62 @@
-# editor / OS noise
-*.swp
-*~
-.DS_Store
-Thumbs.db
+# === secrets & credentials — never publish ===
+*.key
+*.pem
+*.p12
+*.pfx
+*.gpg
+*.asc
+*.kbx
+id_rsa*
+id_ed25519*
+*.token
+*.secret
+.env
+.env.*
+credentials*
+secrets*
 
-# local scratch
-/scratch/
+# === local notes & drafts — keep private by convention ===
+*.local
+*.local.*
+private/
+drafts/
+notes/
+scratch/
+
+# === OS noise ===
+.DS_Store
+._*
+Thumbs.db
+Desktop.ini
+*.lnk
+
+# === editors & IDEs ===
+*~
+*.swp
+*.swo
+.idea/
+.vscode/
+*.sublime-*
+
+# === build & temp (future-proofing) ===
+/build/
+/dist/
+/target/
+node_modules/
+__pycache__/
+*.o
+*.so
+*.pyc
+*.log
+*.tmp
+*.bak
+*.orig
+*.rej
+
+# === archives — never commit blind ===
+*.zip
+*.tar
+*.tar.*
+*.tgz
+*.7z
+*.rar
