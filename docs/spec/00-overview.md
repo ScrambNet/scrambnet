@@ -1,0 +1,72 @@
+# ScrambNet Specification — Part 0: Conventions and Structure
+
+**Status: DRAFT.** Every number in this specification is a strawman to be attacked,
+not a decision. Attack it through the issues; change it through PRs.
+
+## How to read this specification
+
+- The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** are to be
+  interpreted as described in RFC 2119.
+- Requirements are numbered and stable: `SP-n` (share packet, Part 1), `GR-n`
+  (gossip record, Part 2). Issues and PRs reference requirements by number.
+- `OP-n` references point to the open problems list in
+  [threat-model.md](../threat-model.md#open-problems).
+- A conforming implementation implements every MUST of every part it claims.
+
+## Design invariants
+
+These four invariants outrank everything else in the spec. A proposal that violates
+one of them is rejected regardless of what it buys.
+
+- **I-1 (Kerckhoffs).** The specification is complete: a hostile implementer with
+  this document and no other knowledge MUST be able to build an interoperable,
+  equally secure node. If a detail must stay secret for the system to work, the
+  detail is a defect.
+- **I-2 (Unconditional floor).** The confidentiality of message content against an
+  adversary holding fewer than `k` shares MUST NOT depend on any computational
+  assumption. Layers above the dispersal MAY be computational; the floor is not.
+- **I-3 (No single point).** No protocol step may require a party, key, or address
+  that cannot be replaced by an untrusted substitute. This includes discovery,
+  updates, and bootstrap.
+- **I-4 (Uniformity).** Everything observable on the wire by a party without the
+  relevant keys MUST be indistinguishable from uniform random bytes of fixed
+  length. No cleartext versions, flags, or lengths.
+
+## Cryptographic suite
+
+Suite identifiers are one byte, negotiated nowhere: the suite is fixed per network
+epoch and carried implicitly by the packet version (I-4 forbids cleartext
+negotiation). Suite `0x01` (strawman):
+
+| Role | Primitive |
+|---|---|
+| Circuit handshake | Noise `XK` pattern, `Noise_XK_25519_ChaChaPoly_BLAKE2s` |
+| Key exchange | X25519 |
+| AEAD | ChaCha20-Poly1305 |
+| Hash / KDF / PRF | BLAKE2s / HKDF-BLAKE2s |
+| Signatures (gossip records) | Ed25519 |
+| Packet format | Sphinx (Danezis–Goldberg 2009) parameters, Part 1 |
+| Dispersal | Shamir secret sharing over GF(2^8), per byte |
+
+Rationale: fast without hardware acceleration (anonymity that only runs on a new
+laptop is not for the people who need it most), nothing exotic, every primitive has
+a decade of public attacks behind it. Post-quantum note: by I-2 the confidentiality
+floor survives a quantum adversary already; a PQ handshake (suite `0x02`) is a
+planned upgrade, not an emergency.
+
+## Encoding conventions
+
+- All integers are unsigned, network byte order (big-endian).
+- Fixed sizes everywhere a field crosses the wire (I-4). Variable-length data
+  exists only inside AEAD-protected payloads, length-prefixed with 2 bytes.
+- Gossip records use canonical CBOR (RFC 8949 §4.2.1) — Part 2.
+
+## Parts
+
+1. [Part 1 — Share packet](01-share-packet.md): the fixed-size unit that carries
+   one share of one message through one circuit.
+2. [Part 2 — Gossip record](02-gossip-record.md): the self-signed relay descriptor
+   and the rules for exchanging and sampling them.
+
+Planned, not yet drafted: Part 3 — circuit construction and path selection
+(OP-1); Part 4 — chameleon transports; Part 5 — blackout mode framing.
