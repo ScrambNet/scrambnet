@@ -1,0 +1,47 @@
+{
+ "comment": "Cross-implementation vectors for the dispersal core (suite 0x01).",
+ "gf_mul": [
+  [
+   83,
+   202,
+   1
+  ],
+  [
+   2,
+   128,
+   27
+  ],
+  [
+   3,
+   255,
+   26
+  ],
+  [
+   16,
+   16,
+   27
+  ]
+ ],
+ "shamir": {
+  "secret": "000102030405060708090a0b0c0d0e0f",
+  "n": 4,
+  "k": 3,
+  "coeffs": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf",
+  "shares": [
+   "010003020504070609080b0a0d0c0f0e",
+   "e9e4f3feddd0c7ca818c9b96b5b8afa2",
+   "e8e5f2ffdcd1c6cb808d9a97b4b9aea3",
+   "48611a33ecc5be971b324960bf96edc4"
+  ]
+ },
+ "tags": {
+  "key": "0101010101010101010101010101010101010101010101010101010101010101",
+  "nonce": "0001020304050607",
+  "tags": [
+   "f4ccf92c7ebd232452dda71545bb6739",
+   "d198ce05946b5edb95c165235f793f89",
+   "97a3683c93acde0a00eab2f6da9af3c9",
+   "c237fcab5e9ee6d11e358c22fd6739e5"
+  ]
+ }
+}

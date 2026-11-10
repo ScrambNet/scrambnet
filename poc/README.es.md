@@ -1,0 +1,31 @@
+# Núcleo de dispersión — PoC de referencia
+
+Compañero ejecutable de la [Parte 1 de la especificación](../docs/spec/01-share-packet.md).
+Python 3 puro, solo biblioteca estándar, escrito para ser leído y atacado:
+es una especificación ejecutable, no el futuro nodo.
+
+Qué demuestra:
+
+- división Shamir (n, k) sobre GF(2^8), byte a byte, y reconstrucción desde
+  k fragmentos cualesquiera (SP-1, SP-2);
+- el suelo incondicional (I-2), por fuerza bruta: `floor_demo()` enumera cada
+  polinomio coherente con k−1 fragmentos observados y encuentra los 256 bytes
+  secretos candidatos *exactamente igual de coherentes* — no se aprende nada,
+  ni con cómputo ilimitado;
+- las etiquetas SP-7 con clave del destinatario (BLAKE2s con clave) y el
+  reconocimiento por ventana de etiquetas que implican;
+- el relleno aleatorio SP-8 y el formato de carga útil de la Parte 1 §4;
+- el precio honesto: una dispersión (n, k) transmite ×n el volumen del
+  texto cifrado (issue #4).
+
+Ejecución:
+
+    python3 dispersal.py        # demostración
+    python3 test_dispersal.py   # pruebas, incluye vectors.json
+
+`vectors.json` contiene vectores para otras implementaciones: quien los
+reproduce interopera en esta capa.
+
+Lo que **no** es: código de producción. Sin aritmética de tiempo constante,
+sin red, sin capa onion, sin AEAD de extremo a extremo (por SP-1 esta capa
+solo ve texto cifrado opaco). No lo uséis para proteger nada.

@@ -73,9 +73,12 @@ Decrypted by the recipient only:
   coalition of exits, MUST NOT be able to tell whether two packets belong to
   the same message. This requirement is load-bearing: without it, dispersal
   degrades into an enumeration convenience for the adversary.
-- **SP-8.** A message that does not fill `k × share` bytes MUST be padded before
-  splitting; a message that exceeds it is fragmented at a layer above this one
-  (fragmentation design TBD, interacts with OP-4).
+- **SP-8.** A message that does not fill the share payload (`1792` bytes, less
+  the 2-byte length prefix) MUST be padded with random bytes before splitting;
+  a message that exceeds it is fragmented at a layer above this one
+  (fragmentation design TBD, interacts with OP-4). Shamir's honest price: every
+  share is as long as the secret, so an (n, k) dispersal transmits ×`n` the
+  ciphertext volume (OP-3).
 - **SP-9 (timing).** The sender MUST NOT emit the `n` shares as a simultaneous
   burst. Shares SHOULD be emitted with randomized per-share delay; the
   distribution and its cost on latency are OP-4 and unresolved. Clients MAY
