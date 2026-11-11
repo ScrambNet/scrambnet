@@ -4,7 +4,7 @@ The project is at the pre-specification stage. The most valuable contributions r
 in order:
 
 1. **Attack the threat model.** Open an issue against any claim in
-   [docs/threat-model.md](docs/threat-model.md), especially the open problems list.
+   [docs/threat-model.md](threat-model.md), especially the open problems list.
 2. **Propose specification text.** PRs against `docs/` — RFC-style, one mechanism per PR.
 3. **Translate.** The READMEs exist in six languages; `docs/` is English-only so far.
    Translations and corrections by native speakers are first-class contributions.

@@ -1,0 +1,98 @@
+# ScrambNet-Spezifikation — Teil 6: Rendezvous und Zustellung
+> **Informative Übersetzung.** Maßgeblich und normativ ist die englische Fassung ([en](../../en/spec/06-rendezvous.md)).
+
+**Status: ENTWURF (DRAFT).** Strohmann-Werte mit `(s)` markiert. Die Abrufmetadaten- und
+Ökonomie-Fragen, die dieser Teil öffnet, sind OP-9 und absichtlich ungelöst.
+
+## 1. Geltungsbereich
+
+Wie eine Nachricht jemanden erreicht, der nicht — und nicht sein darf — in irgendjemandes Karte ist.
+Empfänger haben keine Netzpositionen; sie haben **Kontaktkarten** und
+**Dead-Drops**. Der Absender legt Anteile ab; der Empfänger ruft sie
+hinter seinen eigenen Circuits ab. Niemand stellt je *an* eine Person zu.
+
+## 2. Niemand gossippt über Personen
+
+- **RZ-1.** Ein Empfänger DARF NICHT (MUST NOT) über Gossip auffindbar sein. Nur Relais
+  veröffentlichen Einträge (Teil 2). Alles, was die Teilnahme einer Person abfragbar macht,
+  ist ein Fehler (vgl. L0: es gibt keine Nutzerliste, weil es keinen
+  Moment gibt, in dem sich ein Nutzer anmeldet).
+
+## 3. Kontaktkarten
+
+- **RZ-2.** Eine Kontaktkarte ist **je Beziehung**: die Karte, die Korrespondent A
+  gegeben wird, MUSS (MUST) mit der Karte, die Korrespondent B gegeben wird, nicht verknüpfbar sein —
+  verschiedener Paarschlüssel, verschiedene Postfächer. Die Kompromittierung eines Korrespondenten entblößt
+  eine Beziehung, nicht die Welt des Empfängers.
+- **RZ-3.** Karteninhalt (kanonisches CBOR, wie Teil 2):
+
+| Schlüssel | Name | Typ | Anmerkungen |
+|---|---|---|---|
+| 0 | `v` | uint | Formatversion, `1` |
+| 1 | `id` | bytes(32) | Ed25519-Identitätsschlüssel des Empfängers |
+| 2 | `kpair` | bytes(32) | Paar-Geheimnis; alles darunter leitet sich daraus ab |
+| 3 | `drops` | array | `d` eingebettete Relais-Einträge (vollständige Teil-2-Einträge) |
+| 4 | `validity` | uint | Unix-Ablauf; SOLLTE dem Ablauf der eingebetteten Einträge folgen |
+
+  Ableitungen (HKDF-BLAKE2s, Suite 0x01): der SP-7-Tag-Schlüssel für dieses Paar ist
+  `K_tag = HKDF(kpair, "tag")`; Postfach-Bezeichner sind
+  `box_id(drop, epoch) = PRF(kpair, "box" ‖ drop_index ‖ epoch)`, abgeschnitten auf
+  16 Bytes, mit `epoch = floor(unix_time / 86400)` (s). Der Drop-Index MUSS (MUST)
+  in die Ableitung eingehen: mit einer einzigen ID je Epoche könnten zwei kolludierende Drops
+  die Postfächer des Paares innerhalb dieser Epoche verknüpfen.
+- **RZ-4.** Karten reisen Out-of-Band (QR-Code, gedruckte Zeichenkette, ein Freund) oder
+  über einen bestehenden ScrambNet-Kanal. Ein Kontakt ist die Untergrenze, wie in GR-10.
+
+## 4. Drops und Ablage
+
+- **RZ-5.** Der Drop-Satz hält `d = n = 4` (s) Relais, vom *Empfänger* gewählt,
+  die SOLLTEN (SHOULD) im selben Sinne gegenseitig unabhängig sein, den die Pfadauswahl
+  verlangt (OP-1 gilt auch für Drops). Die `n` Anteile einer Nachricht
+  MÜSSEN (MUST) an `n` verschiedenen Drops abgelegt werden — SP-7 auf den Speicher ausgedehnt: kein
+  einzelner Drop hält je zwei Anteile von irgendetwas.
+- **RZ-6.** Eine Ablage ist ein gewöhnliches Teil-1-Paket, dessen Circuit am
+  Drop endet. Der Endhop-Klartext von `delta` ist `box_id` (16 B) ‖ `slot`
+  (1840 B); der Slot ist die Anteil-Nutzlast aus Teil 1 §4 mit seinem abschließenden Pad
+  16 Bytes kürzer. Der Drop speichert den Slot unter `box_id` wörtlich: er kann
+  weder die Tag-Semantik noch den Anteil-Inhalt lesen (ein Anteil < `k`, und SP-7
+  macht Anteile gegenseitig nicht verknüpfbar, selbst über kolludierende Drops).
+- **RZ-7.** Ablagen sind Fire-and-Forget. Der Drop DARF NICHT (MUST NOT) irgendeine Antwort ausgeben,
+  die Erfolg, unbekanntes Postfach oder volles Postfach unterscheidet (stille Uniformität, wie
+  GR-4). Speicherregeln: feste Slots von 1840 B, höchstens `64` (s) Slots je Postfach,
+  Slot-Ablauf `7` Tage (s), Ältestes-zuerst-Räumung.
+
+## 5. Abruf
+
+- **RZ-8.** Der Empfänger pollt jeden seiner Drops über seine eigenen Circuits.
+  Die Kenntnis von `box_id` autorisiert den Abruf (es ist geheimnisabgeleitet und
+  nicht erratbar); Slots werden beim Ablauf gelöscht, nicht beim Abholen (Löschen-beim-
+  Abholen-Semantik ist OP-9-Gebiet: ein Gegner, der ein `box_id` stiehlt, darf nicht
+  still Post wegessen können).
+- **RZ-9 (Polling-Disziplin).** Das Polling MUSS (MUST) einem von der Nutzeraktivität
+  unabhängigen Zeitplan folgen: fester Takt mit Jitter (Strohmann: alle `15` Minuten ±
+  gleichverteilt `5`), fortgesetzt, wenn der Nutzer untätig ist, mit Köder-Polls zu Köder-
+  Postfach-IDs im selben Takt. Eine Abrufantwort ist stets genau `b = 8`
+  (s) Slots, aufgefüllt mit Dummy-Slots, die von echten nicht zu unterscheiden sind. Der
+  Drop erfährt den Polling-Takt und die Ablagezeiten eines Postfachs innerhalb einer Epoche —
+  das ist der entworfene Rest, begrenzt durch RZ-10 und in OP-9 angegriffen.
+- **RZ-10 (Epochen).** `box_id` rotiert je Epoche. Ein Drop DARF NICHT (MUST NOT) die
+  Postfächer desselben Paares über Epochen verknüpfen können; nichts im Abrufprotokoll
+  darf einen über Epochen stabilen Wert tragen.
+
+## 6. Erneuerung und Ausfall
+
+- **RZ-11.** Eine Karte wird In-Band erneuert: der Empfänger legt die nächste Karte
+  (neues `kpair`, neue Drops) in die bestehenden Postfächer des Paares als gewöhnliche Nachricht ab,
+  bevor `validity` abläuft. Wenn jeder Drop eines Paares tot ist oder die
+  Karte abgelaufen ist, tauscht das Paar erneut Out-of-Band aus: ein Kontakt ist die
+  Untergrenze, wieder.
+- **RZ-12.** Jeder, der eine Karte hält, kann ihre Postfächer füllen. Die Postfach-Obergrenze (RZ-7)
+  begrenzt den Flutungsschaden auf eine Beziehung; die Ablage-Bepreisung (Client-
+  Puzzles?) und die Speicherökonomie des Drops sind offen (OP-9).
+
+## 7. Was dieser Teil nicht entscheidet
+
+Die Minimierung der Abrufmetadaten (schlaueres-als-Polling-Abrufen, PIR-artige
+Tricks und ihre echten Kosten), die Löschsemantik, die Ablage-Bepreisung, die Drop-
+Anreize (OP-9); die Verifikation der Drop-Satz-Unabhängigkeit (OP-1); das Polling über
+das Mesh im Blackout (OP-6). Für jeden existieren nummerierte Issues.

@@ -48,7 +48,10 @@ destination's own encryption is absent or broken, content. Under dispersal:
 
 ## Open problems
 
-Marked for attack — each deserves its own issue:
+Marked for attack. Each problem is discussed in **one** place: a single
+[issue](https://github.com/ScrambNet/scrambnet/issues) per problem, with the
+English text and all translations in the same thread. Read the problem in any
+language here; discuss it there, in the one issue, so no discussion is split.
 
 1. **Disjointness enforcement.** A first path-selection mechanism now exists in draft
    ([spec Part 3](spec/03-path-selection.md)) with an executable strawman in

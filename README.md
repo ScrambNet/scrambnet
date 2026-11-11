@@ -4,7 +4,7 @@
 
 **[English](README.md)** · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [中文](README.zh-CN.md)
 
-**Status: pre-alpha.** A threat model, a growing wire specification, and a runnable proof-of-concept — not a system to protect real secrets with yet. This repository is the meeting point for people who want to build it, and to attack it. See [how it compares](COMPARISON.md) and [how to report a break](SECURITY.md).
+**Status: pre-alpha.** A threat model, a growing wire specification, and a runnable proof-of-concept — not a system to protect real secrets with yet. This repository is the meeting point for people who want to build it, and to attack it. See [how it compares](docs/en/COMPARISON.md) and [how to report a break](docs/en/SECURITY.md).
 
 ## Three refusals
 
@@ -41,7 +41,9 @@ The cost is declared up front: `n` shares cost `n×` the bandwidth. That is the 
 | L3 | Transport | Chameleon wrappers: the traffic imitates ordinary TLS (uTLS, ECH) or WebRTC calls. Blocking it must cost the censor more than it earns. |
 | L4 | Blackout | When the internet is switched off: local mesh (Wi-Fi Direct, Bluetooth), store-and-forward. The network degrades; it does not die. |
 
-Full details: [docs/architecture.md](docs/architecture.md) · Honest limits: [docs/threat-model.md](docs/threat-model.md) · Wire spec: [docs/spec/](docs/spec/) · Positioning: [COMPARISON.md](COMPARISON.md)
+Full details: [architecture](docs/en/architecture.md) · Honest limits: [threat model](docs/en/threat-model.md) · Wire spec: [docs/en/spec/](docs/en/spec/) · Positioning: [COMPARISON](docs/en/COMPARISON.md) · Roadmap: [ROADMAP](docs/en/ROADMAP.md)
+
+All documentation in six languages: [English](docs/en/) · [Italiano](docs/it/) · [Español](docs/es/) · [Deutsch](docs/de/) · [Français](docs/fr/) · [中文](docs/zh-CN/)
 
 ## Run the proof-of-concept
 
@@ -76,7 +78,7 @@ Shamir (1979), Rabin's Information Dispersal (1989), Chaum's DC-nets (1988), Sph
 
 ## Contributing
 
-Pseudonymous contributions are welcome and expected — see [CONTRIBUTING.md](CONTRIBUTING.md). Discussion happens in the issues of this repository for now. Translations of the documentation are a valued first contribution.
+Pseudonymous contributions are welcome and expected — see [CONTRIBUTING.md](docs/en/CONTRIBUTING.md). Discussion happens in the issues of this repository for now. Translations of the documentation are a valued first contribution.
 
 One rule above all: **this network carries packets, not opinions.** It protects dissidents and their opponents with the same mathematics. Political adversaries are not enemies, and an infrastructure is credible only if it cannot choose sides.
 
