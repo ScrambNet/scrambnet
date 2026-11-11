@@ -9,7 +9,8 @@ non una decisione. Attaccalo attraverso le issue; cambialo attraverso le PR.
 
 - Le parole chiave **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** vanno
   interpretate come descritto in RFC 2119.
-- I requisiti sono numerati e stabili: `SP-n` (share packet, Parte 1), `GR-n`
+- I requisiti sono numerati e stabili: `SP-n` (share packet, Parte 1), `CH-n`
+  (handshake di circuito, Parte 1 §5), `GR-n`
   (gossip record, Parte 2), `PS-n` (selezione dei percorsi, Parte 3), `RZ-n`
   (rendezvous, Parte 6), `SA-n` (argomento di sicurezza, Parte 7), `ID-n`
   (dataset di inferenza, Parte 8). Issue e PR

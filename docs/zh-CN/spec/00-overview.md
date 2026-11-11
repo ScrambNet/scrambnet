@@ -9,7 +9,7 @@
 
 - 关键词 **MUST**、**MUST NOT**、**SHOULD**、**SHOULD NOT**、**MAY** 应按
   RFC 2119 所述解释。
-- 需求是编号且稳定的：`SP-n`（share packet，第 1 部分）、`GR-n`
+- 需求是编号且稳定的：`SP-n`（share packet，第 1 部分）、`CH-n`（链路握手，第 1 部分 §5）、`GR-n`
   （gossip record，第 2 部分）、`PS-n`（path selection，第 3 部分）、`RZ-n`
   （rendezvous，第 6 部分）、`SA-n`（security argument，第 7 部分）、
   `ID-n`（推断数据集，第 8 部分）。issues 与

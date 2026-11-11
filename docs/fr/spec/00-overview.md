@@ -9,7 +9,8 @@ non une décision. Attaquez-le par les issues ; changez-le par les PR.
 
 - Les mots-clés **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** doivent être
   interprétés comme décrit dans la RFC 2119.
-- Les exigences sont numérotées et stables : `SP-n` (paquet de part, Partie 1), `GR-n`
+- Les exigences sont numérotées et stables : `SP-n` (paquet de part, Partie 1), `CH-n`
+  (handshake de circuit, Partie 1 §5), `GR-n`
   (enregistrement de gossip, Partie 2), `PS-n` (sélection des chemins, Partie 3), `RZ-n`
   (rendezvous, Partie 6), `SA-n` (argument de sécurité, Partie 7), `ID-n` (jeu de données
   d'inférence, Partie 8). Les issues et les PR

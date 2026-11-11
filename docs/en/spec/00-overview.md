@@ -7,7 +7,8 @@ not a decision. Attack it through the issues; change it through PRs.
 
 - The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** are to be
   interpreted as described in RFC 2119.
-- Requirements are numbered and stable: `SP-n` (share packet, Part 1), `GR-n`
+- Requirements are numbered and stable: `SP-n` (share packet, Part 1), `CH-n`
+  (circuit handshake, Part 1 §5), `GR-n`
   (gossip record, Part 2), `PS-n` (path selection, Part 3), `RZ-n` (rendezvous,
   Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
   Part 8). Issues and PRs reference requirements by number.

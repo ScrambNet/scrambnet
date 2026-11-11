@@ -8,7 +8,8 @@ no una decisión. Atácalo a través de las issues; cámbialo a través de PRs.
 
 - Las palabras clave **MUST** (DEBE), **MUST NOT** (NO DEBE), **SHOULD** (DEBERÍA),
   **SHOULD NOT** (NO DEBERÍA), **MAY** (PUEDE) se interpretan como se describe en el RFC 2119.
-- Los requisitos están numerados y son estables: `SP-n` (paquete de parte, Parte 1), `GR-n`
+- Los requisitos están numerados y son estables: `SP-n` (paquete de parte, Parte 1), `CH-n`
+  (handshake de circuito, Parte 1 §5), `GR-n`
   (registro de gossip, Parte 2), `PS-n` (selección de rutas, Parte 3), `RZ-n` (rendezvous, Parte 6),
   `SA-n` (argumento de seguridad, Parte 7), `ID-n` (conjunto de datos de inferencia, Parte 8). Las issues y PRs hacen referencia a los requisitos por número.
 - Las referencias `OP-n` apuntan a la lista de problemas abiertos en

@@ -9,7 +9,8 @@ keine Entscheidung. Greife sie über die Issues an; ändere sie über PRs.
 - Die Schlüsselwörter **MUST** (MUSS), **MUST NOT** (DARF NICHT), **SHOULD** (SOLLTE),
   **SHOULD NOT** (SOLLTE NICHT), **MAY** (DARF) sind wie in RFC 2119 beschrieben zu
   interpretieren.
-- Anforderungen sind nummeriert und stabil: `SP-n` (Anteil-Paket, Teil 1), `GR-n`
+- Anforderungen sind nummeriert und stabil: `SP-n` (Anteil-Paket, Teil 1), `CH-n`
+  (Circuit-Handshake, Teil 1 §5), `GR-n`
   (Gossip-Eintrag, Teil 2), `PS-n` (Pfadauswahl, Teil 3), `RZ-n` (Rendezvous, Teil 6),
   `SA-n` (Sicherheitsargument, Teil 7), `ID-n` (Inferenz-Datensatz, Teil 8). Issues und PRs verweisen auf Anforderungen per Nummer.
 - `OP-n`-Verweise zeigen auf die Liste offener Probleme in
