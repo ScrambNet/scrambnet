@@ -38,7 +38,8 @@ except what their signatures bind (GR-2).
   the AS and jurisdiction of each relay from its `addrs` using *its own*
   dataset (e.g. a periodically refreshed IP-to-AS map), never from anything
   the relay says. The dataset's distribution MUST itself obey I-3: no single
-  authoritative source (candidate designs are OP-1).
+  authoritative source. That dataset is specified in [Part 8](08-inference-dataset.md)
+  (a reproducible, content-addressed map; no authority; declared error rate).
 - **PS-5.** Inference is uncertain, and the client MUST treat it so: when the
   AS or jurisdiction of a relay is unknown, it counts as *potentially shared*
   with every other unknown — the conservative assumption, never the optimistic

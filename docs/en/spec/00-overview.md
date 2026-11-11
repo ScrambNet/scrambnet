@@ -9,8 +9,8 @@ not a decision. Attack it through the issues; change it through PRs.
   interpreted as described in RFC 2119.
 - Requirements are numbered and stable: `SP-n` (share packet, Part 1), `GR-n`
   (gossip record, Part 2), `PS-n` (path selection, Part 3), `RZ-n` (rendezvous,
-  Part 6), `SA-n` (security argument, Part 7). Issues and PRs reference
-  requirements by number.
+  Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
+  Part 8). Issues and PRs reference requirements by number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
 - A conforming implementation implements every MUST of every part it claims.
@@ -78,6 +78,11 @@ planned upgrade, not an emergency.
    proof that any `k−1` shares are independent of the secret, the two
    conditions it rests on (coefficient randomness, key separation), and an
    honest statement of what is not proved.
+6. [Part 8 — The inference dataset](08-inference-dataset.md): how a client
+   obtains the IP-to-AS and coarse-jurisdiction map Part 3 infers from, with no
+   authority — a reproducible content-addressed artifact, a permissionless
+   transparency log, declared trust-on-first-use, and the error rate the map
+   admits and feeds to the simulator (OP-1 distribution, roadmap 2.3).
 
 Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
 mode framing.
