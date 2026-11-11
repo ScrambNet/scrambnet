@@ -154,7 +154,165 @@ Descifrada solo por el destinatario:
   distribución y su coste en latencia son OP-4 y están sin resolver. Los clientes PUEDEN (MAY)
   emitir partes señuelo (paquetes con `tag` aleatorio) a una tasa configurable.
 
-## 5. Lo que esta parte no decide
+## 5. El handshake de circuito (no existe — es Sphinx)
+
+La suite una vez nombró `Noise_XK_25519_ChaChaPoly_BLAKE2s` como un «handshake de
+circuito» que nada especificaba, un defecto I-1: un implementador hostil no podía
+construir un nodo interoperable, porque no había transcripción que construir. **La
+resolución es borrar la línea.** Sphinx ya realiza el acuerdo de clave por salto que
+un circuito necesita, así que un handshake Noise separado es un vestigio —muy
+probablemente heredado del linaje de los «handshakes Noise» de WireGuard sin notar
+que Sphinx ya se había comido el trabajo. Esta sección registra esa decisión y
+especifica, de forma normativa, el handshake que Sphinx *es*, de modo que I-1 se
+cumple por especificación, no por un segundo protocolo.
+
+**La decisión, en un párrafo.** `alpha` (SP-3, 32 B, X25519) es un *efímero de
+cliente por paquete*; cada relé deriva el secreto de salto a partir de `alpha` y de su
+clave estática `onion` (GR-2 clave 2). Eso es Diffie-Hellman efímero–estático por
+salto, forward-secret *con granularidad de época* (CH-6), autenticado al relé mediante
+la firma Ed25519 del registro de gossip —exactamente lo que un circuito necesita y
+todo lo que necesita. Un segundo handshake `Noise_XK` con estado volvería a ejecutar el
+mismo DH, añadiría viajes de ida y vuelta que una parte dispersada de un solo disparo no
+puede permitirse, pondría un segundo formato de cable en el enlace que I-4 tendría
+entonces que blanquear, y compraría **una** propiedad de la que Sphinx carece: ocultar
+la clave estática del *iniciador*. El cliente de circuito de ScrambNet **no tiene clave
+estática alguna** (es anónimo por construcción), así que esa propiedad es vacua. `XK`
+autentica maquinaria para una clave que no existe. Reemplazar Sphinx con XK (más viajes
+de ida y vuelta por menos), o usar XK para un canal lateral (todo flujo con estado
+cliente↔relé —gossip GR-6, sondeo GR-12/GR-13— se tuneliza deliberadamente *a través*
+de Sphinx para que el cliente permanezca sin nombre, así que ningún canal de ese tipo
+quiere una sesión directa) fracasan ambos a la inspección. La especificación mejora al
+borrar la línea.
+
+```
+  THE "HANDSHAKE" IS THE SPHINX HEADER. NOTHING ELSE EXISTS.
+
+  cliente (sin clave estática)     guardia G        medio M           salida X
+  ─────────────────────     ───────          ────────          ──────
+   por paquete: elige UN efímero x ; alpha_0 = x·B   (B = base X25519)
+        │
+        │  paquete de parte  [ alpha_0 | beta | gamma | delta ]   (SP-3)
+        │────────────────────────▶│
+        │     G: s_G = DH(alpha_0, onion_G) ─► clave de salto; pela una capa beta
+        │     G: alpha_1 = blind(alpha_0)   (re-aleatorización Sphinx)
+        │                          │────────────────▶│
+        │                          │  M: s_M = DH(alpha_1, onion_M) ─► clave de salto
+        │                          │                  │──────────▶│
+        │                          │                  │  X: s_X = DH(alpha_2, onion_X)
+        ▼                          ▼                  ▼           ▼
+   SIN RTT de handshake. SIN segundo formato de cable. SIN mensaje Noise. El DH es
+   efímero(cliente)·estático(relé) en CADA salto, llevado enteramente en `alpha`.
+
+   Lo que Noise XK habría añadido, y por qué se borra:
+      → e ; ← e,ee,s,es ; → s,se   (RTT extra, el relé nombra una sesión, y el
+      tercer mensaje lleva la estática del INICIADOR que XK existe para ocultar —que
+      nuestro cliente sin clave no tiene, así que no hay nada que enviar ni razón para ejecutarlo)
+```
+
+- **CH-1 (borrar el vestigio).** La suite `0x01` **no** tiene handshake Noise; la
+  fila de la tabla de suites de la Parte 0 se elimina. Una implementación NO DEBE (MUST NOT)
+  emitir, esperar ni negociar ningún mensaje de handshake Noise en un circuito; un
+  paquete que no es un paquete de parte de la Parte 1 no forma parte de este protocolo.
+  *Atácalo nombrando una operación de circuito que la cabecera Sphinx no pueda realizar
+  —una revisión hostil lo intentó y no encontró ninguna.*
+- **CH-2 (el handshake de circuito es la cabecera Sphinx).** El acuerdo de clave por
+  salto DEBE (MUST) ser la construcción Sphinx de SP-3/SP-4: para cada salto `i`, el relé
+  calcula `s_i = X25519(alpha_i, onion_i)` donde `alpha_i` es el elemento de grupo
+  cegado que recibe y `onion_i` es su clave estática (GR-2 clave 2). Todas las claves de
+  salto (cifrador de flujo de la información de enrutamiento, el MAC `gamma`, el AEAD
+  `delta`) DEBEN (MUST) derivarse de `s_i` mediante HKDF-BLAKE2s con etiquetas fijas
+  distintas (`"sphinx-rho"`, `"sphinx-mu"`, `"sphinx-delta"` —bytes exactos bloqueados por
+  vectores bajo roadmap 3.2). No hay ningún otro acuerdo de clave en la capa de circuito.
+- **CH-3 (el iniciador es sin clave, por construcción).** Un cliente de circuito NO DEBE (MUST NOT)
+  poseer ni presentar ninguna clave estática de largo plazo en la ruta del circuito. Su
+  único secreto asimétrico es el **escalar efímero por paquete** `x` detrás de `alpha_0`,
+  que DEBE (MUST) muestrearse de nuevo desde un CSPRNG por paquete (aplica roadmap 3.1 —el
+  forward secrecy de abajo es exactamente tan fuerte como este RNG) y destruirse tras
+  construir el paquete. Sin clave estática de cliente, ningún patrón de ocultación del
+  iniciador tiene nada que ocultar; `XK`/`IK`/`KK` son todos inaplicables a la ruta del
+  circuito (CH-7).
+- **CH-4 (autenticación estática del relé, sin firma de handshake).** Un cliente DEBE (MUST)
+  obtener la clave estática `onion` de cada relé *solo* de un registro de gossip cuya firma
+  Ed25519 (GR-2 clave 7) sobre la codificación canónica —que cubre la clave 2— haya
+  verificado (GR-4). La autenticación del relé es **fuera de línea y transferible**: una vez,
+  cuando el registro se valida, no interactivamente por circuito. NO DEBE (MUST NOT) haber una
+  firma del relé dentro del circuito (sería un selector y una huella de cable, I-4). El límite
+  honesto: un cliente autentica *la clave*, no una *identidad más allá de esa firma* —el residuo
+  de sybil/eclipse vive en la Parte 2 (OP-2, GR-19a/GR-20a), no aquí.
+- **CH-5 (rotación de la clave estática — la ventana de exposición de ≤7 días).** Un relé DEBE (MUST)
+  rotar su clave estática `onion` al menos cada `7 days` (s), y DEBE (MUST) poner a cero la
+  mitad privada de una clave retirada una vez pasado el período de gracia en vuelo; un relé que
+  retiene estáticas viejas agranda su propia ventana de exposición y no es conforme. Los clientes
+  DEBEN (MUST) rechazar un registro cuyo `expiry` exceda `created + 7 days` (GR-2 clave 6). El
+  techo de rotación se impone en ambos extremos y es el techo de la ventana de compromiso
+  estático (CH-6).
+- **CH-5a (la brecha `ee`, y la corrección que no es XK).** Una revisión hostil nombró la única
+  propiedad que cuesta el borrado: como el DH de salto es efímero(cliente)·**estático**(relé), un
+  adversario que registra el tráfico de enlace de un relé y luego se apodera de su estática `onion`
+  *dentro de la época viva* puede recalcular los secretos por salto de esa época y recuperar la
+  **enlazabilidad** de un salto durante hasta 7 días de paquetes registrados (nunca contenido —CH-6).
+  Un `ee` de Noise negaría incluso eso. Esto es una regresión real respecto a un handshake
+  *interactivo completo*, pero **no** es razón para mantener `XK` (cuya ocultación del iniciador no
+  la cierra) y es cerrable sin un handshake: un despliegue que juzgue la ventana demasiado ancha
+  DEBE (MUST) o bien (a) **acortar la rotación** por debajo de 7 días (CH-5 es un techo, no un
+  objetivo), o bien (b) añadir una **pre-clave de relé `ee` opcional** —una pre-clave efímera de
+  vida corta publicada en el registro de gossip, mezclada en el secreto de salto a **cero** viajes
+  de ida y vuelta extra— rotada y destruida de modo que un apoderamiento tardío de la estática no
+  rinda nada durante su tiempo de vida. El campo de registro de la pre-clave y su rotación
+  pertenecen a GR-2 si un despliegue la adopta; CH-5a solo resuelve que la brecha es real, acotada
+  a la enlazabilidad, y cerrable sin el handshake borrado.
+- **CH-6 (el enunciado del forward secrecy, con precisión).** `[claim-critical]` Un adversario que
+  compromete la clave privada **estática** `onion` del relé `R` en el instante `T` (y nada más —los
+  efímeros nunca salieron de los clientes y fueron destruidos, CH-3):
+  (a) **el tráfico pasado está a salvo entre épocas** —los paquetes cuyo salto en `R` usó una
+  estática anterior, rotada-y-destruida, no son descifrables (la clave ya no está, CH-5; el
+  logaritmo discreto del efímero del cliente ya no está, CH-3); el forward secrecy es con
+  granularidad de época, siendo la rotación de ≤7 días esa granularidad. (b) **Dentro de la época
+  viva, la exposición es la *enlazabilidad* de un salto, nunca contenido** —para los paquetes
+  enviados mientras la estática apoderada estaba viva, el adversario recalcula `s_i` para los saltos
+  en `R` y pela la capa de `R`, aprendiendo el predecesor/sucesor de `R`, es decir, los metadatos que
+  un relé malicioso ya ve. No rinde **ningún** contenido: incondicional por debajo de `k` (I-2, Parte
+  7), y por encima de `k` el AEAD extremo a extremo se cifra a partir de una `kpair` simétrica
+  precompartida sin ninguna transcripción DH que la clave apoderada pueda tocar (SP-1a). Una estática
+  apoderada compra *la enlazabilidad de un salto sobre los paquetes de una época* —exactamente la
+  correlación guardia+salida que el diseño de dispersión/disjunción ya trata como *mitigada, no
+  eliminada*; comprometer la estática no mueve al adversario más allá de lo que *operar* ese relé ya
+  hace.
+- **CH-7 (la ocultación del iniciador no es necesaria; el salto tiene forma `N`, no `XK`).**
+  `[claim-critical]` ¿Necesita el cliente la propiedad de estática-de-iniciador-oculta de XK? **No**,
+  de forma dispositiva: el cliente no tiene clave estática de iniciador (CH-3), así que la propiedad es
+  vacua. En el vocabulario de Noise, el salto de un solo disparo es un acuerdo unidireccional, de
+  iniciador-efímero, respondedor-de-estática-conocida —la forma de Noise `N` (`→ e, es`), no de `XK`.
+  El circuito no usa ningún mensaje Noise literal (CH-2: es Sphinx, que subsume esta forma); los dos
+  mensajes que XK añade más allá de `N` no llevan nada y existen solo para autenticar una clave que no
+  tenemos. La ocultación del iniciador ya la provee de forma más fuerte Sphinx (uniformidad de SP-4; el
+  cliente nunca es un extremo que un relé pueda nombrar, GR-12). Reemplazamos la ocultación del
+  iniciador de XK por *«el iniciador es anónimo y sin clave»*, que no necesita ningún patrón para
+  ocultar lo que no está ahí.
+- **CH-8 (las sesiones relé↔relé, si acaso, quedan fuera de esta parte y no son `XK`).** Un futuro canal
+  de control o de emparejamiento que necesite una sesión con estado, bidireccional y mutuamente
+  autenticada entre dos partes **nombradas** (p. ej., cifrado de enlace relé-a-relé) es un documento
+  separado y DEBE (MUST) satisfacer igualmente I-4 (CH-9). Incluso ahí `XK` es incorrecto: las estáticas
+  de ambos relés son **públicas** en sus registros de gossip, así que no hay nada que ocultar y encaja un
+  patrón de estática-ya-conocida (`IK`/`KK`). Esta sección no especifica tal canal; solo impide
+  reimportar `XK` por reflejo.
+- **CH-9 (I-4 por no tener un segundo formato de cable).** `[claim-critical]` La capa de circuito no
+  pone nada en el cable salvo paquetes de parte de la Parte 1, cada byte uniforme (SP-4). **No** hay
+  ningún mensaje de handshake Noise que uniformizar —el resultado I-4 más limpio, logrado por *no tener*
+  un segundo protocolo. Una transcripción Noise XK tiene estructura reconocible (patrón de longitud de
+  mensaje, campos de clave pública `e`/`s`); mantener XK habría *añadido* un requisito de ofuscación que
+  el borrado elimina. Cualquier futuro canal de sesión (CH-8) hereda esta obligación en su propio
+  documento.
+
+**Lo que la sección 5 no decide.** Los parámetros de Sphinx en sí (grupo, cegado, MAC, etiquetas HKDF
+exactas y encadenamiento) son §3 y los vectores del roadmap 3.2; CH-2 los referencia. Poscuántico: la
+suite `0x02` puede reemplazar el DH de salto X25519 por un KEM PQ —la *forma* del forward secrecy de CH-6
+no cambia (efímero + rotación estática de ≤7 días), cambia la primitiva, y el umbral de contenido de I-2
+es PQ-seguro en todo caso (SP-1a). El canal relé↔relé (CH-8) y el campo opcional de pre-clave `ee` (CH-5a)
+se dejan a partes futuras. CH-4 autentica una *clave que un registro firmó*, no una identidad más allá de
+ella: el residuo de gossip/eclipse es de la Parte 2 (OP-2).
+
+## 6. Lo que esta parte no decide
 
 La selección de rutas y la imposición de la disjunción (OP-1), los parámetros de mezcla (OP-5),
 la fragmentación (SP-8), la economía de los señuelos (SP-9) están abiertos a propósito. Cada uno tiene una

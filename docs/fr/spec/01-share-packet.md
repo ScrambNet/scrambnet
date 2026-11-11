@@ -152,7 +152,166 @@ Déchiffrée par le destinataire seul :
   distribution et son coût en latence relèvent d'OP-4 et sont non résolus. Les clients PEUVENT (MAY)
   émettre des parts leurres (paquets à `tag` aléatoire) à un débit configurable.
 
-## 5. Ce que cette partie ne décide pas
+## 5. Le handshake de circuit (il n'y en a pas — c'est Sphinx)
+
+La suite nommait autrefois `Noise_XK_25519_ChaChaPoly_BLAKE2s` comme un « handshake de
+circuit » que rien ne spécifiait, un défaut I-1 : un implémenteur hostile ne pouvait pas
+construire un nœud interopérable, car il n'existait aucune transcription à construire.
+**La résolution est de supprimer la ligne.** Sphinx réalise déjà l'accord de clé par saut
+dont un circuit a besoin, de sorte qu'un handshake Noise séparé est un vestige — hérité
+très probablement de la lignée des « handshakes Noise » de WireGuard sans qu'on remarque
+que Sphinx avait déjà avalé le travail. Cette section consigne cette décision et spécifie,
+de façon normative, le handshake que Sphinx *est*, de sorte qu'I-1 est satisfait par
+spécification, et non par un second protocole.
+
+**La décision, en un paragraphe.** `alpha` (SP-3, 32 o, X25519) est un *éphémère client par
+paquet* ; chaque relais dérive le secret de saut de `alpha` et de sa clé statique `onion`
+(GR-2 clé 2). C'est un Diffie-Hellman éphémère–statique par saut, assurant la forward secrecy
+*à la granularité de l'époque* (CH-6), avec authentification du relais via la signature
+Ed25519 de l'enregistrement de gossip — exactement ce dont un circuit a besoin et tout ce
+dont il a besoin. Un second handshake `Noise_XK` à état ré-exécuterait le même DH, ajouterait
+des allers-retours qu'une part dispersée en un coup ne peut pas se permettre, poserait un
+second format sur le fil du lien qu'I-4 devrait alors blanchir, et n'achèterait qu'**une**
+propriété qui manque à Sphinx : cacher la clé statique de l'*initiateur*. Le client de circuit
+de ScrambNet n'a **aucune clé statique** (il est anonyme par construction), de sorte que cette
+propriété est vide. `XK` authentifie la machinerie d'une clé qui n'existe pas. Remplacer Sphinx
+par XK (plus d'allers-retours pour moins), ou utiliser XK pour un canal auxiliaire (chaque flux
+client↔relais à état — gossip GR-6, sondage GR-12/GR-13 — est délibérément tunnelé *à travers*
+Sphinx pour que le client reste innommé, de sorte qu'aucun tel canal ne veut de session directe),
+tous deux échouent à l'examen. La spécification est meilleure une fois la ligne supprimée.
+
+```
+  LE « HANDSHAKE » EST L'EN-TÊTE SPHINX. RIEN D'AUTRE N'EXISTE.
+
+  client (pas de clé statique)  garde G          milieu M          sortie X
+  ─────────────────────────    ───────          ────────          ──────
+   par paquet : choisir UN SEUL éphémère x ; alpha_0 = x·B   (B = base X25519)
+        │
+        │  paquet de part  [ alpha_0 | beta | gamma | delta ]   (SP-3)
+        │────────────────────────▶│
+        │     G: s_G = DH(alpha_0, onion_G) ─► clé de saut ; peler une couche beta
+        │     G: alpha_1 = blind(alpha_0)   (re-randomisation Sphinx)
+        │                          │────────────────▶│
+        │                          │  M: s_M = DH(alpha_1, onion_M) ─► clé de saut
+        │                          │                  │──────────▶│
+        │                          │                  │  X: s_X = DH(alpha_2, onion_X)
+        ▼                          ▼                  ▼           ▼
+   AUCUN RTT de handshake. AUCUN second format sur le fil. AUCUN message Noise. Le DH est
+   éphémère(client)·statique(relais) à CHAQUE saut, porté entièrement dans `alpha`.
+
+   Ce que Noise XK aurait ajouté, et pourquoi c'est supprimé :
+      → e ; ← e,ee,s,es ; → s,se   (RTT en plus, le relais nomme une session, et le
+      troisième message porte la statique INITIATEUR que XK existe pour cacher — que notre
+      client sans clé n'a pas, donc rien à envoyer et aucune raison de l'exécuter)
+```
+
+- **CH-1 (supprimer le vestige).** La suite `0x01` n'a **aucun** handshake Noise ; la ligne
+  de la table des suites de la Partie 0 est retirée. Une implémentation NE DOIT PAS (MUST NOT)
+  émettre, attendre ni négocier un quelconque message de handshake Noise sur un circuit ; un
+  paquet qui n'est pas un paquet de part de la Partie 1 ne fait pas partie de ce protocole.
+  *Attaquez ceci en nommant une opération de circuit que l'en-tête Sphinx ne peut pas réaliser
+  — une révision hostile a essayé et n'en a trouvé aucune.*
+- **CH-2 (le handshake de circuit est l'en-tête Sphinx).** L'accord de clé par saut DOIT (MUST)
+  être la construction Sphinx de SP-3/SP-4 : pour chaque saut `i`, le relais calcule
+  `s_i = X25519(alpha_i, onion_i)` où `alpha_i` est l'élément de groupe aveuglé qu'il reçoit et
+  `onion_i` est sa clé statique (GR-2 clé 2). Toutes les clés de saut (chiffrement de flux de
+  l'info de routage, le MAC `gamma`, l'AEAD `delta`) DOIVENT (MUST) être dérivées de `s_i` par
+  HKDF-BLAKE2s avec des étiquettes fixes distinctes (`"sphinx-rho"`, `"sphinx-mu"`,
+  `"sphinx-delta"` — octets exacts verrouillés par vecteurs sous la feuille de route 3.2). Il
+  n'y a aucun autre accord de clé dans la couche circuit.
+- **CH-3 (l'initiateur est sans clé, par construction).** Un client de circuit NE DOIT PAS
+  (MUST NOT) posséder ni présenter de clé statique de long terme sur le chemin du circuit. Son
+  seul secret asymétrique est le scalaire **éphémère par paquet** `x` derrière `alpha_0`, qui
+  DOIT (MUST) être fraîchement échantillonné depuis un CSPRNG par paquet (la feuille de route 3.1
+  s'applique — la forward secrecy ci-dessous est exactement aussi forte que ce RNG) et détruit
+  après la construction du paquet. Sans clé statique client, aucun motif cachant l'initiateur n'a
+  rien à cacher ; `XK`/`IK`/`KK` sont tous inapplicables au chemin du circuit (CH-7).
+- **CH-4 (authentification statique du relais, sans signature de handshake).** Un client DOIT
+  (MUST) obtenir la clé statique `onion` de chaque relais *uniquement* depuis un enregistrement
+  de gossip dont il a vérifié (GR-4) la signature Ed25519 (GR-2 clé 7) sur l'encodage canonique —
+  qui couvre la clé 2. L'authentification du relais est **hors ligne et transférable** : une
+  fois, lors de la validation de l'enregistrement, non interactivement par circuit. Il NE DOIT
+  PAS (MUST NOT) y avoir de signature de relais dans le circuit (ce serait un sélecteur et une
+  empreinte sur le fil, I-4). La limite honnête : un client authentifie *la clé*, non une
+  *identité au-delà de cette signature* — le résidu sybil/eclipse réside dans la Partie 2 (OP-2,
+  GR-19a/GR-20a), pas ici.
+- **CH-5 (rotation de la clé statique — la fenêtre d'exposition ≤7 days).** Un relais DOIT (MUST)
+  faire tourner sa clé statique `onion` au moins tous les `7 days` (s), et DOIT (MUST) remettre à
+  zéro la moitié privée d'une clé retirée une fois passé le délai de grâce des paquets en vol ; un
+  relais qui conserve d'anciennes statiques agrandit sa propre fenêtre d'exposition et n'est pas
+  conforme. Les clients DOIVENT (MUST) rejeter un enregistrement dont l'`expiry` dépasse
+  `created + 7 days` (GR-2 clé 6). Le plafond de rotation est imposé aux deux extrémités et
+  constitue le plafond de la fenêtre de compromission de la statique (CH-6).
+- **CH-5a (l'écart `ee`, et le correctif qui n'est pas XK).** Une révision hostile a nommé la
+  seule propriété que la suppression coûte : parce que le DH de saut est éphémère(client)·
+  **statique**(relais), un adversaire qui enregistre le trafic de lien d'un relais puis saisit sa
+  statique `onion` *à l'intérieur de l'époque vivante* peut recalculer les secrets par saut de
+  cette époque et récupérer la **liaison** d'un saut pour jusqu'à 7 days de paquets enregistrés
+  (jamais le contenu — CH-6). Un `ee` Noise refuserait même cela. C'est une vraie régression par
+  rapport à un handshake *interactif complet*, mais ce n'est **pas** une raison de garder `XK`
+  (dont le camouflage de l'initiateur ne la ferme pas) et c'est fermable sans handshake : un
+  déploiement qui juge la fenêtre trop large DOIT (MUST) soit (a) **raccourcir la rotation** en
+  deçà de 7 days (CH-5 est un plafond, non une cible), soit (b) ajouter une **pré-clé de relais
+  `ee` optionnelle** — une pré-clé éphémère de courte durée publiée dans l'enregistrement de
+  gossip, mélangée au secret de saut à **zéro** aller-retour supplémentaire — tournée et détruite
+  de sorte qu'une saisie tardive de la statique ne donne rien pour sa durée de vie. Le champ
+  d'enregistrement de la pré-clé et sa rotation relèvent de GR-2 si un déploiement l'adopte ;
+  CH-5a règle seulement que l'écart est réel, borné à la liaison, et fermable sans le handshake
+  supprimé.
+- **CH-6 (l'énoncé de forward secrecy, précisément).** `[claim-critical]` Un adversaire qui
+  compromet la clé privée **statique** `onion` du relais `R` à l'instant `T` (et rien d'autre —
+  les éphémères n'ont jamais quitté les clients et ont été détruits, CH-3) : (a) **le trafic passé
+  est sûr d'une époque à l'autre** — les paquets dont le saut en `R` a utilisé une statique
+  antérieure, tournée-et-détruite, ne sont pas déchiffrables (la clé a disparu, CH-5 ; le
+  logarithme discret de l'éphémère client a disparu, CH-3) ; la forward secrecy est à la
+  granularité de l'époque, la rotation ≤7 days étant cette granularité. (b) **À l'intérieur de
+  l'époque vivante, l'exposition est la *liaison* d'un saut, jamais le contenu** — pour les paquets
+  envoyés tant que la statique saisie était vivante, l'adversaire recalcule `s_i` pour les sauts en
+  `R` et pèle la couche de `R`, apprenant le prédécesseur/successeur de `R`, c.-à-d. les métadonnées
+  qu'un relais malveillant voit déjà. Cela ne donne **aucun** contenu : inconditionnel en dessous
+  de `k` (I-2, Partie 7), et au-dessus de `k` l'AEAD de bout en bout est clavé depuis un `kpair`
+  symétrique pré-partagé sans transcription DH que la clé saisie puisse toucher (SP-1a). Une
+  statique saisie achète *la liaison d'un saut sur les paquets d'une époque* — exactement la
+  corrélation garde+sortie que la conception de dispersion/disjonction traite déjà comme
+  *atténuée, non éliminée* ; compromettre la statique ne mène l'adversaire pas plus loin que le
+  fait de *faire tourner* ce relais déjà.
+- **CH-7 (le camouflage de l'initiateur n'est pas nécessaire ; le saut a la forme `N`, non `XK`).**
+  `[claim-critical]` Le client a-t-il besoin de la propriété de statique-initiateur-cachée de XK ?
+  **Non**, de façon dirimante : le client n'a pas de clé statique d'initiateur (CH-3), de sorte que
+  la propriété est vide. Dans le vocabulaire de Noise, le saut en un coup est un accord à sens
+  unique, à initiateur éphémère et répondeur à statique connue — la forme de Noise `N` (`→ e, es`),
+  non `XK`. Le circuit n'utilise aucun message Noise littéral (CH-2 : c'est Sphinx, qui subsume
+  cette forme) ; les deux messages que XK ajoute au-delà de `N` ne portent rien et n'existent que
+  pour authentifier une clé que nous n'avons pas. Le camouflage de l'initiateur est déjà fourni
+  plus fortement par Sphinx (uniformité SP-4 ; le client n'est jamais une extrémité qu'un relais
+  peut nommer, GR-12). Nous avons remplacé le camouflage de l'initiateur de XK par *« l'initiateur
+  est anonyme et sans clé »*, qui n'a besoin d'aucun motif pour cacher ce qui n'est pas là.
+- **CH-8 (les sessions relais↔relais, s'il en existe un jour, sont hors de cette partie et ne sont
+  pas `XK`).** Un futur canal de contrôle ou de peering nécessitant une session à état,
+  bidirectionnelle et mutuellement authentifiée entre deux parties **nommées** (p. ex. le
+  chiffrement de lien relais-à-relais) est un document séparé et DOIT (MUST) tout de même
+  satisfaire I-4 (CH-9). Même là, `XK` est faux : les statiques des deux relais sont **publiques**
+  dans leurs enregistrements de gossip, de sorte qu'il n'y a rien à cacher et un motif à statique
+  déjà connue (`IK`/`KK`) convient. Cette section ne spécifie aucun tel canal ; elle interdit
+  seulement de ré-importer `XK` par réflexe.
+- **CH-9 (I-4 en n'ayant aucun second format sur le fil).** `[claim-critical]` La couche circuit
+  ne met rien sur le fil sinon des paquets de part de la Partie 1, chaque octet uniforme (SP-4). Il
+  n'y a **aucun** message de handshake Noise à rendre uniforme — l'issue I-4 la plus propre,
+  obtenue en *n'ayant pas* de second protocole. Une transcription Noise XK a une structure
+  reconnaissable (motif de longueur de message, champs de clé publique `e`/`s`) ; garder XK aurait
+  *ajouté* une exigence d'obfuscation que la suppression retire. Tout futur canal de session (CH-8)
+  hérite de cette obligation dans son propre document.
+
+**Ce que la section 5 ne décide pas.** Les paramètres Sphinx eux-mêmes (groupe, aveuglement, MAC,
+étiquettes HKDF exactes et chaînage) sont au §3 et dans les vecteurs de la feuille de route 3.2 ;
+CH-2 y renvoie. Post-quantique : la suite `0x02` peut remplacer le DH de saut X25519 par une KEM
+PQ — la *forme* de forward secrecy de CH-6 est inchangée (éphémère + rotation statique ≤7 days), la
+primitive change, et le plancher de contenu I-2 est PQ-sûr quoi qu'il en soit (SP-1a). Le canal
+relais↔relais (CH-8) et le champ de pré-clé `ee` optionnelle (CH-5a) sont laissés aux parties
+futures. CH-4 authentifie une *clé qu'un enregistrement a signée*, non une identité au-delà :
+le résidu gossip/eclipse est celui de la Partie 2 (OP-2).
+
+## 6. Ce que cette partie ne décide pas
 
 La sélection des chemins et l'imposition de la disjonction (OP-1), les paramètres de mixage (OP-5),
 la fragmentation (SP-8), l'économie des leurres (SP-9) sont ouverts à dessein. Chacun a une
