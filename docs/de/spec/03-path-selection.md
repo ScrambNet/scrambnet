@@ -90,12 +90,15 @@ Gegner nicht billig setzen kann. Alles hier muss gegen Relais standhalten, die
   Gegner ausnutzt — von der *Annahme* des Clients und variiert die
   Schlussfolgerungs-Fehlerrate: Steigt der Fehler, wird die AS-disjunkte Auswahl
   teilweise illusorisch, und sowohl die Inhaltsbruchrate als auch der
-  Verknüpfungsleck steigen monoton. Zwei Folgerungen sind normativ: (a) Der
-  Fehler untergräbt die **Verknüpfung weit schneller als den Inhalt** — ein
+  Verknüpfungsleck steigen monoton. Zwei Folgerungen sind normativ: (a) Bei
+  **zufälligem** Schlussfolgerungsfehler (Rauschen, eine bloß ungenaue Karte)
+  untergräbt der Fehler die **Verknüpfung weit schneller als den Inhalt** — ein
   Inhaltsbruch erfordert weiterhin, dass der Gegner auf `≥ k` Circuits
   gleichzeitig sitzt, sodass die Untergrenze hält, während die Metadaten zuerst
   degradieren; die UI DARF NICHT (MUST NOT) eine niedrige Inhaltsbruchzahl so
-  darstellen, als begrenze sie auch die Verknüpfung; (b) eine dünnere
+  darstellen, als begrenze sie auch die Verknüpfung. Diese Asymmetrie gilt **nur
+  für zufälligen Fehler**; eine *adversarisch gewählte* Karte ist kein Rauschen
+  (siehe PS-12); (b) eine dünnere
   **Gossip-Stichprobe** (PS-10, I-3) erzwingt das Zurückfallen früher: Ein
   Client, der zu wenige Relais kennt, kann überhaupt keine AS-disjunkten
   Circuits aufbauen und fällt auf `none` zurück, wo die Bruchrate springt (§2).
@@ -104,6 +107,48 @@ Gegner nicht billig setzen kann. Alles hier muss gegen Relais standhalten, die
   bei null Fehler und voller Sicht sind der beste Fall; ein konformer Client MUSS
   (MUST) die erreichte Stufe (PS-9) aus seiner realen, verrauschten, partiellen
   Sicht darstellen.
+- **PS-12 (eine feindliche Karte darf die Auswahl nicht auf den Gegner lenken).**
+  `[claim-critical]` Eine *adversarisch gewählte* Karte ist kein zufälliger
+  Fehler, und die Asymmetrie aus PS-11(a) schützt **nicht** gegen sie. Eine Karte,
+  die der Gegner kontrolliert, hat zwei Hebel über die AS-disjunkte Auswahl: den
+  eigenen ko-lokalisierten Relais des Gegners *verschiedene* gefälschte ASes geben
+  (damit sie sich nie gegenseitig ausschließen) und *ehrlichen* Relais
+  *kollidierende* gefälschte ASes geben (damit, sobald Circuit 1 ein ehrliches
+  Relais wählt, jedes andere ehrliche Relais AS-geteilt aussieht und
+  herausgefiltert wird). Der ehrliche Kandidaten-Pool kollabiert dann nach der
+  ersten Ziehung, und der Client wählt die Circuits 2…`n` fast vollständig aus
+  Gegner-Relais — womit der Gegner **deterministisch** auf Wächter **und** Ausgang
+  von `≥ k` Circuits landet, ein *Inhalts*-Bruch, während der Client noch glaubt,
+  AS-Disjunktheit erreicht zu haben, und keine Rückfall-Warnung erhebt.
+  Demonstriert gegen `poc/network_sim.py`: Eine lenkende Karte treibt die
+  Inhaltsbruchrate von ~0 % auf **100 % bei ~15 %** Gegner-Besitz (gegenüber einer
+  niedrigen einstelligen Rate für eine ehrliche Karte bei 35 %). Also **KANN eine
+  schlechte Karte Inhalt erreichen, nicht nur Verknüpfung** (dies korrigiert eine
+  frühere Übertreibung; Teil 8 ID-8a ist passend korrigiert). Die Verteidigungen,
+  die ein konformer Client anwenden MUSS (MUST):
+  1. **Lass die Karte allein nicht den ehrlichen Pool kollabieren.** Ein Client
+     DARF NICHT (MUST NOT) eine Circuit-Menge bauen, in der mehr als ein begrenzter
+     Anteil der Circuits für ihre behauptete gegenseitige Disjunktheit von Relais
+     abhängt, die der Client nicht *unabhängig* als verschieden bestätigen kann
+     (GR-8 Quellenmischung, PS-10 "zähle nur unabhängig verifizierte"). Würde die
+     als disjunkt geglaubte Auswahl die Circuits 2…`n` aus einem Pool ziehen, den
+     die Karte verdächtig klein gemacht hat, MUSS (MUST) der Client dies als
+     Rückfall-/Anomalie-Bedingung behandeln (PS-8, PS-9), nicht als Erfolg.
+  2. **Eine Karte, die eine unplausible AS-Struktur impliziert, ist selbst eine
+     Anomalie.** Eine Karte, unter der die *erreichbare ehrliche Stichprobe* des
+     Clients auf ein oder wenige ASes kollabiert, während der gegner-geformte Rest
+     maximal vielfältig ist, ist eine Signatur von Lenkung; der Client SOLLTE
+     (SHOULD) sie als Karten-Anomalie gossippen (Teil 8 ID-10) und zurückfallen.
+  3. **Neubau ist die eigentliche Verteidigung.** Eine lenkende Karte ist nicht aus
+     öffentlichen Eingaben reproduzierbar (Teil 8 ID-5a); ein Client, der neu baut
+     oder mit einem ehrlichen Peer übereinstimmt, der es tat, lehnt sie ab. Bis
+     dahin MUSS (MUST) der Client die Disjunktheits-Behauptungen einer
+     unverifizierten Karte als unverifiziert behandeln, nicht als erreicht (PS-9).
+  Das ehrliche Residuum bleibt: Innerhalb des Eklipse-Fensters eines Clients, der
+  eine unverifizierte lenkende Karte akzeptiert hat und noch nicht neu bauen kann,
+  kann die Inhalts-Untergrenze fallen. Dies ist durch die `k`/`n`-Marge und durch
+  die obigen Verteidigungen begrenzt, nicht durch eine Behauptung, dass es nicht
+  geschehen kann.
 
 ## 6. Was dieser Teil nicht entscheidet
 

@@ -92,11 +92,14 @@ un adversaire ne peut pas se poster à bas coût. Tout ce qui suit doit tenir fa
   balaie le taux d'erreur d'inférence : à mesure que l'erreur croît, la sélection
   disjointe par AS devient en partie illusoire et tant le taux de rupture du
   contenu que la fuite de liaison croissent de façon monotone. Deux conséquences
-  sont normatives : (a) l'erreur érode **la liaison bien plus vite que le
-  contenu** — une rupture de contenu exige toujours que l'adversaire soit sur
+  sont normatives : (a) pour une erreur d'inférence **aléatoire** (du bruit,
+  une carte simplement inexacte), l'erreur érode **la liaison bien plus vite que
+  le contenu** — une rupture de contenu exige toujours que l'adversaire soit sur
   `≥ k` circuits à la fois, de sorte que le plancher tient tandis que les
   métadonnées se dégradent d'abord ; l'UI NE DOIT PAS (MUST NOT) présenter un
-  faible chiffre de rupture de contenu comme s'il bornait aussi la liaison ;
+  faible chiffre de rupture de contenu comme s'il bornait aussi la liaison. Cette
+  asymétrie ne tient **que pour une erreur aléatoire** ; une carte *choisie par
+  l'adversaire* n'est pas du bruit (voir PS-12) ;
   (b) un **échantillon de gossip** plus mince (PS-10, I-3) force le repli plus
   tôt : un client qui connaît trop peu de relais ne peut pas construire du tout
   de circuits disjoints par AS et retombe à `none`, où le taux de rupture bondit
@@ -105,6 +108,52 @@ un adversaire ne peut pas se poster à bas coût. Tout ce qui suit doit tenir fa
   erreur nulle et vue complète sont le meilleur cas ; un client conforme DOIT
   (MUST) présenter le niveau atteint (PS-9) depuis sa vue réelle, bruitée et
   partielle.
+- **PS-12 (une carte hostile ne doit pas orienter la sélection vers
+  l'adversaire).** `[claim-critical]` Une carte *choisie par l'adversaire* n'est
+  pas une erreur aléatoire, et l'asymétrie de PS-11(a) ne protège **pas** contre
+  elle. Une carte que l'adversaire contrôle dispose de deux leviers sur la
+  sélection disjointe par AS : donner aux propres relais co-localisés de
+  l'adversaire des AS fictifs *distincts* (pour qu'ils ne s'excluent jamais
+  mutuellement), et donner aux relais *honnêtes* des AS fictifs *entrant en
+  collision* (de sorte qu'une fois que le circuit 1 a choisi un relais honnête,
+  tout autre relais honnête paraisse partager un AS et soit filtré). Le vivier de
+  candidats honnêtes s'effondre alors après le premier tirage et le client
+  sélectionne les circuits 2…`n` presque entièrement parmi les relais de
+  l'adversaire — plaçant l'adversaire sur la garde **et** la sortie de `≥ k`
+  circuits **de façon déterministe**, une rupture de *contenu*, alors que le
+  client croit toujours avoir atteint la disjonction par AS et ne lève aucun
+  avertissement de repli. Démontré face à `poc/network_sim.py` : une carte
+  d'orientation fait passer le taux de rupture de contenu de ~0 % à **100 % à
+  ~15 %** de possession adverse (contre un taux à un seul chiffre pour une carte
+  honnête à 35 %). Donc **une mauvaise carte PEUT atteindre le contenu, pas
+  seulement la liaison** (ceci corrige une surestimation antérieure ; la Partie 8
+  ID-8a est corrigée en conséquence). Les défenses qu'un client conforme DOIT
+  (MUST) appliquer :
+  1. **Ne pas laisser la carte seule effondrer le vivier honnête.** Un client NE
+     DOIT PAS (MUST NOT) construire un ensemble de circuits dans lequel plus
+     qu'une fraction bornée des circuits dépend, pour leur disjonction mutuelle
+     affirmée, de relais que le client ne peut corroborer *indépendamment* comme
+     distincts (mélange de sources GR-8, PS-10 « ne compter que les sources
+     vérifiées indépendamment »). Si la sélection disjointe-selon-la-croyance
+     devait tirer les circuits 2…`n` d'un vivier que la carte a rendu
+     suspicieusement petit, le client DOIT (MUST) traiter cela comme une
+     condition de repli/anomalie (PS-8, PS-9), non comme un succès.
+  2. **Une carte qui implique une structure d'AS invraisemblable est elle-même
+     une anomalie.** Une carte sous laquelle l'*échantillon honnête atteignable*
+     du client s'effondre à un seul ou quelques AS tandis que le reste façonné
+     par l'adversaire est maximalement divers est une signature d'orientation ;
+     le client DEVRAIT (SHOULD) la diffuser par gossip comme une anomalie de
+     carte (Partie 8 ID-10) et se replier.
+  3. **La reconstruction est la vraie défense.** Une carte d'orientation n'est
+     pas reproductible à partir d'entrées publiques (Partie 8 ID-5a) ; un client
+     qui reconstruit, ou qui s'accorde avec un pair honnête qui l'a fait, la
+     rejette. Jusque-là, le client DOIT (MUST) traiter les affirmations de
+     disjonction d'une carte non vérifiée comme non vérifiées, non comme atteintes
+     (PS-9).
+  Le résidu honnête demeure : dans la fenêtre d'éclipse d'un client qui a accepté
+  une carte d'orientation non vérifiée et ne peut pas encore reconstruire, le
+  plancher de contenu peut tomber. Ceci est borné par la marge `k`/`n` et par les
+  défenses ci-dessus, non par une affirmation que cela ne peut pas se produire.
 
 ## 6. Ce que cette partie ne décide pas
 

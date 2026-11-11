@@ -374,13 +374,26 @@ Teil gibt nicht vor, sie zu brechen.
   kontrolliert, kann ihm eine Karte geben, die ASes so falsch beschriftet, dass
   ko-lokalisierte Relais disjunkt aussehen. Die Schranke für den Schaden ist
   dreifach und MUSS (MUST) vom Entwurf gewahrt bleiben:
-  1. **Der Inhalt bleibt auf der Untergrenze.** Selbst eine völlig feindliche Karte
-     kann die I-2-Inhalts-Untergrenze nicht senken: Sie kann den Client nur die
-     *Disjunktheit falsch beurteilen* lassen, was (gemäß PS-11 und dem Simulator,
-     §10) **Verknüpfbarkeit weit schneller als Inhalt** erodiert — ein Inhaltsbruch
-     braucht immer noch den Gegner auf ≥`k` Circuits zugleich. Eine schlechte Karte
-     ist ein Metadaten-Angriff, kein Inhalts-Angriff. Diese Asymmetrie ist der
-     einzige wichtigste Grund, warum das Bootstrap-Paradox überlebbar ist.
+  1. **Die I-2-Untergrenze selbst bleibt unberührt; aber eine feindliche Karte
+     KANN durch Lenkung Inhalt erreichen.** Die Shamir-Untergrenze unterhalb von
+     `k` ist mathematisch, und eine schlechte Karte kann sie nicht senken. Was eine
+     schlechte Karte *kann* — und dies korrigiert eine frühere Übertreibung —, ist,
+     den Gegner **über `k` hinaus zu manövrieren**: Eine Karte, die den
+     ko-lokalisierten Relais des Gegners verschiedene gefälschte ASes gibt und
+     ehrlichen Relais kollidierende gefälschte ASes gibt, kollabiert den ehrlichen
+     Kandidaten-Pool und lenkt die AS-disjunkte Auswahl deterministisch auf `≥ k`
+     Gegner-Circuits (die volle Konstruktion und ihre Verteidigungen sind **PS-12**;
+     gegen den Simulator demonstriert, ~100 % Inhaltsbruch bei ~15 % Besitz). Eine
+     schlechte Karte ist also **kein** reiner Metadaten-Angriff: Für einen Client,
+     der eine unverifizierte Karte akzeptiert hat und noch nicht neu bauen kann,
+     kann die Inhalts-Untergrenze fallen. Die ehrliche Schranke ist daher bedingt,
+     nicht absolut: Eine schlechte Karte erreicht Inhalt **nur**, wenn der Gegner
+     bereits genug der *erreichbaren* Stichprobe des Clients besitzt, um den
+     Pool nach dem Kollaps zu dominieren (Schwellenbereich, PS-12), **und** die
+     Verteidigungen von PS-12 nicht angewandt werden. Zufällige Ungenauigkeit
+     (Rauschen) erodiert Verknüpfbarkeit immer noch weit schneller als Inhalt; eine
+     *gewählte* Karte nicht. Die Behauptungen 2 und 3 unten sind es, die selbst
+     dies begrenzt halten.
   2. **Sie ist vorübergehend und erkennbar, nicht dauerhaft.** In dem Moment, in dem
      der Client seine Wurzel/sein `H` per Gossip verbreitet (ID-9) oder neu baut
      (ID-5a), sticht eine Karte hervor, die kein ehrlicher Peer und keine
@@ -473,10 +486,13 @@ Relais physisch sind" ist das Residuum, und es ist real:
   öffentlicher Daten kann durch eine wahrheitsgemäß aussehende BGP-Ankündigung
   hindurch auf das Rack dahinter sehen. Das steht im tiefsten ehrlichen Punkt der
   Roadmap, und es hält: **Vom Overlay aus verifizierst du Konsistenz gegen einen
-  Datensatz mit beschränktem Vertrauen, nicht wahre Disjunktheit.** Die Aufgabe ist,
-  zu begrenzen, was dieser Gegner gewinnt (ID-8a: der Inhalt bleibt auf der
-  Untergrenze; der Angriff ist Metadaten/Verknüpfbarkeit), nicht, ihn
-  wegzureden.
+  Datensatz mit beschränktem Vertrauen, nicht wahre Disjunktheit.** Für diesen
+  *passiven* Fall — eine korrekte Karte, die co-lozierte Relais nur zufällig
+  falsch etikettiert — ist der Angriff Metadaten/Verknüpfbarkeit, weil die
+  ehrliche Karte den ehrlichen Pool nicht kollabieren lässt. (Der *aktive* Fall,
+  eine Karte, die gewählt wurde, um ihn kollabieren zu lassen, ist schlimmer und
+  erreicht den Inhalt: PS-12 und das Inhalts-Steering-Restrisiko weiter unten.)
+  Die Aufgabe ist, zu begrenzen, was der Gegner gewinnt, nicht, ihn wegzureden.
 - **BGP ist stellenweise echt mehrdeutig.** MOAS-Präfixe (ein Präfix, legitim von
   mehreren ASes originiert), **Geschwister-ASes (sibling ASes)** unter einem
   Betreiber (verschiedene ASNs, eine kontrollierende Partei — die Karte sieht zwei
@@ -494,12 +510,57 @@ Relais physisch sind" ist das Residuum, und es ist real:
   Kooperationsblöcke, Realität der Rechtshilfe) ist bewusst **nicht** kodiert — sie
   wäre ein Ermessensurteil, das kein reproduzierbarer Bau treffen kann, ohne eine
   vertrauenswürdige Meinung zu importieren, was ID-1 verbietet.
+- **Eine adversarische Karte kann Inhalt erreichen, nicht nur Metadaten.** Das
+  Ko-Lokations-Residuum oben ist ein *passiver* Fehler (die korrekte Karte
+  beschriftet zufällig falsch). Eine *aktiv gewählte* Karte ist schlimmer: Sie kann
+  die AS-disjunkte Auswahl auf `≥ k` Gegner-Circuits lenken und Inhalt brechen,
+  nicht bloß Verknüpfbarkeit (PS-12, das die Verteidigungen trägt). Dieser Teil
+  behauptet **nicht**, dass eine schlechte Karte nur Metadaten betrifft; diese
+  frühere Behauptung war falsch. Das Residuum ist begrenzt durch die
+  `k`/`n`-Marge, durch die Pool-Kollaps-Verteidigungen von PS-12 und durch Neubau
+  (ID-5a) — nicht durch Unmöglichkeit.
+- **Reproduktion (ID-5a) ist nur Schiedsrichter, solange die Eingaben abrufbar sind
+  — eine Lebendigkeitsschranke (liveness bound).** Neubau löst einen Streit nur,
+  wenn die fixierten öffentlichen Eingaben noch von einer ehrlichen Quelle
+  abgerufen werden können. RouteViews-/RIPE-RIS-MRT-Dumps und
+  RIR-Delegationsdateien sind **keine** dauerhaften Archive mit einer
+  Aufbewahrungsgarantie für dieses Projekt; sobald eine fixierte Eingabe aus jedem
+  Spiegel herausaltert, ist `rebuild(manifest)` nicht ausführbar, und ein Streit
+  über jene epoch hat **keinen Schiedsrichter** — am schlimmsten für genau die
+  Alt-epoch-Forensik-Streitfälle, die ihn brauchen. Eine konforme Bereitstellung
+  SOLLTE (SHOULD) die fixierten Eingabe-Bytes in einem inhaltsadressierten Speicher
+  hinterlegen, der über dieselbe erlaubnisfreie Spiegel-Menge wie die Karte
+  repliziert wird, sodass der Schiedsrichter die Verfügbarkeit der Karte selbst
+  erbt; fehlt das, ist ID-5a als **lebendigkeits-begrenzt** erklärt, nicht
+  unbedingt. (Verwandte, in §4.1 noch nicht fixierte Determinismus-Gefahren:
+  spiegelabhängiges Pruning, das "letzter Dump ≤ Grenze" spiegelabhängig macht;
+  RIR-Mutation einer Einzeldatei pro Tag gegenüber einer Dump-Serie;
+  MRT-*Eingabe-Dekodier*-Divergenz über Parser-Versionen, die die
+  Ausgabe-Kanonisierung von ID-4d nicht abdeckt.)
+- **ID-1 verlagert Autorität auf OP-2; es beseitigt Vertrauen nicht.** Keine Partei
+  *signiert* die Karte (ID-1 hält dem Buchstaben nach, und für jeden Client, der
+  **neu baut**, trägt die Reproduktion allein). Aber ein Client, der nicht neu baut
+  (ID-5b erlaubt das), ruht auf der per Gossip verbreiteten Quorum-Bestätigung
+  (ID-7b, ID-9), deren Stimme **nur dann** autoritätsfrei ist, **wenn** Sybil/
+  Eklipse widerstanden werden kann — was **OP-2, offen** ist. Unter Eklipse kann
+  die Equivocation-Erkennung (ID-7a) nicht feuern (das Opfer berührt keine ehrliche
+  Wurzel), ein Quorum von Gegner-Logs kann eine schlechte Karte bestätigt aussehen
+  lassen, und — die umgekehrte, unterverteidigte Richtung — ein Gegner kann eine
+  *gute* lokale Karte *unbestätigt* aussehen lassen und das Opfer über ID-9a ("
+  behandle deine Karte als verdächtig, erneut abrufen") davon abbringen (ein
+  Herunterstufen durch die Ehrlichkeits-Maschinerie selbst). Für den nicht neu
+  bauenden oder eklipsten Client bedeutet "keine Autorität" also "vertraue dem
+  Quorum", und das hält nur so weit wie OP-2. Dieser Teil **reduziert** das
+  Karten-Autoritäts-Problem auf OP-2; er löst es nicht auf.
 
 Die ehrliche Zusammenfassung: **Die Fehlerrate des Datensatzes ist ein erklärtes,
-von null verschiedenes Residuum, kein auf null zu behebender Defekt.** Sie ist der
-Preis dafür, eine Autorität zu verweigern. Die richtige Antwort ist nicht, sie zu
-verbergen, sondern sie dem Simulator zuzuführen und dem Nutzer das erreichte
-Niveau zu zeigen (PS-9, PS-11).
+von null verschiedenes Residuum, kein auf null zu behebender Defekt** — und, wie
+die drei gerade hinzugefügten Punkte deutlich machen, sind es auch die
+Inhalts-Lenkungs-Obergrenze (PS-12), die Lebendigkeitsschranke des Schiedsrichters
+und die Reduktion der Karten-Autorität auf OP-2. Diese sind der Preis dafür, eine
+Autorität zu verweigern. Die richtige Antwort ist nicht, sie zu verbergen, sondern
+sie zu begrenzen, die Fehlerrate dem Simulator zuzuführen und dem Nutzer das
+erreichte Niveau zu zeigen (PS-9, PS-11).
 
 ## 11. Die Fehlerrate speist den Simulator (nicht weggewedelt)
 
@@ -547,9 +608,10 @@ Datensatz, und ihr gemessenes Residuum **ist** dieser Stellknopf:
   verbreitete Wurzeln + Konsistenzbeweise; mehrere Logs, kein kanonischer; der Log
   hält Zusagen, nicht die Karte.
 - **ID-8 / ID-8a / ID-8b** — Bootstrap ist erklärtes TOFU; der Schaden einer
-  schlechten ersten Karte ist begrenzt (der Inhalt bleibt auf der Untergrenze, sie
-  ist erkennbar, Reproduktion kann nicht gefälscht werden); erkennen, nicht zu
-  verhindern beanspruchen.
+  schlechten ersten Karte ist begrenzt, aber **nicht nur Metadaten** — eine
+  lenkende Karte kann Inhalt erreichen (PS-12), also ist die Schranke bedingt
+  (k/n-Marge + PS-12-Verteidigungen + Neubau), erkennbar, und Reproduktion kann
+  nicht gefälscht werden; erkennen, nicht zu verhindern beanspruchen.
 - **ID-9 / ID-9a / ID-10** — Auffrischung und Gossip von `(epoch, H)` und Wurzeln
   unter GR-8; Divergenz gezeigt über PS-9; obligatorischer Anomalie-Gossip für die
   drei Angriffs-Signaturen.
@@ -561,11 +623,19 @@ Datensatz, und ihr gemessenes Residuum **ist** dieser Stellknopf:
   Konfidenz von Teil 3 speist; der Null-Fehler-Fall ist der beste Fall, nie der
   erwartete.
 
-ID-1, ID-5a und ID-8a sind die tragenden drei: keine Autorität, Reproduktion ist
-der Schiedsrichter, und eine schlechte Karte kann die Inhalts-Untergrenze nicht
-senken. Brich eine von ihnen — finde einen Schritt, der eine vertrauenswürdige
-Partei braucht, eine Karte, die aus ihren Eingaben nicht neu gebaut werden kann,
-oder einen Weg, auf dem eine schlechte Karte Inhalt und nicht bloß
-Verknüpfbarkeit erreicht — und du hast diesen Teil gebrochen. Das ist die
-Einladung. Der `infer_error`-Durchlauf von `poc/network_sim.py` ist der
-ausführbare Strohmann hinter §11; greif das Modell an, dann diesen Text.
+ID-1 und ID-5a sind die tragenden zwei: keine Autorität, und Reproduktion ist der
+Schiedsrichter. Beide sind begrenzt, nicht absolut — ID-1 reduziert sich für einen
+Client, der nicht neu baut, auf OP-2, und ID-5a ist lebendigkeits-begrenzt (§10).
+Die dritte Behauptung, die dieser Teil ursprünglich machte — dass eine schlechte
+Karte Inhalt nicht erreichen könne —, wurde von einer feindlichen Überprüfung
+**gebrochen**: Eine lenkende Karte manövriert den Gegner über `k` hinaus und bricht
+Inhalt, nicht bloß Verknüpfung. Statt dies zu verbergen, trägt dieser Teil es nun
+offen: Die Verteidigung ist PS-12, und das Residuum ist in §10 erklärt. Brich den
+Rest auf dieselbe Weise — finde einen Schritt, der eine vertrauenswürdige Partei
+braucht, eine Karte, die aus ihren Eingaben nicht neu gebaut werden kann, eine
+Lebendigkeitslücke, die wir übersahen, oder einen *neuen* Weg, auf dem eine
+schlechte Karte an den Verteidigungen von PS-12 vorbei Inhalt erreicht — und du
+hast diesen Teil gebrochen. Das ist die Einladung, und sie wurde bereits einmal
+angenommen. Der `infer_error`-Durchlauf von `poc/network_sim.py` (und die lenkende
+Konstruktion von PS-12) ist der ausführbare Strohmann hinter §11; greif das Modell
+an, dann diesen Text.

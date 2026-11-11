@@ -333,9 +333,11 @@ romperla.
               (ID-5b,10)                 usuario advertido (ID-8b)
 
   Incluso un primer mapa TOTALMENTE adversarial está acotado (ID-8a):
-    1. el contenido sigue CON UMBRAL — un mal mapa juzga mal la disjunción,
-       lo que erosiona la vinculación; una ruptura de contenido aún necesita
-       al adversario en ≥k circuitos A LA VEZ (I-2). Es metadatos, no contenido.
+    1. el umbral I-2 sigue intacto, PERO un mapa de *direccionamiento* puede
+       maniobrar al adversario más allá de k (colapsa la reserva honesta, PS-12)
+       -> el contenido SÍ PUEDE caer para un mapa no verificado por encima de un
+       umbral de propiedad de ~15 %. No solo metadatos. Acotado por el margen
+       k/n + las defensas de PS-12, no por "no puede".
     2. temporal + detectable — el adversario debe eclipsar al cliente PARA
        SIEMPRE para mantenerlo oculto (eso es OP-2, no una debilidad nueva).
     3. infalsificable — el adversario no puede hacer que las entradas públicas
@@ -358,14 +360,25 @@ romperla.
   puede entregarle un mapa que etiquete mal los ASes de modo que los relés colocados
   juntos parezcan disjuntos. La cota del daño es triple y DEBE (MUST) preservarse en
   el diseño:
-  1. **El contenido sigue con umbral.** Incluso un mapa totalmente adversarial no
-     puede bajar el umbral incondicional del contenido I-2: solo puede hacer que el
-     cliente *juzgue mal la disjunción*, lo cual (según PS-11 y el simulador, §10)
-     erosiona la **vinculación mucho más rápido que el contenido** — una ruptura de
-     contenido sigue necesitando al adversario en ≥`k` circuitos a la vez. Un mal
-     mapa es un ataque de metadatos, no un ataque de contenido. Esta asimetría es la
-     razón individual más importante de que la paradoja del arranque sea
-     sobrevivible.
+  1. **El umbral I-2 en sí sigue intacto; pero un mapa hostil SÍ PUEDE alcanzar el
+     contenido mediante direccionamiento.** El umbral de Shamir por debajo de `k`
+     es matemático y un mal mapa no puede bajarlo. Lo que un mal mapa *sí* puede
+     hacer — y esto corrige una exageración anterior — es **maniobrar al adversario
+     más allá de `k`**: un mapa que da a los relés colocados juntos del adversario
+     ASes falsos distintos y da a los relés honestos ASes falsos que colisionan
+     colapsa la reserva de candidatos honestos y dirige la selección disjunta por
+     AS hacia `≥ k` circuitos del adversario de forma determinista (la construcción
+     completa y sus defensas son **PS-12**; demostrado contra el simulador, ~100 %
+     de ruptura de contenido con ~15 % de propiedad). Así que un mal mapa **no** es
+     un ataque de solo metadatos: para un cliente que ha aceptado un mapa no
+     verificado y aún no puede reconstruir, el umbral incondicional del contenido
+     puede caer. La cota honesta es por tanto condicional, no absoluta: un mal mapa
+     alcanza el contenido **solo** cuando el adversario ya posee suficiente de la
+     muestra *alcanzable* del cliente como para dominar la reserva posterior al
+     colapso (territorio de umbral, PS-12) **y** las defensas de PS-12 no se
+     aplican. La inexactitud aleatoria (ruido) todavía erosiona la vinculación
+     mucho más rápido que el contenido; un mapa *elegido* no. Las afirmaciones 2 y
+     3 de abajo son lo que mantiene acotado incluso esto.
   2. **Es temporal y detectable, no permanente.** En el momento en que el cliente
      difunde por gossip su raíz/`H` (ID-9) o reconstruye (ID-5a), un mapa que ningún
      par honesto ni entrada pública corrobora destaca. El adversario debe mantener al
@@ -457,8 +470,12 @@ detecten de forma demostrable que difieren. **No** hace que el mapa sea
   veraz hasta el rack que hay detrás. Esto se enuncia en el punto honesto más
   profundo de la planificación y se mantiene: **desde la superposición verificas
   consistencia contra un conjunto de datos de confianza acotada, no disjunción
-  verdadera.** El trabajo es acotar lo que este adversario gana (ID-8a: el contenido
-  sigue con umbral; el ataque es de metadatos/vinculación), no fingir que no existe.
+  verdadera.** Para este caso *pasivo* — un mapa correcto que simplemente resulta
+  etiquetar mal relés co-ubicados — el ataque es de metadatos/vinculación, porque
+  el mapa honesto no colapsa el pool honesto. (El caso *activo*, un mapa elegido
+  para colapsarlo, es peor y alcanza el contenido: PS-12 y el residuo de
+  dirección de contenido más abajo.) El trabajo es acotar lo que el adversario
+  gana, no fingir que no existe.
 - **BGP es genuinamente ambiguo en algunos puntos.** Los prefijos MOAS (un prefijo
   originado legítimamente por varios ASes), los **ASes hermanos** bajo un operador
   (ASN distintos, una parte controladora — el mapa ve dos ASes donde la realidad-de-
@@ -475,11 +492,56 @@ detecten de forma demostrable que difieren. **No** hace que el mapa sea
   de la asistencia legal mutua) deliberadamente **no** se codifica — sería un juicio
   de valor que ninguna construcción reproducible puede hacer sin importar una opinión
   confiable, lo cual ID-1 prohíbe.
+- **Un mapa adversarial puede alcanzar el contenido, no solo los metadatos.** El
+  residual de colocación conjunta de arriba es un error *pasivo* (el mapa correcto
+  resulta etiquetar mal). Un mapa *activamente elegido* es peor: puede dirigir la
+  selección disjunta por AS hacia `≥ k` circuitos del adversario y romper el
+  contenido, no solo la vinculación (PS-12, que carga las defensas). Esta parte
+  **no** afirma que un mal mapa sea de solo metadatos; esa afirmación anterior era
+  errónea. El residual está acotado por el margen `k`/`n`, por las defensas de
+  colapso de reserva de PS-12 y por la reconstrucción (ID-5a) — no por la
+  imposibilidad.
+- **La reproducción (ID-5a) es el árbitro solo mientras las entradas sean
+  obtenibles — una cota de vivacidad.** La reconstrucción resuelve una disputa
+  solo si las entradas públicas fijadas todavía pueden obtenerse desde alguna
+  fuente honesta. Los volcados MRT de RouteViews / RIPE RIS y los ficheros de
+  delegación de los RIR **no** son archivos permanentes con una garantía de
+  retención hacia este proyecto; una vez que una entrada fijada caduca de todos
+  los espejos, `rebuild(manifest)` es inejecutable y una disputa sobre esa época
+  **no tiene árbitro** — lo peor precisamente para las disputas forenses de épocas
+  antiguas que lo necesitan. Un despliegue conforme DEBERÍA (SHOULD) depositar en
+  garantía los bytes de entrada fijados en un almacén direccionado por contenido
+  replicado a través del mismo conjunto de espejos sin permisos que el mapa, de
+  modo que el árbitro herede la propia disponibilidad del mapa; en ausencia de
+  ello, ID-5a se declara **acotada por vivacidad**, no incondicional. (Peligros de
+  determinismo relacionados aún no fijados en el §4.1: la poda dependiente del
+  espejo que hace "último volcado ≤ límite" dependiente del espejo; la mutación de
+  un único fichero por día de los RIR frente a una serie de volcados; la
+  divergencia de *decodificación de entrada* MRT entre versiones de analizador, que
+  la canonicalización de salida de ID-4d no cubre.)
+- **ID-1 reubica la autoridad en OP-2; no elimina la confianza.** Ninguna parte
+  *firma* el mapa (ID-1 se sostiene en la letra, y para cualquier cliente que
+  **reconstruye**, la reproducción por sí sola lo lleva). Pero un cliente que no
+  reconstruye (ID-5b lo permite) descansa en la corroboración por quórum difundido
+  (ID-7b, ID-9), cuyo voto está libre de autoridad **solo si** se puede resistir
+  sybil/eclipse — lo cual es **OP-2, abierto**. Bajo eclipse, la detección de
+  equivocación (ID-7a) no puede dispararse (la víctima no toca ninguna raíz
+  honesta), un quórum de registros del adversario puede hacer que un mal mapa
+  parezca corroborado y — la dirección inversa, infradefendida — un adversario
+  puede hacer que un *buen* mapa local parezca *no corroborado* y forzar a la
+  víctima a abandonarlo vía el "trata tu mapa como sospechoso, re-obtén" de ID-9a
+  (una degradación a través de la propia maquinaria de honestidad). Así que para
+  el cliente que no reconstruye o está eclipsado, "ninguna autoridad" significa
+  "confía en el quórum", y eso se sostiene solo hasta donde lo haga OP-2. Esta
+  parte **reduce** el problema de la autoridad del mapa a OP-2; no lo disuelve.
 
 El resumen honesto: **la tasa de error del conjunto de datos es un residual
-declarado y no nulo, no un defecto a arreglar hasta cero.** Es el precio de rechazar
-una autoridad. La respuesta correcta no es ocultarla, sino alimentarla al simulador
-y mostrarle al usuario el nivel alcanzado (PS-9, PS-11).
+declarado y no nulo, no un defecto a arreglar hasta cero** — y, como dejan
+explícito los tres puntos recién añadidos, también lo son el techo de
+direccionamiento de contenido (PS-12), la cota de vivacidad sobre el árbitro y la
+reducción de la autoridad del mapa a OP-2. Estos son el precio de rechazar una
+autoridad. La respuesta correcta no es ocultarlos, sino acotarlos, alimentar la
+tasa de error al simulador y mostrarle al usuario el nivel alcanzado (PS-9, PS-11).
 
 ## 11. La tasa de error alimenta al simulador (no se agita a mano)
 
@@ -526,8 +588,10 @@ especificado **es** ese conjunto de datos, y su residual medido **es** esa peril
   difundidas + pruebas de consistencia; múltiples registros, ninguno canónico; el
   registro guarda compromisos, no el mapa.
 - **ID-8 / ID-8a / ID-8b** — el arranque es TOFU declarado; el daño de un mal primer
-  mapa está acotado (el contenido sigue con umbral, es detectable, la reproducción no
-  puede falsificarse); detectar, no afirmar que se previene.
+  mapa está acotado pero **no es de solo metadatos** — un mapa de direccionamiento
+  puede alcanzar el contenido (PS-12), así que la cota es condicional (margen k/n +
+  defensas de PS-12 + reconstrucción), detectable, y la reproducción no puede
+  falsificarse; detectar, no afirmar que se previene.
 - **ID-9 / ID-9a / ID-10** — refresco y gossip de `(epoch, H)` y raíces bajo GR-8;
   divergencia mostrada vía PS-9; gossip de anomalías obligatorio para las tres firmas
   de ataque.
@@ -539,10 +603,17 @@ especificado **es** ese conjunto de datos, y su residual medido **es** esa peril
   reproducible que alimenta la perilla `infer_error` del simulador y la confianza de
   la Parte 3; el caso de error cero es el mejor caso, nunca el esperado.
 
-ID-1, ID-5a e ID-8a son los tres portantes: ninguna autoridad, la reproducción es el
-árbitro, y un mal mapa no puede bajar el umbral del contenido. Rompe cualquiera de
-ellos — encuentra un paso que necesite una parte confiable, un mapa que no pueda
-reconstruirse a partir de sus entradas, o una forma en que un mal mapa alcance el
-contenido y no meramente la vinculación — y habrás roto esta parte. Esa es la
-invitación. El barrido de `infer_error` de `poc/network_sim.py` es el hombre de paja
-ejecutable detrás del §11; ataca el modelo, luego este texto.
+ID-1 e ID-5a son los dos portantes: ninguna autoridad, y la reproducción es el
+árbitro. Ambos están acotados, no son absolutos — ID-1 se reduce a OP-2 para un
+cliente que no reconstruye, e ID-5a está acotada por vivacidad (§10). La tercera
+afirmación que esta parte hizo originalmente — que un mal mapa no puede alcanzar el
+contenido — fue **rota** por una revisión hostil: un mapa de direccionamiento maniobra
+al adversario más allá de `k` y rompe el contenido, no solo la vinculación. En lugar
+de ocultarlo, esta parte ahora lo carga abiertamente: la defensa es PS-12 y el
+residual se declara en el §10. Rompe el resto del mismo modo — encuentra un paso que
+necesite una parte confiable, un mapa que no pueda reconstruirse a partir de sus
+entradas, una laguna de vivacidad que se nos escapara, o una forma *nueva* en que un
+mal mapa alcance el contenido sorteando las defensas de PS-12 — y habrás roto esta
+parte. Esa es la invitación, y ya ha sido aceptada una vez. El barrido de
+`infer_error` de `poc/network_sim.py` (y la construcción de direccionamiento de PS-12)
+es el hombre de paja ejecutable detrás del §11; ataca el modelo, luego este texto.

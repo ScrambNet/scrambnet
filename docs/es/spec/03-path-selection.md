@@ -91,12 +91,16 @@ relés que mienten sobre todo salvo lo que sus firmas vinculan (GR-2).
   adversario explota — de la *creencia* del cliente, y barre la tasa de error de
   inferencia: a medida que el error crece, la selección disjunta por AS se vuelve
   en parte ilusoria y tanto la tasa de ruptura de contenido como la fuga de
-  vinculación crecen de forma monótona. Dos consecuencias son normativas: (a) el
-  error erosiona la **vinculación mucho más rápido que el contenido** — una
-  ruptura de contenido todavía requiere que el adversario esté en `≥ k` circuitos
-  a la vez, así que el umbral incondicional se sostiene mientras los metadatos se degradan
-  primero; la interfaz NO DEBE (MUST NOT) presentar una cifra baja de ruptura de
-  contenido como si acotara también la vinculación; (b) una **muestra de gossip**
+  vinculación crecen de forma monótona. Dos consecuencias son normativas:
+  (a) para el error de inferencia **aleatorio** (ruido, un mapa meramente
+  inexacto), el error erosiona la **vinculación mucho más rápido que el
+  contenido** — una ruptura de contenido todavía requiere que el adversario esté
+  en `≥ k` circuitos a la vez, así que el umbral incondicional se sostiene
+  mientras los metadatos se degradan primero; la interfaz NO DEBE (MUST NOT)
+  presentar una cifra baja de ruptura de contenido como si acotara también la
+  vinculación. Esta asimetría se sostiene **solo para el error aleatorio**; un
+  mapa *elegido adversarialmente* no es ruido (ver PS-12);
+  (b) una **muestra de gossip**
   más fina (PS-10, I-3) fuerza el repliegue antes: un cliente que conoce
   demasiado pocos relés no puede construir circuitos disjuntos por AS en absoluto
   y cae a `none`, donde la tasa de ruptura se dispara (§2). La estimación de
@@ -104,6 +108,51 @@ relés que mienten sobre todo salvo lo que sus firmas vinculan (GR-2).
   *alcanzable*, no la red entera. Las cifras de error cero y vista completa son
   el mejor caso; un cliente conforme DEBE (MUST) presentar el nivel alcanzado
   (PS-9) a partir de su vista real, ruidosa y parcial.
+- **PS-12 (un mapa hostil no debe dirigir la selección hacia el adversario).**
+  `[claim-critical]` Un mapa *elegido adversarialmente* no es error aleatorio, y
+  la asimetría de PS-11(a) **no** protege contra él. Un mapa que el adversario
+  controla tiene dos palancas sobre la selección disjunta por AS: dar a los
+  propios relés colocados juntos del adversario ASes falsos *distintos* (de modo
+  que nunca se excluyan entre sí), y dar a los relés *honestos* ASes falsos *que
+  colisionan* (de modo que, una vez que el circuito 1 elige un relé honesto, todo
+  otro relé honesto parezca compartir AS y quede filtrado). La reserva de
+  candidatos honestos colapsa entonces tras la primera extracción y el cliente
+  selecciona los circuitos 2…`n` casi por completo entre relés del adversario —
+  dejando al adversario en la guardia **y** en la salida de `≥ k` circuitos de
+  forma **determinista**, una ruptura de *contenido*, mientras el cliente todavía
+  cree que logró la disjunción por AS y no levanta ninguna advertencia de
+  repliegue. Demostrado contra `poc/network_sim.py`: un mapa de direccionamiento
+  lleva la tasa de ruptura de contenido de ~0 % al **100 % con ~15 %** de
+  propiedad del adversario (frente a una tasa de un solo dígito bajo para un mapa
+  honesto al 35 %). Así que **un mal mapa SÍ PUEDE alcanzar el contenido, no solo
+  la vinculación** (esto corrige una exageración anterior; la ID-8a de la Parte 8
+  se corrige para coincidir). Las defensas que un cliente conforme DEBE (MUST)
+  aplicar:
+  1. **No dejar que el mapa por sí solo colapse la reserva honesta.** Un cliente
+     NO DEBE (MUST NOT) construir un conjunto de circuitos en el que más de una
+     fracción acotada de los circuitos dependa, para su supuesta disjunción mutua,
+     de relés que el cliente no puede corroborar como distintos de forma
+     *independiente* (mezcla de fuentes GR-8, PS-10 "cuenta solo los verificados
+     de forma independiente"). Si la selección creída-disjunta extrajera los
+     circuitos 2…`n` de una reserva que el mapa ha vuelto sospechosamente pequeña,
+     el cliente DEBE (MUST) tratar eso como una condición de repliegue/anomalía
+     (PS-8, PS-9), no como un éxito.
+  2. **Un mapa que implica una estructura de AS inverosímil es en sí una
+     anomalía.** Un mapa bajo el cual la *muestra honesta alcanzable* del cliente
+     colapsa a uno o unos pocos ASes mientras el resto moldeado por el adversario
+     es máximamente diverso es una firma de direccionamiento; el cliente DEBERÍA
+     (SHOULD) difundirlo por gossip como una anomalía del mapa (Parte 8 ID-10) y
+     replegarse.
+  3. **La reconstrucción es la defensa real.** Un mapa de direccionamiento no es
+     reproducible a partir de entradas públicas (Parte 8 ID-5a); un cliente que
+     reconstruye, o que concuerda con un par honesto que lo hizo, lo rechaza.
+     Hasta entonces el cliente DEBE (MUST) tratar las afirmaciones de disjunción
+     de un mapa no verificado como no verificadas, no como logradas (PS-9).
+  El residual honesto permanece: dentro de la ventana de eclipse de un cliente
+  que ha aceptado un mapa de direccionamiento no verificado y aún no puede
+  reconstruir, el umbral incondicional del contenido puede caer. Esto está acotado
+  por el margen `k`/`n` y por las defensas anteriores, no por una afirmación de
+  que no puede ocurrir.
 
 ## 6. Lo que esta parte no decide
 

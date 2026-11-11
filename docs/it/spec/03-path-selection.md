@@ -91,12 +91,15 @@ che mentono su tutto tranne ciò che le loro firme vincolano (GR-2).
   il tasso di errore dell'inferenza: al crescere dell'errore, la selezione
   disgiunta per AS diventa in parte illusoria e sia il tasso di rottura del
   contenuto sia la perdita di collegamento crescono in modo monotòno. Due
-  conseguenze sono normative: (a) l'errore erode il **collegamento molto più
+  conseguenze sono normative: (a) per l'errore di inferenza **casuale** (rumore,
+  una mappa semplicemente inaccurata), l'errore erode il **collegamento molto più
   rapidamente del contenuto** — una rottura del contenuto richiede comunque che
   l'avversario sia su `≥ k` circuiti contemporaneamente, quindi il livello minimo
   garantito regge mentre i metadati si degradano per primi; l'interfaccia NON
   DEVE (MUST NOT) presentare un valore basso di rottura del contenuto come se
-  limitasse anche il collegamento; (b) un **campione di gossip** più sottile
+  limitasse anche il collegamento. Questa asimmetria vale **solo per l'errore
+  casuale**; una mappa *scelta in modo avversario* non è rumore (vedi PS-12);
+  (b) un **campione di gossip** più sottile
   (PS-10, I-3) costringe al ripiego prima: un client che conosce troppo pochi
   relay non riesce a costruire affatto circuiti disgiunti per AS e precipita a
   `none`, dove il tasso di rottura balza (§2). La stima della dimensione viabile
@@ -104,6 +107,49 @@ che mentono su tutto tranne ciò che le loro firme vincolano (GR-2).
   dell'intera rete. I valori a errore zero e con vista completa sono il caso
   migliore; un client conforme DEVE (MUST) presentare il livello raggiunto (PS-9)
   a partire dalla sua vista reale, rumorosa e parziale.
+- **PS-12 (una mappa ostile non deve dirottare la selezione sull'avversario).**
+  `[claim-critical]` Una mappa *scelta in modo avversario* non è errore casuale, e
+  l'asimmetria di PS-11(a) **non** protegge contro di essa. Una mappa che
+  l'avversario controlla ha due leve sulla selezione disgiunta per AS: dare ai
+  relay co-locati dell'avversario stesso AS *distinti* falsi (così che non si
+  escludano mai a vicenda), e dare ai relay *onesti* AS *collidenti* falsi (così
+  che, una volta che il circuito 1 ha scelto un relay onesto, ogni altro relay
+  onesto sembri condividere l'AS e venga filtrato via). Il bacino di candidati
+  onesti collassa allora dopo la prima estrazione e il client seleziona i circuiti
+  2…`n` quasi interamente da relay dell'avversario — portando l'avversario sulla
+  guardia **e** sull'uscita di `≥ k` circuiti in modo **deterministico**, una
+  rottura di *contenuto*, mentre il client crede ancora di aver raggiunto la
+  disgiunzione per AS e non solleva alcun avviso di ripiego. Dimostrato contro
+  `poc/network_sim.py`: una mappa di dirottamento porta il tasso di rottura del
+  contenuto dal ~0% al **100% al ~15%** di proprietà dell'avversario (contro un
+  tasso basso a una sola cifra per una mappa onesta al 35%). Quindi **una mappa
+  cattiva PUÒ raggiungere il contenuto, non solo il collegamento** (questo corregge
+  una precedente sopravvalutazione; la Parte 8 ID-8a è corretta di conseguenza). Le
+  difese che un client conforme DEVE (MUST) applicare:
+  1. **Non lasciare che sia la mappa da sola a far collassare il bacino onesto.**
+     Un client NON DEVE (MUST NOT) costruire un insieme di circuiti in cui più di
+     una frazione limitata dei circuiti dipenda, per la propria disgiunzione
+     reciproca dichiarata, da relay che il client non può *indipendentemente*
+     corroborare come distinti (mescolamento delle sorgenti GR-8, PS-10 "conta solo
+     ciò che è verificato indipendentemente"). Se la selezione creduta-disgiunta
+     estraesse i circuiti 2…`n` da un bacino che la mappa ha reso sospettosamente
+     piccolo, il client DEVE (MUST) trattarlo come una condizione di
+     ripiego/anomalia (PS-8, PS-9), non come un successo.
+  2. **Una mappa che implica una struttura di AS implausibile è essa stessa
+     un'anomalia.** Una mappa sotto la quale il *campione onesto raggiungibile* del
+     client collassa a uno o pochi AS mentre il resto plasmato dall'avversario è
+     massimamente diverso è una firma del dirottamento; il client DOVREBBE (SHOULD)
+     diffonderla via gossip come anomalia della mappa (Parte 8 ID-10) e ripiegare.
+  3. **La ricostruzione è la vera difesa.** Una mappa di dirottamento non è
+     riproducibile da input pubblici (Parte 8 ID-5a); un client che ricostruisce, o
+     che concorda con un peer onesto che l'ha fatto, la rifiuta. Fino ad allora il
+     client DEVE (MUST) trattare le affermazioni di disgiunzione di una mappa non
+     verificata come non verificate, non come raggiunte (PS-9).
+  Il residuo onesto permane: entro la finestra di eclipse di un client che ha
+  accettato una mappa di dirottamento non verificata e non può ancora ricostruire,
+  il livello minimo di contenuto può cadere. Questo è delimitato dal margine
+  `k`/`n` e dalle difese di cui sopra, non da un'affermazione che non possa
+  accadere.
 
 ## 6. Cosa questa parte non decide
 

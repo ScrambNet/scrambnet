@@ -337,10 +337,11 @@ pretende di romperla.
              (ID-5b,10)                 utente avvisato (ID-8b)
 
   Anche una prima mappa PIENAMENTE avversaria è limitata (ID-8a):
-    1. il contenuto resta al LIVELLO MINIMO — una mappa cattiva sbaglia la
-       disgiunzione, il che erode il collegamento; una rottura di contenuto
-       richiede comunque l'avversario su ≥k circuiti ASSIEME (I-2). Una
-       mappa cattiva è un attacco ai metadati, non al contenuto.
+    1. il livello minimo I-2 è intatto, MA una mappa di DIROTTAMENTO può
+       manovrare l'avversario oltre k (far collassare il bacino onesto,
+       PS-12) -> il contenuto PUÒ cadere per una mappa non verificata sopra
+       una soglia di proprietà del ~15%. Non solo metadati. Delimitato dal
+       margine k/n + difese PS-12, non da un "non può".
     2. temporanea + rilevabile — l'avversario deve eclissare il client
        PER SEMPRE per tenerla nascosta (è OP-2, non una nuova debolezza qui).
     3. non falsificabile — l'avversario non può far ricostruire gli input
@@ -363,14 +364,25 @@ pretende di romperla.
   nuovo può consegnargli una mappa che etichetta male gli AS così che relay
   co-locati sembrino disgiunti. Il limite sul danno è triplice e DEVE (MUST)
   essere preservato dal design:
-  1. **Il contenuto resta al livello minimo.** Anche una mappa pienamente
-     avversaria non può abbassare il livello minimo di contenuto I-2: può solo
-     far *sbagliare il giudizio di disgiunzione* al client, il che (per PS-11 e il
-     simulatore, §10) erode il **collegamento molto più velocemente del
-     contenuto** — una rottura di contenuto richiede comunque che l'avversario sia
-     su ≥`k` circuiti contemporaneamente. Una mappa cattiva è un attacco ai
-     metadati, non un attacco al contenuto. Questa asimmetria è la singola ragione
-     più importante per cui il paradosso del bootstrap è sopravvivibile.
+  1. **Il livello minimo I-2 stesso è intatto; ma una mappa ostile PUÒ
+     raggiungere il contenuto tramite dirottamento.** Il livello minimo di Shamir
+     sotto `k` è matematico e una mappa cattiva non può abbassarlo. Ciò che una
+     mappa cattiva *può* fare — e questo corregge una precedente sopravvalutazione
+     — è **manovrare l'avversario oltre `k`**: una mappa che dà ai relay co-locati
+     dell'avversario AS falsi distinti e dà ai relay onesti AS falsi collidenti fa
+     collassare il bacino di candidati onesti e dirotta la selezione disgiunta per
+     AS su `≥ k` circuiti dell'avversario in modo deterministico (la costruzione
+     completa e le sue difese sono **PS-12**; dimostrato contro il simulatore,
+     ~100% di rottura del contenuto al ~15% di proprietà). Quindi una mappa cattiva
+     **non** è un attacco ai soli metadati: per un client che ha accettato una
+     mappa non verificata e non può ancora ricostruire, il livello minimo di
+     contenuto può cadere. Il limite onesto è perciò condizionale, non assoluto:
+     una mappa cattiva raggiunge il contenuto **solo** quando l'avversario possiede
+     già abbastanza del campione *raggiungibile* del client da dominare il bacino
+     post-collasso (territorio di soglia, PS-12) **e** le difese di PS-12 non sono
+     applicate. L'inaccuratezza casuale (rumore) erode comunque il collegamento
+     molto più velocemente del contenuto; una mappa *scelta* no. Le affermazioni 2
+     e 3 qui sotto sono ciò che mantiene limitato anche questo.
   2. **È temporanea e rilevabile, non permanente.** Nel momento in cui il client
      fa gossip della sua root/`H` (ID-9) o ricostruisce (ID-5a), una mappa che
      nessun peer onesto o input pubblico corrobora salta all'occhio. L'avversario
@@ -463,9 +475,13 @@ i relay" è il residuo, ed è reale:
   può vedere attraverso un annuncio BGP dall'aspetto veritiero fino al rack dietro
   di esso. Questo è enunciato nel punto onesto più profondo della roadmap e
   resiste: **dall'overlay verifichi la consistenza contro un dataset a fiducia
-  limitata, non la vera disgiunzione.** Il compito è delimitare ciò che questo
-  avversario guadagna (ID-8a: il contenuto resta al livello minimo; l'attacco è
-  metadati/collegamento), non pretendere di averlo eliminato.
+  limitata, non la vera disgiunzione.** Per questo caso *passivo* — una mappa
+  corretta che semplicemente capita di etichettare male relay co-locati —
+  l'attacco è metadati/collegamento, perché la mappa onesta non fa collassare il
+  bacino onesto. (Il caso *attivo*, una mappa scelta per farlo collassare, è
+  peggiore e raggiunge il contenuto: PS-12 e il residuo di dirottamento del
+  contenuto qui sotto.) Il compito è delimitare ciò che l'avversario guadagna,
+  non pretendere di averlo eliminato.
 - **Il BGP è genuinamente ambiguo in alcuni punti.** I prefissi MOAS (un prefisso
   legittimamente originato da diversi AS), gli **AS fratelli** sotto un unico
   operatore (ASN distinti, un'unica parte di controllo — la mappa vede due AS dove
@@ -482,11 +498,55 @@ i relay" è il residuo, ed è reale:
   legale, realtà dell'assistenza legale reciproca) è deliberatamente **non**
   codificato — sarebbe una valutazione che nessuna build riproducibile può fare
   senza importare un'opinione fidata, cosa che ID-1 vieta.
+- **Una mappa avversaria può raggiungere il contenuto, non solo i metadati.** Il
+  residuo di co-locazione qui sopra è un errore *passivo* (la mappa corretta
+  etichetta male per caso). Una mappa *scelta attivamente* è peggiore: può
+  dirottare la selezione disgiunta per AS su `≥ k` circuiti dell'avversario e
+  rompere il contenuto, non solo il collegamento (PS-12, che porta le difese).
+  Questa parte **non** afferma che una mappa cattiva sia solo sui metadati; quella
+  precedente affermazione era sbagliata. Il residuo è delimitato dal margine
+  `k`/`n`, dalle difese di collasso del bacino di PS-12 e dalla ricostruzione
+  (ID-5a) — non dall'impossibilità.
+- **La riproduzione (ID-5a) è l'arbitro solo finché gli input sono recuperabili —
+  un limite di liveness.** La ricostruzione risolve una disputa solo se gli input
+  pubblici pinnati possono ancora essere recuperati da qualche fonte onesta. I dump
+  MRT di RouteViews / RIPE RIS e i file di delega RIR **non** sono archivi
+  permanenti con una garanzia di conservazione verso questo progetto; una volta che
+  un input pinnato esce da ogni mirror, `rebuild(manifest)` è ineseguibile e una
+  disputa su quell'epoch non ha **alcun arbitro** — nel peggiore dei casi proprio
+  per le dispute forensi di vecchi epoch che ne hanno bisogno. Un deployment
+  conforme DOVREBBE (SHOULD) depositare in escrow i byte degli input pinnati in uno
+  store indirizzato per contenuto replicato sullo stesso insieme di mirror senza
+  permessi della mappa, così che l'arbitro erediti la disponibilità della mappa
+  stessa; in assenza di ciò, ID-5a è dichiarato **limitato dalla liveness**, non
+  incondizionato. (Pericoli per il determinismo correlati non ancora pinnati nel
+  §4.1: il pruning dipendente dal mirror che rende "ultimo dump ≤ confine"
+  dipendente dal mirror; la mutazione di un singolo file-al-giorno RIR contro una
+  serie di dump; la divergenza nel *decode dell'input* MRT tra versioni del parser,
+  che la canonicalizzazione dell'output di ID-4d non copre.)
+- **ID-1 riloca l'autorità su OP-2; non elimina la fiducia.** Nessuna parte
+  *firma* la mappa (ID-1 vale alla lettera, e per ogni client che **ricostruisce**
+  la sola riproduzione lo sostiene). Ma un client che non ricostruisce (ID-5b lo
+  permette) poggia sulla corroborazione del quorum diffuso via gossip (ID-7b,
+  ID-9), il cui voto è privo di autorità **solo se** sybil/eclipse possono essere
+  resistiti — che è **OP-2, aperto**. Sotto eclipse, il rilevamento
+  dell'equivocazione (ID-7a) non può scattare (la vittima non tocca alcuna root
+  onesta), un quorum di log dell'avversario può far sembrare corroborata una mappa
+  cattiva e — la direzione inversa, sotto-difesa — un avversario può far sembrare
+  *non corroborata* una *buona* mappa locale e costringere la vittima ad
+  abbandonarla tramite il "tratta la tua mappa come sospetta, ri-recupera" di ID-9a
+  (un downgrade attraverso lo stesso macchinario di onestà). Quindi per il client
+  che non ricostruisce o è eclissato, "nessuna autorità" significa "fidati del
+  quorum", e questo vale solo fin dove vale OP-2. Questa parte **riduce** il
+  problema dell'autorità della mappa a OP-2; non lo dissolve.
 
 Il riassunto onesto: **il tasso di errore del dataset è un residuo dichiarato, non
-nullo, non un difetto da azzerare.** È il prezzo del rifiutare un'autorità. La
-risposta corretta non è nasconderlo ma darlo in pasto al simulatore e mostrare
-all'utente il livello raggiunto (PS-9, PS-11).
+nullo, non un difetto da azzerare** — e, come i tre punti appena aggiunti rendono
+esplicito, lo sono anche il tetto di dirottamento del contenuto (PS-12), il limite
+di liveness sull'arbitro e la riduzione dell'autorità della mappa a OP-2. Questi
+sono il prezzo del rifiutare un'autorità. La risposta corretta non è nasconderli ma
+delimitarli, dare in pasto il tasso di errore al simulatore e mostrare all'utente
+il livello raggiunto (PS-9, PS-11).
 
 ## 11. Il tasso di errore alimenta il simulatore (non ignorato con una scrollata)
 
@@ -534,8 +594,10 @@ quel dataset, e il suo residuo misurato **è** quella manopola:
   prove di consistenza; log multipli, nessuno canonico; il log tiene gli impegni,
   non la mappa.
 - **ID-8 / ID-8a / ID-8b** — il bootstrap è TOFU dichiarato; il danno di una prima
-  mappa cattiva è delimitato (il contenuto resta al livello minimo, è rilevabile,
-  la riproduzione non può essere falsificata); rileva, non pretendere di prevenire.
+  mappa cattiva è delimitato ma **non solo sui metadati** — una mappa di
+  dirottamento può raggiungere il contenuto (PS-12), quindi il limite è
+  condizionale (margine k/n + difese PS-12 + ricostruzione), rilevabile, e la
+  riproduzione non può essere falsificata; rileva, non pretendere di prevenire.
 - **ID-9 / ID-9a / ID-10** — refresh e gossip di `(epoch, H)` e delle root sotto
   GR-8; divergenza mostrata via PS-9; gossip delle anomalie obbligatorio per le
   tre firme di attacco.
@@ -547,10 +609,17 @@ quel dataset, e il suo residuo misurato **è** quella manopola:
   confidenza della Parte 3; il caso a errore zero è il caso migliore, mai quello
   atteso.
 
-ID-1, ID-5a e ID-8a sono i tre portanti: nessuna autorità, la riproduzione è
-l'arbitro, e una mappa cattiva non può abbassare il livello minimo di contenuto.
-Rompi uno qualunque di essi — trova un passo che ha bisogno di una parte fidata,
-una mappa che non possa essere ricostruita dai suoi input, o un modo in cui una
-mappa cattiva raggiunge il contenuto e non meramente il collegamento — e hai rotto
-questa parte. Questo è l'invito. Lo sweep di `infer_error` di `poc/network_sim.py`
-è lo strawman eseguibile dietro il §11; attacca il modello, poi questo testo.
+ID-1 e ID-5a sono i due portanti: nessuna autorità, e la riproduzione è l'arbitro.
+Entrambi sono delimitati, non assoluti — ID-1 si riduce a OP-2 per un client che
+non ricostruisce, e ID-5a è limitato dalla liveness (§10). La terza affermazione
+che questa parte faceva originariamente — che una mappa cattiva non possa
+raggiungere il contenuto — è stata **rotta** da una revisione ostile: una mappa di
+dirottamento manovra l'avversario oltre `k` e rompe il contenuto, non solo il
+collegamento. Anziché nasconderlo, questa parte ora lo porta apertamente: la difesa
+è PS-12 e il residuo è dichiarato nel §10. Rompi il resto allo stesso modo — trova
+un passo che ha bisogno di una parte fidata, una mappa che non possa essere
+ricostruita dai suoi input, un vuoto di liveness che ci è sfuggito, o un modo
+*nuovo* in cui una mappa cattiva raggiunge il contenuto oltre le difese di PS-12 —
+e hai rotto questa parte. Questo è l'invito, ed è già stato accolto una volta. Lo
+sweep di `infer_error` di `poc/network_sim.py` (e la costruzione di dirottamento di
+PS-12) è lo strawman eseguibile dietro il §11; attacca il modello, poi questo testo.
