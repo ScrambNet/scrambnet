@@ -68,3 +68,7 @@ Marked for attack — each deserves its own issue:
 7. **Bootstrap with zero contacts** for the social-graph bridge distribution.
 8. **Update governance.** Multi-signature releases across jurisdictions: how many signers,
    how chosen, how replaced — without creating the committee that becomes the kill switch.
+9. **Dead-drop metadata and economics.** A drop sees deposit times and polling cadence for
+   a box within one epoch (spec Part 6). Polling distributions and decoy cost on metered
+   connections, deletion semantics, deposit pricing against flooding, storage incentives:
+   what does each defense cost, and what does each leak?

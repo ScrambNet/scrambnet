@@ -131,6 +131,31 @@ demonstrate on real hardware. A message can cross a city at the speed of a bus �
 infinitely better than zero. Dispersal still applies: shares can take different physical
 carriers.
 
+## Who runs what — participation roles
+
+Delivery never targets a person: recipients hold per-relationship contact cards
+and collect shares from dispersed dead drops, from behind their own circuits
+(spec Part 6). Around that sits a spectrum of roles, every one of them chosen,
+none required:
+
+- **Pure client** — near-invisible, for people in places where participating is
+  itself dangerous; rides bridges and chameleon transports.
+- **Relay + user** — the natural backbone where the risk is low: transit traffic
+  is free cover for one's own traffic, capacity grows with use. The price is a
+  published address; the discipline is an always-on schedule, because a relay
+  that is up exactly when its operator chats is an intersection attack on
+  itself.
+- **Pure relay / drop** — the volunteer in a safe jurisdiction carrying and
+  storing for those who are not. Messaging traffic has no clear-web exit: a
+  relay forwards fixed-size noise and a drop stores shares it cannot read or
+  link, which keeps the volunteer's exposure structurally lower than a Tor
+  exit's.
+- **Mesh node / gateway** — always an explicit opt-in, because its visibility
+  is physical, at neighborhood scale.
+
+Nobody must be visible to participate; nobody pays for those who cannot afford
+visibility. The suggested default for the safe is to contribute.
+
 ## Prior art this design composes
 
 | Piece | Year | Role here |
@@ -144,6 +169,7 @@ carriers.
 | Snowflake, Lox (Tor) | — | Ephemeral bridges; social-graph distribution |
 | Walking Onions | 2020 | Discovery by verifiable sample |
 | Briar, Reticulum | — | Proof the blackout layer works on real hardware |
+| Pond, Loopix | 2015–2017 | Dead drops and provider mailboxes — the delivery pattern Part 6 disperses |
 
 The contribution is not a new primitive. It is a composition in which the primitive that
 cannot expire carries the load, and everything that can expire is a convenience.
