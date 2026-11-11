@@ -98,6 +98,36 @@ ehrliche Parteien auseinanderdriften, hört Hash-Gleichheit (ID-5) auf, "gleiche
 Karte" zu bedeuten, und der Entwurf bricht in das Bedürfnis nach einer Autorität
 zusammen, die Gleichstände bricht.
 
+```
+  ÖFFENTLICHE EINGABEN (im Manifest per Inhalts-Hash fixiert, ID-3)
+  ┌────────────────────────┐   ┌────────────────────────┐
+  │ RouteViews + RIPE RIS  │   │ 5 RIR-Delegations-     │
+  │ BGP MRT RIB-Dumps      │   │ dateien (AS → Land)    │
+  │ (Präfix → Ursprungs-AS)│   │                        │
+  └───────────┬────────────┘   └───────────┬────────────┘
+              │       epoch = letzter Dump ≤ 00:00 UTC-Grenze (ID-4)
+              └───────────────┬───────────────┘
+                              ▼
+            ┌───────────────────────────────────┐
+            │  DETERMINISTISCHER BAU (reine Fn)   │
+            │  feste Ordnung (ID-4a), feste       │
+            │  Gleichstandsauflösung (ID-4b),     │
+            │  keine fließenden Eingaben (ID-4c), │
+            │  kanonischer Container (ID-4d)      │
+            └─────────────────┬─────────────────┘
+                              ▼
+                      Karten-Artefakt
+                              │
+                              ▼
+                   H = BLAKE2s(artifact)   ← der EINZIGE Name der Karte (ID-2)
+
+  Alice ─ gleiche Eingaben ─▶ H_A         Zwei ehrliche Parteien, die dieselben
+  Bob   ─ gleiche Eingaben ─▶ H_B         Eingaben fixieren, erhalten H_A == H_B.
+                                          Übereinstimmung ist Hash-Gleichheit
+                                          (ID-5), nicht Vertrauen in einen
+                                          Signierer. Reproduktion ist der Richter.
+```
+
 - **ID-3 (öffentliche Eingaben, per Inhalt fixiert). [normativ]** Die Karte MUSS
   (MUST) nur aus Eingaben gebaut werden, die öffentlich, reproduzierbar und selbst
   im Manifest des Artefakts durch ihre eigenen Hashes inhaltsfixiert sind:
@@ -211,6 +241,33 @@ für sich allein nicht gegen einen Gegner, der **verschiedenen** Clients
 **Split-View-Angriff (Equivocation)**. Der Transparenz-Log existiert für genau
 diese Bedrohung und für nichts weiter.
 
+```
+  DER SPLIT-VIEW-ANGRIFF, UND WIE GOSSIP IHN FÄNGT
+
+  Ein feindlicher Log versucht, zwei Sichten zu zeigen, die sich nie treffen:
+
+     Log ──Wurzel X (Karte H_good)──▶  Alice   "meine Karte ist bestätigt"
+         └─Wurzel Y (Karte H_bad )──▶  Bob     "meine Karte ist bestätigt"
+
+  Jeder Client allein sieht eine konsistente Geschichte. Aber Wurzeln werden
+  über den GR-6-Kanal (ID-7a) per Gossip verbreitet, sodass ein dritter Client
+  Carol BEIDE hört:
+
+        Alice ──Wurzel X──┐
+                          ├──▶  Carol verlangt einen KONSISTENZBEWEIS
+        Bob   ──Wurzel Y──┘     zwischen X und Y.
+                               Sind X und Y nicht Erweiterungen eines
+                               anfügbaren Baums, SCHEITERT der Beweis:
+                               ✗  kryptografischer Beweis, dass der Log
+                                  Equivocation beging → Log als feindlich
+                                  markiert, per Gossip verbreitet (ID-10)
+
+  Der Log sagt nie, welche Karte GUT ist — das tut die Reproduktion (ID-5a).
+  Er macht nur das Lügen gegenüber verschiedenen Leuten zugleich erkennbar.
+  Jeder darf anfügen (ID-7, erlaubnisfrei), also ist der Log ein schwarzes
+  Brett, keine Autorität — was ihn vom I-3-Verbot freihält.
+```
+
 - **ID-6 (was der Log ist).** Der Log ist ein **anfügbarer (append-only)
   Merkle-Baum** (RFC 6962 / Certificate-Transparency-Struktur: ein Merkle-Baum
   über eine Folge von Blättern, mit Inklusionsbeweisen und Konsistenzbeweisen
@@ -265,6 +322,41 @@ vorherige Karte; er muss seine **erste** Karte über Pfade abrufen, deren
 Disjunktheit er **noch nicht verifizieren kann** (diese Verifikation braucht genau
 die Karte, die er abruft). Das ist eine echte zirkuläre Abhängigkeit, und dieser
 Teil gibt nicht vor, sie zu brechen.
+
+```
+  DIE ERSTE KARTE IST TRUST-ON-FIRST-USE (ID-8) — IHR SCHADEN IST BEGRENZT
+
+  frischer Client ──▶ erste Karte über Kanäle holen, die er noch nicht bewerten kann
+                      │
+                      ▼
+        ┌───────────────────────────┐
+        │  Zustand: UNVERIFIED-TOFU  │  UI: "du vertraust deiner ersten
+        │  (dem Nutzer gezeigt)      │       Karte; noch nicht bestätigt"
+        └─────────────┬─────────────┘
+                      │  über die nächsten epochs, ENTWEDER:
+         ┌────────────┴─────────────┐
+         ▼                          ▼
+   aus Eingaben neu bauen     Wurzeln gossippen + Peer-H
+   (ID-5a): H passt?          über Schwelle einig?
+         │                          │
+    ja ──┴── nein              ja ──┴── nein (driftet weiter)
+     ▼       ▼                  ▼        ▼
+  VERIFIZ.  ANOMALIE         VERIFIZ.   ANOMALIE gegossippt (ID-10),
+            (ID-5b,10)                 Nutzer gewarnt (ID-8b)
+
+  Selbst eine VÖLLIG feindliche erste Karte ist begrenzt (ID-8a):
+    1. die I-2-Untergrenze bleibt unberührt, ABER eine *lenkende* Karte kann den
+       Gegner über k hinaus manövrieren (den ehrlichen Pool kollabieren, PS-12) ->
+       Inhalt KANN für eine unverifizierte Karte oberhalb einer ~15%-Besitz-
+       Schwelle fallen. Nicht nur Metadaten. Begrenzt durch die k/n-Marge + PS-12-
+       Verteidigungen, nicht durch "geht nicht".
+    2. vorübergehend + erkennbar — der Gegner muss den Client FÜR IMMER
+       verfinstern (eclipsen), um sie verborgen zu halten (das ist OP-2, keine
+       neue Schwäche hier).
+    3. unfälschbar — der Gegner kann die öffentlichen Eingaben nicht dazu bringen,
+       auf ein schlechtes H neu zu bauen. Ein Neubau, oder ein ehrlicher Peer, der
+       es tat, konvergiert zur Wahrheit.
+```
 
 - **ID-8 (Bootstrap ist Trust-on-First-Use, erklärt). [normativ]** Die erste
   Karte, die ein frischer Client erhält, ist eine **TOFU**-Entscheidung. Der Client

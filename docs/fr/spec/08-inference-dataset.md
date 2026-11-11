@@ -33,6 +33,36 @@ Le piège est subtil et doit être nommé : la conception « sans confiance » l
 
 La construction est une **fonction pure d'entrées publiques nommées vers un artefact identique octet par octet**. Le déterminisme est tout l'enjeu : si deux parties honnêtes peuvent diverger, l'égalité de hachage (ID-5) cesse de signifier « même carte » et la conception s'effondre, nécessitant une autorité pour départager.
 
+```
+  ENTREES PUBLIQUES (épinglées par hachage de contenu dans le manifeste, ID-3)
+  ┌────────────────────────┐   ┌────────────────────────┐
+  │ RouteViews + RIPE RIS  │   │ 5 fichiers délég. RIR  │
+  │ dumps BGP MRT RIB      │   │ (AS → pays)            │
+  │ (préfixe → AS-origine) │   │                        │
+  └───────────┬────────────┘   └───────────┬────────────┘
+              │     epoch = dernier dump ≤ limite 00:00 UTC (ID-4)
+              └───────────────┬───────────────┘
+                              ▼
+          ┌───────────────────────────────────────┐
+          │  CONSTRUCTION DETERMINISTE (fn pure)  │
+          │  ordre fixe (ID-4a), départage        │
+          │  fixe (ID-4b), pas d'entrées          │
+          │  flottantes (ID-4c), conteneur        │
+          │  canonique (ID-4d)                    │
+          └───────────────────┬───────────────────┘
+                              ▼
+                      artefact carte
+                              │
+                              ▼
+                   H = BLAKE2s(artifact)   ← le SEUL nom de la carte (ID-2)
+
+  Alice ─ mêmes entrées ─▶ H_A         Deux parties honnêtes qui épinglent les
+  Bob   ─ mêmes entrées ─▶ H_B         mêmes entrées obtiennent H_A == H_B.
+                                       L'accord est l'égalité de hachage
+                                       (ID-5), non la confiance en un
+                                       signataire. La reproduction est l'arbitre.
+```
+
 - **ID-3 (entrées publiques, épinglées par le contenu). [normatif]** La carte DOIT (MUST) être construite uniquement à partir d'entrées qui sont publiques, reproductibles, et elles-mêmes épinglées par contenu dans le manifeste de l'artefact par leurs propres hachages :
   - **Tables de routage BGP** pour l'AS d'origine : les collecteurs du projet **RouteViews** et les collecteurs **RIPE RIS** (dumps MRT `RIB`). Ce sont les archives BGP publiques, multi-points-d'observation, standard ; utiliser plusieurs collecteurs des deux projets est en soi une mesure de diversité (la vue d'aucun collecteur unique ne fait autorité, ID-3a).
   - **Statistiques de délégation RIR** pour la correspondance AS → pays : les fichiers **delegated-extended** publiés par les cinq RIR (ARIN, RIPE NCC, APNIC, LACNIC, AFRINIC). Ils donnent les codes-pays d'allocation pour les numéros d'AS et les blocs d'adresses sans que personne s'auto-déclare.
@@ -62,6 +92,33 @@ Chaque risque ci-dessous est un endroit où deux constructeurs honnêtes pourrai
 
 L'égalité de hachage indique à deux clients qu'ils *diffèrent* ; elle ne défend pas en soi contre un adversaire qui alimente **différents** clients avec **différentes** cartes en gardant chaque client cohérent en interne — une **attaque à vue dédoublée (équivocation)**. Le journal de transparence existe pour exactement cette menace et pour rien de plus.
 
+```
+  L'ATTAQUE A VUE DEDOUBLEE, ET COMMENT LE GOSSIP LA PREND
+
+  Un journal hostile tente de montrer deux vues qui ne se rencontrent jamais :
+
+     journal ─racine X (carte H_good)─▶  Alice  « ma carte est corroborée »
+             └racine Y (carte H_bad )─▶  Bob    « ma carte est corroborée »
+
+  Chaque client, seul, voit une histoire cohérente. Mais les racines sont
+  diffusées par gossip sur le canal GR-6 (ID-7a), donc un troisième client
+  Carol les entend TOUTES DEUX :
+
+        Alice ──racine X──┐
+                          ├──▶  Carol exige une PREUVE DE COHERENCE
+        Bob   ──racine Y──┘     entre X et Y.
+                               Si X et Y ne sont pas des extensions d'un
+                               seul arbre en ajout seul, la preuve ECHOUE :
+                               ✗  preuve cryptographique que le journal a
+                                  équivoqué
+                                  → journal marqué hostile, gossipé (ID-10)
+
+  Le journal ne dit jamais quelle carte est BONNE — la reproduction le fait
+  (ID-5a). Il rend seulement détectable le mensonge à plusieurs à la fois.
+  N'importe qui peut ajouter (ID-7, sans permission), donc le journal est
+  un tableau d'affichage, non une autorité — ce qui le tient à l'écart de I-3.
+```
+
 - **ID-6 (ce qu'est le journal).** Le journal est un **arbre de Merkle en ajout seul** (structure RFC 6962 / Certificate-Transparency : un arbre de Merkle sur une séquence de feuilles, avec des preuves d'inclusion et des preuves de cohérence entre deux tailles d'arbre). Chaque **feuille** est une annonce de carte : `(epoch, H, input-manifest-hash)`. L'état du journal est résumé par sa **tête d'arbre signée** — ici, un **hachage de racine** à une taille d'arbre. Le journal prouve deux choses cryptographiquement : qu'un `H` donné **est inclus** (preuve d'inclusion) et que le journal **n'a fait que croître, sans jamais réécrire l'histoire** (preuve de cohérence). Il ne prouve rien quant à savoir si `H` est une *bonne* carte — c'est la reproduction (ID-5a) qui le fait.
 - **ID-7 (qui peut ajouter — sans permission, donc ce n'est pas une autorité). [normatif]** **N'importe qui** PEUT (MAY) ajouter une feuille annonçant une carte qu'il a construite ; il n'y a pas d'appendeur privilégié, pas de liste d'autorisation, pas d'ensemble de signataires dont la signature rend une carte officielle. Le journal n'est donc **pas** la chose à laquelle on fait confiance — c'est un **tableau d'affichage témoigné, inviolable en apparence (tamper-evident)**. Son seul pouvoir est de rendre l'équivocation *détectable* ; il n'a **aucun pouvoir de choisir la carte**, ce qui le tient à l'écart de l'interdiction I-3. Un journal qui filtrerait les ajouts derrière un ensemble de signataires SERAIT l'autorité d'annuaire que I-3 interdit, et une telle conception est non conforme (ID-1).
 - **ID-7a (détection d'équivocation via racines diffusées par gossip). [normatif]** La défense contre une vue dédoublée n'est **pas** de faire confiance à l'opérateur du journal ; c'est de **diffuser par gossip les têtes d'arbre signées du journal sur le canal de gossip GR existant** (GR-6) et d'exiger des **preuves de cohérence** entre deux racines quelconques qu'un client voit. Si un journal présente jamais deux têtes d'arbre qui ne sont pas des extensions cohérentes l'une de l'autre — la signature de l'équivocation — tout client qui observe les deux (directement ou via une racine diffusée par un pair) détient une **preuve cryptographique** que le journal a menti, et DOIT (MUST) traiter ce journal comme hostile (ID-10). Comme les racines sont diffusées largement (GR-6 mélange les sources, GR-8), un journal ne peut pas montrer longtemps la racine X au client A et la racine Y au client B sans qu'un client détienne les deux et le prenne en flagrant délit.
@@ -71,6 +128,40 @@ L'égalité de hachage indique à deux clients qu'ils *diffèrent* ; elle ne dé
 ## 7. Le paradoxe de l'amorçage, énoncé honnêtement
 
 Un nouveau client n'a pas d'échantillon de relais qu'il puisse évaluer ni de carte antérieure ; il doit récupérer sa **première** carte par des chemins dont il **ne peut pas encore vérifier** la disjonction (cette vérification a besoin de la carte même qu'il récupère). C'est une dépendance circulaire authentique, et cette partie ne prétend pas la briser.
+
+```
+  LA PREMIERE CARTE EST CONFIANCE-A-LA-PREMIERE-UTILISATION (ID-8) —
+  ET SES DEGATS SONT BORNES
+
+  nouveau client ──▶ récupère la 1re carte par des canaux encore inévaluables
+                   │
+                   ▼
+        ┌───────────────────────────┐
+        │  état : NON-VERIFIE-TOFU   │  UI : « vous faites confiance à votre
+        │  (montré à l'utilisateur)  │       première carte ; pas encore
+        └─────────────┬─────────────┘        corroborée »
+                      │  au fil des epochs suivants, SOIT :
+         ┌────────────┴─────────────┐
+         ▼                          ▼
+   reconstruire d'entrées     gossip racines + H des pairs
+   (ID-5a) : H concorde ?     accord au-dessus du seuil ?
+         │                          │
+    oui ─┴─ non                oui ─┴─ non (continue de diverger)
+     ▼       ▼                  ▼        ▼
+  VERIFIE  ANOMALIE          VERIFIE   ANOMALIE gossipée (ID-10),
+           (ID-5b,10)                  utilisateur averti (ID-8b)
+
+  Même une première carte PLEINEMENT adversariale est bornée (ID-8a) :
+    1. le contenu reste au PLANCHER — une mauvaise carte mal juge la
+       disjonction, ce qui érode la liaison ; une rupture de contenu requiert
+       toujours l'adversaire sur ≥k circuits EN MEME TEMPS (I-2). Une mauvaise
+       carte est une attaque de métadonnées, non de contenu.
+    2. temporaire + détectable — l'adversaire doit éclipser le client POUR
+       TOUJOURS pour la garder cachée (c'est OP-2, non une faiblesse nouvelle).
+    3. infalsifiable — l'adversaire ne peut faire que des entrées publiques se
+       reconstruisent vers un mauvais H. Une reconstruction, ou un pair honnête
+       qui l'a faite, converge vers la vérité.
+```
 
 - **ID-8 (l'amorçage est confiance-à-la-première-utilisation, déclarée). [normatif]** La première carte qu'un nouveau client obtient est une décision **TOFU**. Le client DOIT (MUST) l'obtenir par autant de canaux **indépendants** qu'il en a (homme de paille : la ligne de pont hors-bande de GR-10, plus deux miroirs publics ou plus atteints via des réseaux distincts (s)), DOIT (MUST) exiger le **même `H`** de tous avant une acceptation provisoire, et DOIT (MUST) enregistrer la carte comme **non-vérifiée-TOFU** jusqu'à ce que, soit (a) il reconstruise à partir des entrées (ID-5a), soit (b) il accumule des racines diffusées cohérentes et un accord de `H` entre pairs (ID-7a, ID-9) au-dessus d'un seuil de confiance. Le client DOIT (MUST) faire remonter cet état : *vous faites confiance à votre première carte ; elle n'a pas encore été corroborée.*
 - **ID-8a (borne sur ce qu'une mauvaise première carte rapporte à l'adversaire). [normatif]** Un adversaire qui contrôle toute la première récupération d'un nouveau client peut lui remettre une carte qui étiquette à tort des AS de sorte que des relais co-localisés paraissent disjoints. La borne sur les dégâts est triple et DOIT (MUST) être préservée par la conception :

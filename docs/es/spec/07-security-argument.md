@@ -12,6 +12,32 @@ La afirmación es deliberadamente estrecha. Lee primero las dos frases del §1; 
 
 Estos dos niveles son **disjuntos y exhaustivos**: todo adversario posee o bien `< k` partes (nivel 1) o bien `≥ k` (nivel 2), y la garantía de cada uno se enuncia sin referencia al otro. El resto de esta parte demuestra el nivel 1 de forma rigurosa, enuncia con precisión por qué el nivel 2 no puede ser incondicional, y fija el único punto donde los dos niveles podrían filtrarse uno en el otro (§4: la clave AEAD debe ser invisible por debajo de `k`).
 
+```
+  LOS DOS NIVELES, SEGÚN CUÁNTAS PARTES POSEE EL ADVERSARIO
+
+   partes poseídas:  0 ............ k-1  │  k ........... n
+                     └──── NIVEL 1 ────┘ │ └──── NIVEL 2 ────┘
+                                         │
+   NIVEL 1  (por debajo de k)            │   NIVEL 2  (k o más)
+   ──────────────────────────            │   ──────────────────
+   las k-1 partes son                    │   el adversario reconstruye C,
+   ESTADÍSTICAMENTE INDEPENDIENTES       │   luego se topa con el AEAD de
+   del secreto (SA-1, SA-2)              │   extremo a extremo bajo la clave K
+          │                              │          │
+          ▼                              │          ▼
+   no hay nada ahí que aprender,         │   confidencialidad = ChaCha20-
+   frente a cómputo ILIMITADO            │   Poly1305 bajo K que el adversario
+   y cualquier computadora cuántica      │   no posee (SP-1a)
+          │                              │          │
+          ▼                              │          ▼
+   INCONDICIONAL (el umbral)             │   COMPUTACIONAL (el cinturón)
+
+   La junta (SA-4): K nunca aparece en nada que vea un adversario por debajo
+   de k. Eso es lo que impide que el nivel 1 decaiga silenciosamente en el
+   nivel 2 — el umbral oculta C, y el adversario tampoco gana nada hacia K
+   para un C futuro.
+```
+
 ## 2. Modelo y adversario
 
 - Un **mensaje** es una cadena de bytes `M`. El emisor calcula primero el texto cifrado `C = AEAD-Seal(K, N, M)` (SP-1a), donde `K = HKDF(kpair, "e2e-content")` y `N` es el nonce del mensaje. `C` — nunca `M` — es lo que entra en la dispersión.

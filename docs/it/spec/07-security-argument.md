@@ -13,6 +13,32 @@ L'affermazione è deliberatamente stretta. Leggi prima le due frasi del §1; tut
 
 Questi due livelli sono **disgiunti ed esaustivi**: ogni avversario tiene o `< k` quote (livello 1) o `≥ k` (livello 2), e la garanzia in ciascuno è enunciata senza riferimento all'altro. Il resto di questa parte dimostra rigorosamente il livello 1, enuncia con precisione perché il livello 2 non può essere incondizionato, e inchioda l'unico punto in cui i due livelli potrebbero trafilare l'uno nell'altro (§4: la chiave AEAD deve essere invisibile sotto `k`).
 
+```
+  I DUE LIVELLI, PER QUANTE QUOTE TIENE L'AVVERSARIO
+
+   quote tenute:  0 ........... k-1    │  k ........... n
+                └──── LIVELLO 1 ────┘ │ └──── LIVELLO 2 ────┘
+                                       │
+   LIVELLO 1  (sotto k)                │   LIVELLO 2  (k o più)
+   ──────────────────                  │   ────────────────────
+   le k-1 quote sono                   │   l'avversario ricostruisce C,
+   STATISTICAMENTE INDIPENDENTI        │   poi incontra l'AEAD end-to-end
+   dal segreto (SA-1, SA-2)            │   sotto la chiave K
+          │                            │             │
+          ▼                            │             ▼
+   non c'è nulla da apprendere,        │   riservatezza = ChaCha20-
+   contro computazione ILLIMITATA      │   Poly1305 sotto K che l'avversario
+   e qualsiasi computer quantistico    │   non possiede (SP-1a)
+          │                            │             │
+          ▼                            │             ▼
+   INCONDIZIONATO (il livello minimo)  │   COMPUTAZIONALE (la cintura)
+
+   La giuntura (SA-4): K non appare mai in nulla di ciò che vede un
+   avversario sotto-k. È questo che impedisce al livello 1 di decadere
+   silenziosamente nel livello 2 — il livello minimo nasconde C, e
+   l'avversario non guadagna nulla verso K per un futuro C.
+```
+
 ## 2. Modello e avversario
 
 - Un **messaggio** è una stringa di byte `M`. Il mittente calcola prima il testo cifrato `C = AEAD-Seal(K, N, M)` (SP-1a), dove `K = HKDF(kpair, "e2e-content")` e `N` è il nonce del messaggio. È `C` — mai `M` — a entrare nella dispersione.

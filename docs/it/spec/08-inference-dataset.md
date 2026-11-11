@@ -93,6 +93,36 @@ byte-identico**. Il determinismo è tutto il gioco: se due parti oneste possono
 divergere, l'uguaglianza degli hash (ID-5) smette di significare "stessa mappa" e
 il design collassa nel bisogno di un'autorità che sciolga i pareggi.
 
+```
+  INPUT PUBBLICI (pinnati per hash di contenuto nel manifest, ID-3)
+  ┌────────────────────────┐   ┌────────────────────────┐
+  │ RouteViews + RIPE RIS  │   │ 5 file di delega RIR   │
+  │ dump BGP MRT RIB       │   │ (AS → paese)           │
+  │ (prefisso → origin-AS) │   │                        │
+  └────────────────────────┘   └────────────────────────┘
+              │         epoch = ultimo dump ≤ confine 00:00 UTC (ID-4)
+              └───────────────┬───────────────┘
+                              ▼
+            ┌───────────────────────────────────┐
+            │ BUILD DETERMINISTICA (fn pura)    │
+            │ ordine fisso (ID-4a), tie-        │
+            │ breaking fisso (ID-4b), nessun    │
+            │ input fluttuante (ID-4c),         │
+            │ container canonico (ID-4d)        │
+            └───────────────────────────────────┘
+                              ▼
+                      artefatto mappa
+                              │
+                              ▼
+                   H = BLAKE2s(artifact)   ← l'UNICO nome della mappa (ID-2)
+
+  Alice ─ stessi input ─▶ H_A        Due parti oneste che pinnano gli
+  Bob   ─ stessi input ─▶ H_B        stessi input ottengono H_A == H_B.
+                                      L'accordo è uguaglianza degli hash
+                                      (ID-5), non fiducia in un firmatario.
+                                      La riproduzione è l'arbitro.
+```
+
 - **ID-3 (input pubblici, pinnati per contenuto). [normativo]** La mappa DEVE
   (MUST) essere costruita solo da input che siano pubblici, riproducibili, ed essi
   stessi pinnati per contenuto nel manifest dell'artefatto tramite i propri hash:
@@ -202,6 +232,33 @@ sé contro un avversario che dà a client **diversi** mappe **diverse** mantenen
 ciascun client internamente coerente — un **attacco di split-view (equivocazione)**.
 Il log di trasparenza esiste esattamente per quella minaccia e per nient'altro.
 
+```
+  L'ATTACCO SPLIT-VIEW, E COME IL GOSSIP LO COGLIE
+
+  Un log ostile prova a mostrare due viste che non si incontrano mai:
+
+     log ──root X (mappa H_good)─▶  Alice   "la mia mappa è corroborata"
+         └─root Y (mappa H_bad )─▶  Bob     "la mia mappa è corroborata"
+
+  Ogni client da solo vede una storia coerente. Ma le root sono diffuse
+  via gossip sul canale GR-6 (ID-7a), quindi un terzo client Carol le
+  sente ENTRAMBE:
+
+        Alice ──root X──┐
+                        ├──▶  Carol esige una PROVA DI CONSISTENZA
+        Bob   ──root Y──┘     tra X e Y.
+                             Se X e Y non sono estensioni di un unico
+                             albero append-only, la prova FALLISCE:
+                             ✗  prova crittografica che il log ha
+                                equivocato
+                                → log marcato ostile, diffuso via gossip (ID-10)
+
+  Il log non dice mai quale mappa sia BUONA — lo fa la riproduzione (ID-5a).
+  Rende solo rilevabile il mentire a persone diverse allo stesso tempo.
+  Chiunque può appendere (ID-7, senza permessi), quindi il log è una
+  bacheca, non un'autorità — ed è ciò che lo tiene fuori da I-3.
+```
+
 - **ID-6 (cos'è il log).** Il log è un **albero di Merkle append-only** (struttura
   RFC 6962 / Certificate-Transparency: un albero di Merkle su una sequenza di
   foglie, con prove di inclusione e prove di consistenza tra due dimensioni
@@ -257,6 +314,39 @@ precedente; deve recuperare la sua **prima** mappa su percorsi la cui disgiunzio
 **non può ancora verificare** (quella verifica ha bisogno della mappa stessa che
 sta recuperando). Questa è una genuina dipendenza circolare, e questa parte non
 pretende di romperla.
+
+```
+  LA PRIMA MAPPA È TRUST-ON-FIRST-USE (ID-8) — E IL SUO DANNO È LIMITATO
+
+  client nuovo ─▶ recupera la prima mappa su canali non ancora valutabili
+                      │
+                      ▼
+        ┌───────────────────────────┐  UI: "ti stai fidando della tua
+        │ stato: UNVERIFIED-TOFU    │       prima mappa; non ancora
+        │ (mostrato all'utente)     │       corroborata"
+        └─────────────┬─────────────┘
+                      │  nei prossimi epoch, O l'UNO O l'ALTRO:
+         ┌────────────┴─────────────┐
+         ▼                          ▼
+   ricostruisci dagli input    gossip root + H dei peer
+   (ID-5a): H combacia?        accordo sopra la soglia?
+         │                          │
+    sì ──┴── no                sì ──┴── no (continua a divergere)
+     ▼       ▼                  ▼       ▼
+  VERIFICATO ANOMALIA      VERIFICATO   ANOMALIA diffusa via gossip (ID-10),
+             (ID-5b,10)                 utente avvisato (ID-8b)
+
+  Anche una prima mappa PIENAMENTE avversaria è limitata (ID-8a):
+    1. il contenuto resta al LIVELLO MINIMO — una mappa cattiva sbaglia la
+       disgiunzione, il che erode il collegamento; una rottura di contenuto
+       richiede comunque l'avversario su ≥k circuiti ASSIEME (I-2). Una
+       mappa cattiva è un attacco ai metadati, non al contenuto.
+    2. temporanea + rilevabile — l'avversario deve eclissare il client
+       PER SEMPRE per tenerla nascosta (è OP-2, non una nuova debolezza qui).
+    3. non falsificabile — l'avversario non può far ricostruire gli input
+       pubblici verso una H cattiva. Una ricostruzione, o un peer onesto
+       che l'ha fatta, converge alla verità.
+```
 
 - **ID-8 (il bootstrap è trust-on-first-use, dichiarato). [normativo]** La prima
   mappa che un client nuovo ottiene è una decisione **TOFU**. Il client DEVE

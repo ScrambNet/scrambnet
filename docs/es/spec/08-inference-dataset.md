@@ -92,6 +92,36 @@ idéntico byte a byte**. El determinismo es todo el juego: si dos partes honesta
 pueden divergir, la igualdad de hash (ID-5) deja de significar "mismo mapa" y el
 diseño colapsa en necesitar una autoridad que deshaga los empates.
 
+```
+  ENTRADAS PÚBLICAS (fijadas por hash de contenido en el manifiesto, ID-3)
+  ┌────────────────────────┐   ┌────────────────────────┐
+  │ RouteViews + RIPE RIS  │   │ 5 ficheros deleg. RIR  │
+  │ volcados BGP MRT RIB   │   │ (AS → país)            │
+  │ (prefijo → AS-origen)  │   │                        │
+  └───────────┬────────────┘   └───────────┬────────────┘
+              │       época = último volcado ≤ límite 00:00 UTC (ID-4)
+              └───────────────┬───────────────┘
+                              ▼
+            ┌──────────────────────────────────────┐
+            │  CONSTRUCCIÓN DETERMINISTA (fn pura) │
+            │  orden fijo (ID-4a), desempate       │
+            │  fijo (ID-4b), sin entradas          │
+            │  flotantes (ID-4c), contenedor       │
+            │  canónico (ID-4d)                    │
+            └─────────────────┬────────────────────┘
+                              ▼
+                      artefacto mapa
+                              │
+                              ▼
+                   H = BLAKE2s(artifact)   ← el ÚNICO nombre del mapa (ID-2)
+
+  Alice ─ mismas entradas ─▶ H_A      Dos partes honestas que fijan las
+  Bob   ─ mismas entradas ─▶ H_B      mismas entradas obtienen H_A == H_B.
+                                      La concordancia es igualdad de hash
+                                      (ID-5), no confianza en un firmante.
+                                      La reproducción es el árbitro.
+```
+
 - **ID-3 (entradas públicas, fijadas por contenido). [normativo]** El mapa DEBE
   (MUST) construirse únicamente a partir de entradas que sean públicas,
   reproducibles y a su vez fijadas por contenido en el manifiesto del artefacto
@@ -201,6 +231,31 @@ contra un adversario que alimenta a clientes **diferentes** con mapas
 vista partida (equivocación)**. El registro de transparencia existe exactamente para
 esa amenaza y para nada más.
 
+```
+  EL ATAQUE DE VISTA PARTIDA, Y CÓMO EL GOSSIP LO ATRAPA
+
+  Un registro hostil intenta mostrar dos vistas que nunca se encuentran:
+
+     log ──raíz X (mapa H_good)──▶  Alice   «mi mapa está corroborado»
+         └─raíz Y (mapa H_bad )──▶  Bob     «mi mapa está corroborado»
+
+  Cada cliente a solas ve una historia consistente. Pero las raíces se
+  difunden por el canal GR-6 (ID-7a), así que un tercer cliente Carol oye AMBAS:
+
+        Alice ──raíz X──┐
+                        ├──▶  Carol exige una PRUEBA DE CONSISTENCIA
+        Bob   ──raíz Y──┘     entre X e Y.
+                             Si X e Y no son extensiones de un mismo
+                             árbol de solo-anexado, la prueba FALLA:
+                             ✗  prueba criptográfica de que el registro
+                                equivocó → registro marcado hostil (ID-10)
+
+  El registro nunca dice qué mapa es BUENO — la reproducción lo hace (ID-5a).
+  Solo hace detectable mentir a gente distinta a la vez. Cualquiera puede
+  anexar (ID-7, sin permisos), así que el registro es un tablón de anuncios,
+  no una autoridad — que es lo que lo mantiene fuera de I-3.
+```
+
 - **ID-6 (qué es el registro).** El registro es un **árbol de Merkle de solo-
   anexado** (estructura RFC 6962 / Certificate-Transparency: un árbol de Merkle
   sobre una secuencia de hojas, con pruebas de inclusión y pruebas de consistencia
@@ -255,6 +310,37 @@ ningún mapa previo; debe obtener su **primer** mapa por rutas cuya disjunción
 **todavía no puede verificar** (esa verificación necesita el mismísimo mapa que
 está obteniendo). Esta es una genuina dependencia circular, y esta parte no finge
 romperla.
+
+```
+  EL PRIMER MAPA ES CONFIANZA-EN-EL-PRIMER-USO (ID-8) — Y SU DAÑO ESTÁ ACOTADO
+
+  cliente nuevo ─▶ obtiene el primer mapa por canales que aún no puede evaluar
+                   │
+                   ▼
+        ┌─────────────────────────────┐
+        │  estado: NO-VERIFICADO-TOFU │  IU: «estás confiando en tu primer
+        │  (mostrado al usuario)      │       mapa; aún no corroborado»
+        └─────────────┬───────────────┘
+                      │  durante las épocas siguientes, O BIEN:
+         ┌────────────┴─────────────┐
+         ▼                          ▼
+   reconstruir desde entradas  raíces por gossip + H de pares
+   (ID-5a): ¿H coincide?       ¿concuerdan sobre el umbral?
+         │                          │
+     sí ─┴─ no                  sí ─┴─ no (sigue divergiendo)
+     ▼       ▼                  ▼       ▼
+  VERIFICADO  ANOMALÍA       VERIFICADO  ANOMALÍA por gossip (ID-10),
+              (ID-5b,10)                 usuario advertido (ID-8b)
+
+  Incluso un primer mapa TOTALMENTE adversarial está acotado (ID-8a):
+    1. el contenido sigue CON UMBRAL — un mal mapa juzga mal la disjunción,
+       lo que erosiona la vinculación; una ruptura de contenido aún necesita
+       al adversario en ≥k circuitos A LA VEZ (I-2). Es metadatos, no contenido.
+    2. temporal + detectable — el adversario debe eclipsar al cliente PARA
+       SIEMPRE para mantenerlo oculto (eso es OP-2, no una debilidad nueva).
+    3. infalsificable — el adversario no puede hacer que las entradas públicas
+       reconstruyan a un H malo. Una reconstrucción converge a la verdad.
+```
 
 - **ID-8 (el arranque es confianza-en-el-primer-uso, declarada). [normativo]** El
   primer mapa que obtiene un cliente recién llegado es una decisión **TOFU**. El

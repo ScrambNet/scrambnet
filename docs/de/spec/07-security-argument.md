@@ -12,6 +12,32 @@ Die Behauptung ist bewusst eng gefasst. Lies zuerst die zwei Sätze in §1; alle
 
 Diese beiden Stufen sind **disjunkt und erschöpfend**: Jeder Gegner hält entweder `< k` Anteile (Stufe 1) oder `≥ k` (Stufe 2), und die Garantie in jeder ist ohne Bezug auf die andere formuliert. Der Rest dieses Teils beweist Stufe 1 rigoros, gibt präzise an, warum Stufe 2 nicht bedingungslos sein kann, und fixiert die eine Stelle, an der die beiden Stufen ineinander durchsickern könnten (§4: der AEAD-Schlüssel muss unterhalb von `k` unsichtbar sein).
 
+```
+  DIE ZWEI STUFEN, NACH DER ZAHL DER ANTEILE, DIE DER GEGNER HÄLT
+
+   Anteile:       0 ........... k-1   │  k ........... n
+                  └──── STUFE 1 ────┘ │ └──── STUFE 2 ────┘
+                                      │
+   STUFE 1  (unterhalb von k)         │   STUFE 2  (k oder mehr)
+   ──────────────────────────         │   ─────────────────────
+   die k-1 Anteile sind               │   Gegner rekonstruiert C,
+   STATISTISCH UNABHÄNGIG             │   trifft dann auf das Ende-
+   vom Geheimnis (SA-1, SA-2)         │   zu-Ende-AEAD unter K
+          │                           │          │
+          ▼                           │          ▼
+   nichts da, um es zu erfahren,      │   Vertraulichkeit = ChaCha20-
+   gegen UNBESCHRÄNKTE Rechenkraft    │   Poly1305 unter K, das der
+   und jeden Quantencomputer          │   Gegner nicht hält (SP-1a)
+          │                           │          │
+          ▼                           │          ▼
+   BEDINGUNGSLOS (die Untergrenze)    │   RECHNERISCH (der Gürtel)
+
+   Die Naht (SA-4): K taucht in nichts auf, das ein Unter-k-Gegner sieht.
+   Das hält Stufe 1 davon ab, still in Stufe 2 zu verfallen — die Unter-
+   grenze verbirgt C, und der Gegner gewinnt auch nichts Richtung K für
+   ein künftiges C.
+```
+
 ## 2. Modell und Gegner
 
 - Eine **Nachricht** ist eine Byte-Zeichenkette `M`. Der Absender berechnet zuerst den Schlüsseltext `C = AEAD-Seal(K, N, M)` (SP-1a), wobei `K = HKDF(kpair, "e2e-content")` und `N` die Nachrichten-Nonce ist. `C` — niemals `M` — ist das, was in die Streuung eingeht.
