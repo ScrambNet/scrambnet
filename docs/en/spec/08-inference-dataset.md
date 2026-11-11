@@ -421,9 +421,12 @@ real:
   **correct** map. No reproducible build of public data can see through a
   truthful-looking BGP advertisement to the rack behind it. This is stated in the
   roadmap's deepest honest point and it stands: **from the overlay you verify
-  consistency against a bounded-trust dataset, not true disjointness.** The job
-  is to bound what this adversary gains (ID-8a: content stays floored; the attack
-  is metadata/linkage), not to pretend it away.
+  consistency against a bounded-trust dataset, not true disjointness.** For this
+  *passive* case — a correct map that merely happens to mislabel co-located
+  relays — the attack is metadata/linkage, because the honest map does not
+  collapse the honest pool. (The *active* case, a map chosen to collapse it, is
+  worse and reaches content: PS-12 and the content-steering residual below.) The
+  job is to bound what the adversary gains, not to pretend it away.
 - **BGP is genuinely ambiguous in places.** MOAS prefixes (one prefix legitimately
   originated by several ASes), **sibling ASes** under one operator (distinct ASNs,
   one controlling party — the map sees two ASes where disjointness-reality is
