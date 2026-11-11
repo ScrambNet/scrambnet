@@ -22,6 +22,10 @@ dove la cifratura propria della destinazione è assente o compromessa, il conten
 
 - Il **contenuto** è protetto incondizionatamente sotto le `k` quote catturate. Nessuna assunzione
   computazionale è in gioco. Questo livello minimo non può essere eroso da crittoanalisi o progresso quantistico.
+  A partire dalle `k` quote l'avversario ricompone il testo cifrato e incontra l'AEAD end-to-end — una cintura
+  computazionale, alimentata da un segreto simmetrico precondiviso, così che anche questo livello resista a un
+  avversario «raccogli ora, decifra dopo» del futuro quantistico (spec SP-1a). L'affermazione è la permanenza
+  del livello minimo, non l'inviolabilità della cintura.
 - Il **collegamento** (metadati) su un singolo percorso di quota violato è comunque una perdita reale: l'
   avversario apprende che *un qualche* flusso è passato tra te e il raccoglitore di quote di una destinazione.
   La dispersione restringe ciò che un circuito tradisce; non lo annulla. Guardie stabili,

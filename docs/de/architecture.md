@@ -65,7 +65,12 @@ Bootstrap für einen Nutzer mit null Kontakten. Siehe [threat-model.md](threat-m
 Jede Nachricht wird mit Shamirs Secret Sharing (1979) in `n` Anteile zerlegt; beliebige `k`
 rekonstruieren sie; beliebige `k−1` sind statistisch nicht von Zufallsrauschen zu unterscheiden. Dies ist
 informationstheoretisch, nicht rechnerisch: Ein Gegner mit `k−1` Anteilen und unbegrenzter Rechenleistung
-hält nichts in Händen, weil nichts da ist.
+hält nichts in Händen, weil nichts da ist. Das Regime ist entscheidend und wird klar benannt: Diese
+bedingungslose Garantie ist die Untergrenze *unterhalb* von `k` Anteilen. Bei oder oberhalb von `k`
+setzt ein Gegner den Geheimtext wieder zusammen und steht dann dem Ende-zu-Ende-AEAD gegenüber — ein
+rechnerischer Gürtel, keine zweite informationstheoretische Wand (Spec SP-1/SP-1a). Die Wette des
+Projekts ist, dass die Untergrenze unter diesem Gürtel nicht ablaufen kann, nicht dass der Gürtel
+unzerbrechlich wäre.
 
 Die Anteile reisen über **disjunkte Pfade**: verschiedene Wächter, Pfade so gewählt, dass sie keine
 autonomen Systeme und Jurisdiktionen teilen, und — wenn der Client es des Preises wert hält —

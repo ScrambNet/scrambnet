@@ -66,7 +66,11 @@ central, amorçage pour un utilisateur sans aucun contact. Voir [threat-model.md
 Chaque message est découpé par le partage de secret de Shamir (1979) en `n` parts ; `k`
 quelconques le reconstituent ; `k−1` quelconques sont statistiquement indiscernables d'un bruit aléatoire. C'est
 informationnel-théorique, non calculatoire : un adversaire à `k−1` parts doté d'une puissance de calcul
-illimitée ne détient rien, parce qu'il n'y a rien.
+illimitée ne détient rien, parce qu'il n'y a rien. Le régime importe et il est énoncé sans détour : cette
+garantie inconditionnelle est le plancher *en deçà* de `k` parts. À `k` parts ou au-delà, un adversaire
+réassemble le texte chiffré et affronte alors l'AEAD de bout en bout — une ceinture calculatoire, non un
+second mur relevant de la théorie de l'information (spécification SP-1/SP-1a). Le pari du projet est que le
+plancher au-dessous de cette ceinture ne peut pas expirer, non que la ceinture est incassable.
 
 Les parts voyagent par des **chemins disjoints** : des nœuds de garde différents, des chemins choisis pour éviter de
 partager des systèmes autonomes et des juridictions, et — quand le client juge que cela en vaut le coût —

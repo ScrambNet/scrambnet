@@ -11,7 +11,7 @@
 Most anonymity networks stand on three legs of trust. ScrambNet is designed to remove all three:
 
 1. **No secrecy of design.** Kerckhoffs's principle, taken literally: public RFC-style specification, open source, reproducible builds. The adversary may read every line; security lives in user keys and in the shape of the network.
-2. **No reliance on computational hardness.** "Breaking this would take billions of years" is a promise about the universe's laziness, and such promises have a history of expiring (DES, RC4, SHA-1 — and quantum computers are on the horizon). The load-bearing wall must not expire.
+2. **No reliance on computational hardness for the floor.** "Breaking this would take billions of years" is a promise about the universe's laziness, and such promises have a history of expiring (DES, RC4, SHA-1 — and quantum computers are on the horizon). So the load-bearing wall — content secrecy below `k` captured shares — rests on no such promise at all: it is information-theoretic (Shamir). Above `k` shares a conventional AEAD still applies, and *that* belt is computational; the honest claim is that the floor beneath it never expires, not that cryptography is abolished. Keying that belt from a pre-shared *symmetric* secret (no asymmetric agreement in the content path) keeps even the above-`k` content out of reach of a future-quantum "harvest now, decrypt later" adversary — see the spec, SP-1a.
 3. **No single point to seize.** No directory authorities, no indispensable server, no update key held by one party. The kill switch is not forbidden; it is nonexistent.
 
 ## The core idea: strength from dispersal

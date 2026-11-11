@@ -54,6 +54,12 @@ aucune promesse informationnelle là-dessus, en mode rapide.
 Parce que la garantie de contenu de tous les autres systèmes porte une date de péremption inscrite
 dans les hypothèses de 2003–2017, et que « moissonner maintenant, déchiffrer plus tard » est une
 stratégie d'adversaire bien réelle contre des dissidents dont les messages doivent rester illisibles
-pendant des décennies. Un plancher de contenu que ni les progrès de la cryptanalyse ni ceux du
-quantique ne peuvent éroder vaut une facture de bande passante `×n` et le travail de bâtir le reste.
+pendant des décennies. En deçà de `k` parts, le plancher de contenu ne peut absolument pas être érodé par
+les progrès de la cryptanalyse ni du quantique — il n'y a rien là à casser. À `k` parts ou au-delà, la
+ceinture est un AEAD conventionnel, et ScrambNet lui donne une clé issue d'un secret *symétrique*
+pré-partagé, sans aucun accord asymétrique dans le chemin du contenu (spécification SP-1a), de sorte que
+la « moisson maintenant, déchiffrement plus tard » est déjouée dans *ce* régime aussi : il n'existe aucun
+échange de clés enregistré qu'un futur ordinateur quantique pourrait casser, seulement un secret que les
+parties avaient déjà partagé. Le résidu honnête est l'unique échange hors bande qui livre ce secret
+partagé. Cela vaut une facture de bande passante `×n` et le travail de bâtir le reste.
 Si ce pari est faux, le moyen le plus rapide de le découvrir est de l'attaquer ici.

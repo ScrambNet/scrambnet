@@ -54,6 +54,13 @@ no information-theoretic promise there in fast mode.
 Because every other system's content guarantee has an expiry date written in
 the assumptions of 2003–2017, and "harvest now, decrypt later" is a real
 adversary strategy against dissidents whose messages must stay unreadable for
-decades. A content floor that cannot be eroded by cryptanalytic or quantum
-progress is worth a ×`n` bandwidth bill and the work of building the rest. If
-that wager is wrong, the fastest way to find out is to attack it here.
+decades. Below `k` shares the content floor cannot be eroded by cryptanalytic
+or quantum progress at all — there is nothing there to break. At or above `k`
+the belt is a conventional AEAD, and ScrambNet keys it from a pre-shared
+*symmetric* secret with no asymmetric agreement in the content path (spec
+SP-1a), so "harvest now, decrypt later" is defeated in *that* regime too: there
+is no recorded key exchange for a future quantum computer to break, only a
+secret the parties already shared. The honest residual is the one-time
+out-of-band exchange that delivers that shared secret. This is worth a ×`n`
+bandwidth bill and the work of building the rest. If that wager is wrong, the
+fastest way to find out is to attack it here.

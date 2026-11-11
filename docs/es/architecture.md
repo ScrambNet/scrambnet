@@ -65,7 +65,11 @@ arranque para un usuario con cero contactos. Ver [threat-model.md](threat-model.
 Cada mensaje se divide con el esquema de Shamir (1979) en `n` partes; `k` cualesquiera lo
 reconstruyen; `k−1` cualesquiera son estadísticamente indistinguibles del ruido aleatorio. Esto es
 teórico-informativo, no computacional: un adversario con `k−1` partes y potencia de cálculo ilimitada
-no tiene nada en las manos, porque no hay nada ahí.
+no tiene nada en las manos, porque no hay nada ahí. El régimen importa y se declara sin rodeos: esta
+garantía incondicional es el umbral *por debajo* de `k` partes. En `k` partes o por encima, un adversario
+reensambla el texto cifrado y entonces se enfrenta al AEAD extremo a extremo — un cinturón computacional,
+no un segundo muro teórico-informativo (spec SP-1/SP-1a). La apuesta del proyecto es que el umbral que
+sostiene ese cinturón no puede caducar, no que el cinturón sea irrompible.
 
 Las partes viajan por **rutas disjuntas**: guardias distintos, rutas elegidas para evitar compartir
 sistemas autónomos y jurisdicciones, y — cuando el cliente lo considera digno del coste —

@@ -99,6 +99,32 @@ Nur vom Empfänger entschlüsselt:
   Koalition von Ausgängen DARF NICHT (MUST NOT) erkennen können, ob zwei Pakete zur
   selben Nachricht gehören. Diese Anforderung ist tragend: ohne sie degradiert die Streuung
   zu einer Aufzählungsbequemlichkeit für den Gegner.
+- **SP-7a (Anteil-Integrität: akzeptiertes fail-closed-Restrisiko).** Das `tag` sagt,
+  *zu welcher* Nachricht ein Paket zu gehören behauptet; es authentifiziert **nicht** die
+  `share`-Bytes oder das `params`-Byte (`k,n`). Die Shamir-Rekonstruktion hat keine
+  eigene Integrität, sodass ein feindlicher Drop oder Ausgang, der Bits in einem Anteil
+  kippt — oder über `k,n` lügt —, einen konsistenten-aber-falschen Klartext-Kandidaten
+  erzeugt, den Shamir nicht erkennen kann. Dies wird **eine Schicht höher abgefangen**:
+  das Ende-zu-Ende-AEAD (SP-1a) scheitert mit seinem Tag bei jeder beschädigten
+  Rekonstruktion, und der Empfänger verwirft die Nachricht, statt auf Müll zu reagieren
+  (vorgeführt in `poc/dispersal.py`, Test `test_tampered_share_fails_closed`). Das
+  Restrisiko ist daher **kein Verlust der Vertraulichkeit, sondern eine gezielte
+  Dienstverweigerung (DoS)**: ein einzelner bösartiger Aussichtspunkt auf einem der `n`
+  Anteil-Pfade kann eine bestimmte Nachricht an der Rekonstruktion scheitern lassen, zum
+  Preis eines einzigen gekippten Bits. Das Urteil für diesen Entwurf ist, dieses
+  Restrisiko zu **akzeptieren und zu dokumentieren**, statt einen MAC je Anteil
+  hinzuzufügen, aus zwei Gründen: (1) ein Authentikator je Anteil würde Nutzlast-Bytes
+  verbrauchen und einen zweiten zu verwaltenden Schlüssel einführen, ohne die DoS zu
+  beseitigen — ein Drop, der einen Anteil beschädigen kann, kann ihn ebenso gut
+  *fallenlassen*, und `n−k` solcher Verluste werden ohnehin per Entwurf toleriert; (2) das
+  AEAD macht das Scheitern bereits sicher (fail-closed), sodass die offene Frage die
+  Verfügbarkeit ist, nicht die Geheimhaltung. Die ehrlichen Gegenmaßnahmen sind Redundanz
+  (`n−k`-Reserve), Pfad-Disjunktheit, sodass kein einzelner Aussichtspunkt auf `k` der `n`
+  Pfade sitzt (OP-1), und ein erneuter Versuch über frische Pfade. Eine künftige Revision
+  DARF (MAY) eine optionale Bindung je Anteil für verfügbarkeitskritische Profile
+  hinzufügen; sie wird hier bewusst nicht vorgeschrieben. `k,n` ist vektorverriegelt
+  (Nibble-Reihenfolge, Vektoren aus Teil 3 §3.2), sodass eine Implementierung nicht
+  *versehentlich* widersprechen kann, nur eine bösartige Partei kann lügen.
 - **SP-8.** Eine Nachricht, die die Anteil-Nutzlast (`1792` Bytes, abzüglich
   des 2-Byte-Längenpräfixes) nicht füllt, MUSS (MUST) vor dem Teilen mit Zufallsbytes aufgefüllt werden;
   eine Nachricht, die sie überschreitet, wird auf einer Schicht oberhalb dieser fragmentiert

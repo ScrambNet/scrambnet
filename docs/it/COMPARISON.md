@@ -9,7 +9,7 @@ costa più che sbagliare in qualunque altra parte del repository.
 
 Ogni sistema di anonimato in uso protegge il **contenuto** dei messaggi con
 un'ipotesi computazionale: rompi la cifratura (oggi o con un futuro computer
-quantistico) e il contenuto diventa leggibile. Il piano del contenuto di ScrambNet è
+quantistico) e il contenuto diventa leggibile. Il livello minimo del contenuto di ScrambNet è
 **informazionalmente sicuro**: al di sotto di `k` quote catturate non c'è alcun testo cifrato da
 rompere, perché il contenuto non è presente in nessun insieme di `k−1` quote — una proprietà del
 segreto condiviso di Shamir, non della robustezza di una cifratura (invariante I-2). È
@@ -43,7 +43,7 @@ alcuna promessa informazionale lì, in modalità veloce.
 - **Metadati di collegabilità.** Lo schema di recupero a dead-drop rivela la cadenza di polling
   verso un drop all'interno di un'epoca (OP-9) — un costo che il mixing continuo di Nym
   ammortizza più a fondo.
-- **Banda.** Il piano incondizionato costa `×n` di banda (×4 nello strawman). Tor
+- **Banda.** Il livello minimo incondizionato costa `×n` di banda (×4 nello strawman). Tor
   costa ×1 per la sua garanzia di contenuto più debole. Questo è il prezzo
   della scommessa, non un difetto, ma è un prezzo reale (OP-3).
 - **Incentivi.** Nym paga i relay; ScrambNet chiede volontari, cosa che storicamente
@@ -54,6 +54,12 @@ alcuna promessa informazionale lì, in modalità veloce.
 Perché la garanzia di contenuto di ogni altro sistema ha una data di scadenza scritta nelle
 ipotesi del 2003–2017, e «raccogli ora, decifra dopo» è una strategia reale
 d'avversario contro dissidenti i cui messaggi devono restare illeggibili per
-decenni. Un piano del contenuto che non può essere eroso dal progresso crittoanalitico o
-quantistico vale una bolletta di banda `×n` e il lavoro di costruire tutto il resto. Se
+decenni. Al di sotto di `k` quote il livello minimo del contenuto non può essere eroso affatto dal
+progresso crittoanalitico o quantistico — non c'è nulla lì da rompere. A partire dalle `k` quote
+la cintura è un normale AEAD, e ScrambNet la alimenta con un segreto *simmetrico* precondiviso,
+senza alcun accordo asimmetrico nel percorso del contenuto (spec SP-1a), così che «raccogli ora,
+decifra dopo» è sconfitto anche in *quel* regime: non c'è alcuno scambio di chiavi registrato che
+un futuro computer quantistico possa rompere, solo un segreto che le parti hanno già condiviso. Il
+residuo onesto è lo scambio fuori banda una tantum che consegna quel segreto condiviso. Questo vale
+una bolletta di banda `×n` e il lavoro di costruire tutto il resto. Se
 quella scommessa è sbagliata, il modo più rapido di scoprirlo è attaccarla qui.

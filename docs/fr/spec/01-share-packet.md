@@ -98,6 +98,28 @@ Déchiffrée par le destinataire seul :
   coalition de sorties, NE DOIT PAS (MUST NOT) pouvoir dire si deux paquets appartiennent au
   même message. Cette exigence est porteuse : sans elle, la dispersion
   se dégrade en une commodité d'énumération pour l'adversaire.
+- **SP-7a (intégrité de la part : résidu accepté à fermeture sûre).** Le `tag` indique *à quel*
+  message un paquet prétend appartenir ; il n'authentifie **pas** les octets de `share` ni l'octet
+  de `params` (`k,n`). La reconstruction de Shamir n'a aucune intégrité propre, de sorte qu'un
+  relais ou une sortie hostile qui inverse des bits dans une part — ou ment sur `k,n` — produit un
+  candidat de texte en clair cohérent-mais-faux que Shamir ne peut détecter. Cela est **rattrapé
+  une couche au-dessus** : l'AEAD de bout en bout (SP-1a) échoue à vérifier son étiquette sur toute
+  reconstruction corrompue, et le destinataire écarte le message plutôt que d'agir sur des données
+  corrompues (démontré dans `poc/dispersal.py`, test `test_tampered_share_fails_closed`). Le résidu
+  n'est donc **pas une perte de confidentialité mais un déni de service ciblé** : un unique point de
+  vue malveillant sur l'un des `n` chemins de part peut faire échouer la reconstruction d'un message
+  précis, au prix d'un seul bit inversé. Le verdict pour ce brouillon est d'**accepter et documenter**
+  ce résidu plutôt que d'ajouter un MAC par part, pour deux raisons : (1) un authentificateur par
+  part dépenserait des octets de charge utile et introduirait une seconde clé à gérer sans supprimer
+  le DoS — un relais qui peut corrompre une part peut tout aussi bien la *supprimer*, et `n−k` pertes
+  de ce type sont déjà tolérées par conception ; (2) l'AEAD rend déjà l'échec sûr (fermeture sûre),
+  de sorte que la question ouverte est la disponibilité, non le secret. Les mesures d'atténuation
+  honnêtes sont la redondance (marge `n−k`), la disjonction des chemins pour qu'aucun point de vue
+  unique ne se trouve sur `k` des `n` chemins (OP-1), et la réémission sur des chemins neufs. Une
+  révision future PEUT (MAY) ajouter une liaison optionnelle par part pour les profils où la
+  disponibilité est critique ; elle n'est délibérément pas imposée ici. `k,n` est verrouillé par
+  vecteurs (ordre des quartets, vecteurs de la Partie 3 §3.2), de sorte qu'une implémentation ne peut
+  pas être en désaccord *par accident*, seule une partie malveillante peut mentir.
 - **SP-8.** Un message qui ne remplit pas la charge utile de la part (`1792` octets, moins
   le préfixe de longueur de 2 octets) DOIT (MUST) être complété d'octets aléatoires avant la découpe ;
   un message qui la dépasse est fragmenté à une couche au-dessus de celle-ci

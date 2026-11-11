@@ -9,7 +9,7 @@ cuesta más que equivocarse en cualquier otra parte del repositorio.
 
 Todo sistema de anonimato desplegado protege el **contenido** de los mensajes con
 una hipótesis computacional: rompe el cifrado (hoy o con un futuro ordenador
-cuántico) y el contenido queda legible. El piso de contenido de ScrambNet es
+cuántico) y el contenido queda legible. El umbral de contenido de ScrambNet es
 **informacionalmente seguro**: por debajo de `k` partes capturadas no hay texto cifrado que
 romper, porque el contenido no está presente en ningún conjunto de `k−1` partes — una propiedad del
 secreto compartido de Shamir, no de la fortaleza de ningún cifrado (invariante I-2). Esa es
@@ -43,7 +43,7 @@ ninguna promesa informacional ahí, en modo rápido.
 - **Metadatos de vinculabilidad.** El patrón de recuperación por dead-drop filtra la cadencia
   de sondeo hacia un drop dentro de una época (OP-9) — un coste que el mezclado continuo de
   Nym amortiza más a fondo.
-- **Ancho de banda.** El piso incondicional cuesta `×n` de ancho de banda (×4 en el
+- **Ancho de banda.** El umbral incondicional cuesta `×n` de ancho de banda (×4 en el
   strawman). Tor cuesta ×1 por su garantía de contenido más débil. Este es el precio
   de la apuesta, no un fallo, pero es un precio real (OP-3).
 - **Incentivos.** Nym paga a los relés; ScrambNet pide voluntarios, lo que históricamente
@@ -54,6 +54,12 @@ ninguna promesa informacional ahí, en modo rápido.
 Porque la garantía de contenido de todos los demás sistemas tiene fecha de caducidad escrita en
 las hipótesis de 2003–2017, y «recolecta ahora, descifra después» es una estrategia real
 de adversario contra disidentes cuyos mensajes deben seguir siendo ilegibles durante
-décadas. Un piso de contenido que no puede ser erosionado por el progreso criptoanalítico o
-cuántico vale una factura de ancho de banda `×n` y el trabajo de construir el resto. Si
+décadas. Por debajo de `k` partes, el umbral de contenido no puede ser erosionado en absoluto por el
+progreso criptoanalítico o cuántico — no hay nada ahí que romper. En `k` partes o por encima, el
+cinturón es un AEAD convencional, y ScrambNet lo alimenta desde un secreto *simétrico* precompartido
+sin acuerdo asimétrico en la ruta del contenido (spec SP-1a), de modo que «recolecta ahora, descifra
+después» queda derrotado también en *ese* régimen: no hay intercambio de claves registrado que un futuro
+ordenador cuántico pueda romper, solo un secreto que las partes ya compartían. El residuo honesto es el
+intercambio único, fuera de banda, que entrega ese secreto compartido. Esto vale una factura de ancho de
+banda `×n` y el trabajo de construir el resto. Si
 esa apuesta está equivocada, la forma más rápida de descubrirlo es atacarla aquí.

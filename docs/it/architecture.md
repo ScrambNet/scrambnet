@@ -64,7 +64,12 @@ bootstrap per un utente senza contatti. Vedi [threat-model.md](threat-model.md#o
 Ogni messaggio è scomposto con lo schema di Shamir (1979) in `n` quote; `k` qualsiasi
 lo ricostruiscono; `k−1` qualsiasi sono statisticamente indistinguibili dal rumore casuale. Questo è
 teorico-informativo, non computazionale: un avversario con `k−1` quote e potenza di calcolo
-illimitata non possiede nulla, perché nulla è lì.
+illimitata non possiede nulla, perché nulla è lì. Il regime conta ed è dichiarato con
+chiarezza: questa garanzia incondizionata è il livello minimo *al di sotto* delle `k` quote. A partire
+dalle `k` quote un avversario ricompone il testo cifrato e si trova poi davanti all'AEAD end-to-end —
+una cintura computazionale, non un secondo muro teorico-informativo (spec SP-1/SP-1a). La scommessa
+del progetto è che il livello minimo sotto quella cintura non possa scadere, non che la cintura sia
+inviolabile.
 
 Le quote viaggiano su **percorsi disgiunti**: nodi di guardia diversi, percorsi scelti per evitare di condividere
 sistemi autonomi e giurisdizioni e — quando il client ritiene che ne valga il costo —

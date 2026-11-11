@@ -22,6 +22,10 @@ destination's own encryption is absent or broken, content. Under dispersal:
 
 - **Content** is unconditionally protected below `k` captured shares. No computational
   assumption is involved. This floor cannot be eroded by cryptanalysis or quantum progress.
+  At or above `k` shares the adversary reassembles the ciphertext and meets the end-to-end
+  AEAD — a computational belt, keyed from a pre-shared symmetric secret so that even this
+  tier resists a future-quantum "harvest now, decrypt later" adversary (spec SP-1a). The
+  claim is the floor's permanence, not the belt's unbreakability.
 - **Linkage** (metadata) on a single violated share path is still a real loss: the
   adversary learns that *some* flow ran between you and a destination's share collector.
   Dispersal narrows what one circuit betrays; it does not nullify it. Stable guards,

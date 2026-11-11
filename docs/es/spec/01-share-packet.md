@@ -99,6 +99,29 @@ Descifrada solo por el destinatario:
   coalición de salidas, NO DEBE (MUST NOT) poder decir si dos paquetes pertenecen al
   mismo mensaje. Este requisito es portante: sin él, la dispersión
   se degrada a una comodidad de enumeración para el adversario.
+- **SP-7a (integridad de la parte: residuo de fallo cerrado aceptado).** El `tag` dice
+  *a qué* mensaje afirma pertenecer un paquete; **no** autentica los bytes de la
+  `share` ni el byte de `params` (`k,n`). La reconstrucción de Shamir no tiene integridad
+  propia, así que un salto hostil o una salida que invierta bits en una parte —o mienta
+  sobre `k,n`— produce un candidato de texto en claro coherente-pero-erróneo que Shamir no
+  puede detectar. Esto se **atrapa una capa más arriba**: el AEAD extremo a extremo (SP-1a)
+  falla su etiqueta ante cualquier reconstrucción corrupta y el destinatario descarta el
+  mensaje en lugar de actuar sobre basura (demostrado en `poc/dispersal.py`, test
+  `test_tampered_share_fails_closed`). El residuo es, por tanto, **no una pérdida de
+  confidencialidad sino una denegación de servicio dirigida**: un único punto de observación
+  malicioso en una de las `n` rutas de parte puede hacer que un mensaje concreto no logre
+  reconstruirse, al coste de un solo bit invertido. El veredicto para este borrador es
+  **aceptar y documentar** ese residuo en lugar de añadir un MAC por parte, por dos razones:
+  (1) un autenticador por parte gastaría bytes de carga útil e introduciría una segunda clave
+  que gestionar sin eliminar la DoS —un salto que puede corromper una parte puede igualmente
+  *descartarla*, y `n−k` de tales pérdidas ya se toleran por diseño—; (2) el AEAD ya hace que
+  el fallo sea seguro (fallo cerrado), así que la cuestión abierta es la disponibilidad, no el
+  secreto. Las mitigaciones honestas son la redundancia (margen `n−k`), la disjunción de rutas
+  de modo que ningún punto de observación único se sitúe en `k` de las `n` rutas (OP-1), y el
+  reintento por rutas nuevas. Una revisión futura PUEDE (MAY) añadir un enlace por parte
+  opcional para perfiles críticos en disponibilidad; deliberadamente no se exige aquí. `k,n`
+  está bloqueado por vectores (orden de nibbles, vectores de la Parte 3 §3.2) de modo que una
+  implementación no puede discrepar *accidentalmente*, solo una parte maliciosa puede mentir.
 - **SP-8.** Un mensaje que no llena la carga útil de la parte (`1792` bytes, menos
   el prefijo de longitud de 2 bytes) DEBE (MUST) rellenarse con bytes aleatorios antes de dividirse;
   un mensaje que la excede se fragmenta en una capa por encima de esta

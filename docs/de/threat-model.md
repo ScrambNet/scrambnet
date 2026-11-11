@@ -22,6 +22,11 @@ wo die eigene Verschlüsselung des Ziels fehlt oder gebrochen ist, den Inhalt. U
 
 - **Inhalt** ist unterhalb von `k` erbeuteten Anteilen bedingungslos geschützt. Keine rechnerische
   Annahme ist beteiligt. Diese Untergrenze kann durch Kryptoanalyse oder Quantenfortschritt nicht erodiert werden.
+  Bei oder oberhalb von `k` Anteilen setzt der Gegner den Geheimtext wieder zusammen und trifft auf das
+  Ende-zu-Ende-AEAD — ein rechnerischer Gürtel, geschlüsselt aus einem vorab geteilten symmetrischen Geheimnis,
+  sodass selbst diese Stufe einem künftigen Quantengegner nach dem Muster „harvest now, decrypt later"
+  standhält (Spec SP-1a). Die Behauptung ist die Beständigkeit der Untergrenze, nicht die Unzerbrechlichkeit
+  des Gürtels.
 - **Verknüpfung** (Metadaten) auf einem einzelnen verletzten Anteil-Pfad ist immer noch ein echter Verlust: Der
   Gegner erfährt, dass *irgendein* Fluss zwischen dir und dem Anteil-Sammler eines Ziels lief.
   Die Streuung verengt, was ein Circuit verrät; sie hebt es nicht auf. Stabile Wächter,

@@ -64,7 +64,11 @@ bootstrap for a user with zero contacts. See [threat-model.md](threat-model.md#o
 Every message is split with Shamir secret sharing (1979) into `n` shares; any `k`
 reconstruct it; any `k−1` are statistically indistinguishable from random noise. This is
 information-theoretic, not computational: a `k−1`-share adversary with unlimited computing
-power holds nothing, because nothing is there.
+power holds nothing, because nothing is there. The regime matters and is stated plainly:
+this unconditional guarantee is the floor *below* `k` shares. At or above `k` an adversary
+reassembles the ciphertext and then faces the end-to-end AEAD — a computational belt, not a
+second information-theoretic wall (spec SP-1/SP-1a). The project's wager is that the floor
+beneath that belt cannot expire, not that the belt is unbreakable.
 
 Shares travel over **disjoint paths**: different guard nodes, paths chosen to avoid sharing
 autonomous systems and jurisdictions, and — when the client deems it worth the cost —

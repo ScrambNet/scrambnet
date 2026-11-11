@@ -98,6 +98,28 @@ Decifrato solo dal destinatario:
   coalizione di uscite, NON DEVE (MUST NOT) poter stabilire se due pacchetti appartengono allo
   stesso messaggio. Questo requisito è portante: senza di esso, la dispersione
   degrada in una comodità di enumerazione per l'avversario.
+- **SP-7a (integrità della quota: residuo fail-closed accettato).** Il `tag` dice *a quale*
+  messaggio un pacchetto afferma di appartenere; **non** autentica i byte di `share` né il byte
+  dei `params` (`k,n`). La ricostruzione di Shamir non ha un'integrità propria, perciò una tratta
+  ostile, o un'uscita, che inverte dei bit in una quota — o mente su `k,n` — produce un candidato
+  in chiaro coerente-ma-sbagliato che Shamir non può rilevare. Questo è **intercettato un livello
+  più in alto**: l'AEAD end-to-end (SP-1a) fallisce il suo tag su qualsiasi ricostruzione corrotta
+  e il destinatario scarta il messaggio invece di agire su spazzatura (dimostrato in
+  `poc/dispersal.py`, test `test_tampered_share_fails_closed`). Il residuo non è quindi **una
+  perdita di confidenzialità ma un attacco di negazione del servizio mirato**: un singolo punto di
+  osservazione malevolo su uno degli `n` percorsi delle quote può far fallire la ricostruzione di
+  un messaggio specifico, al costo di un singolo bit invertito. Il verdetto per questa bozza è
+  **accettare e documentare** quel residuo invece di aggiungere un MAC per quota, per due motivi:
+  (1) un autenticatore per quota spenderebbe byte di payload e introdurrebbe una seconda chiave da
+  gestire senza rimuovere il DoS — una tratta che può corrompere una quota può ugualmente
+  *scartarla*, e `n−k` perdite di questo tipo sono già tollerate per progetto; (2) l'AEAD rende già
+  sicuro il fallimento (fail-closed), quindi la questione aperta è la disponibilità, non la
+  segretezza. Le mitigazioni oneste sono la ridondanza (margine `n−k`), la disgiunzione dei percorsi
+  affinché nessun singolo punto di osservazione si trovi su `k` degli `n` percorsi (OP-1), e il
+  ritentare su percorsi freschi. Una revisione futura PUÒ (MAY) aggiungere un legame opzionale per
+  quota per i profili critici per la disponibilità; qui deliberatamente non è imposto. `k,n` è
+  bloccato da vettori (ordine dei nibble, vettori Parte 3 §3.2) affinché un'implementazione non
+  possa essere *accidentalmente* in disaccordo, solo una parte malevola può mentire.
 - **SP-8.** Un messaggio che non riempie il payload della quota (`1792` byte, meno
   il prefisso di lunghezza di 2 byte) DEVE (MUST) essere riempito con byte casuali prima dello split;
   un messaggio che lo supera è frammentato a un livello superiore a questo

@@ -9,7 +9,7 @@ kostet mehr, als irgendwo sonst im Repository falsch zu liegen.
 
 Jedes eingesetzte Anonymitätssystem schützt den **Inhalt** einer Nachricht mit
 einer rechnerischen Annahme: brich die Chiffre (heute oder mit einem künftigen Quanten-
-computer) und der Inhalt wird lesbar. ScrambNets Inhaltsboden ist dagegen
+computer) und der Inhalt wird lesbar. ScrambNets Untergrenze ist dagegen
 **informationstheoretisch**: unterhalb von `k` erbeuteten Anteilen gibt es keinen Geheimtext zu
 brechen, denn der Inhalt ist in keinem Satz von `k−1` Anteilen vorhanden — eine Eigenschaft von
 Shamirs Secret Sharing, nicht der Stärke irgendeiner Chiffre (Invariante I-2). Das ist
@@ -54,6 +54,13 @@ im schnellen Modus kein informationstheoretisches Versprechen.
 Weil die Inhaltsgarantie jedes anderen Systems ein Verfallsdatum trägt, das in den
 Annahmen von 2003–2017 geschrieben steht, und „jetzt ernten, später entschlüsseln" eine reale
 Gegnerstrategie gegen Dissidenten ist, deren Nachrichten über Jahrzehnte unlesbar bleiben
-müssen. Ein Inhaltsboden, den kryptoanalytischer oder quantenmechanischer Fortschritt nicht
-abtragen kann, ist eine `×n`-Bandbreitenrechnung und die Arbeit am Rest wert. Ist
+müssen. Unterhalb von `k` Anteilen kann die Untergrenze durch kryptoanalytischen oder quantenmechanischen
+Fortschritt überhaupt nicht abgetragen werden — da ist nichts, das sich brechen ließe. Bei oder
+oberhalb von `k` ist der Gürtel ein herkömmliches AEAD, und ScrambNet schlüsselt ihn aus einem vorab
+geteilten *symmetrischen* Geheimnis, ohne asymmetrische Einigung im Inhaltspfad (Spec SP-1a), sodass
+„jetzt ernten, später entschlüsseln" auch in *diesem* Regime vereitelt wird: Es gibt keinen
+aufgezeichneten Schlüsseltausch, den ein künftiger Quantencomputer brechen könnte, nur ein Geheimnis,
+das die Parteien bereits geteilt haben. Das ehrliche Restrisiko ist der einmalige Austausch außerhalb
+des Bandes, der dieses geteilte Geheimnis überbringt. Das ist eine `×n`-Bandbreitenrechnung und die
+Arbeit am Rest wert. Ist
 diese Wette falsch, ist der schnellste Weg, es herauszufinden, sie hier anzugreifen.

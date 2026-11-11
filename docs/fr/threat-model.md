@@ -22,6 +22,10 @@ chiffrement propre à la destination est absent ou cassé, le contenu. Sous disp
 
 - Le **contenu** est inconditionnellement protégé en dessous de `k` parts capturées. Aucune hypothèse
   calculatoire n'est en jeu. Ce plancher ne peut être érodé par la cryptanalyse ni par les progrès du quantique.
+  À `k` parts ou au-delà, l'adversaire réassemble le texte chiffré et rencontre l'AEAD de bout en bout — une
+  ceinture calculatoire, dont la clé est issue d'un secret symétrique pré-partagé, de sorte que même ce palier
+  résiste à un adversaire quantique futur pratiquant la « moisson maintenant, déchiffrement plus tard »
+  (spécification SP-1a). L'affirmation porte sur la permanence du plancher, non sur l'incassabilité de la ceinture.
 - La **liaison** (métadonnées) sur un unique chemin de part violé reste une vraie perte : l'adversaire
   apprend qu'*un certain* flux a circulé entre vous et le collecteur de parts d'une destination.
   La dispersion rétrécit ce qu'un seul circuit trahit ; elle ne l'annule pas. Des gardes stables,

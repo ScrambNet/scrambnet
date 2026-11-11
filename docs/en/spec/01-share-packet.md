@@ -97,6 +97,30 @@ Decrypted by the recipient only:
   coalition of exits, MUST NOT be able to tell whether two packets belong to
   the same message. This requirement is load-bearing: without it, dispersal
   degrades into an enumeration convenience for the adversary.
+- **SP-7a (share integrity: accepted fail-closed residual).** The `tag` says
+  *which* message a packet claims to belong to; it does **not** authenticate
+  the `share` bytes or the `params` (`k,n`) byte. Shamir reconstruction has no
+  integrity of its own, so a hostile drop or exit that flips bits in one share
+  — or lies about `k,n` — yields a consistent-but-wrong plaintext candidate
+  that Shamir cannot detect. This is **caught one layer up**: the end-to-end
+  AEAD (SP-1a) fails its tag on any corrupted reconstruction and the recipient
+  discards the message rather than acting on garbage (demonstrated in
+  `poc/dispersal.py`, test `test_tampered_share_fails_closed`). The residual is
+  therefore **not a confidentiality loss but a targeted denial of service**: a
+  single malicious vantage point on one of the `n` share paths can make a
+  specific message fail to reconstruct, at the cost of one flipped bit. The
+  verdict for this draft is to **accept and document** that residual rather
+  than add a per-share MAC, for two reasons: (1) a per-share authenticator
+  would spend payload bytes and introduce a second key to manage without
+  removing the DoS — a drop that can corrupt a share can equally *drop* it, and
+  `n−k` such losses are already tolerated by design; (2) the AEAD already makes
+  the failure safe (fail-closed), so the open question is availability, not
+  secrecy. The honest mitigations are redundancy (`n−k` margin), path
+  disjointness so no single vantage point sits on `k` of the `n` paths (OP-1),
+  and retry over fresh paths. A future revision MAY add an optional per-share
+  binding for availability-critical profiles; it is deliberately not mandated
+  here. `k,n` is vector-locked (nibble order, Part 3 §3.2 vectors) so an
+  implementation cannot *accidentally* disagree, only a malicious party can lie.
 - **SP-8.** A message that does not fill the share payload (`1792` bytes, less
   the 2-byte length prefix) MUST be padded with random bytes before splitting;
   a message that exceeds it is fragmented at a layer above this one

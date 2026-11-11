@@ -22,6 +22,10 @@ cifrado propio del destino es inexistente o está roto, el contenido. Bajo la di
 
 - El **contenido** está incondicionalmente protegido por debajo de `k` partes capturadas. No interviene
   ninguna hipótesis computacional. Este umbral no puede erosionarse por el criptoanálisis ni el avance cuántico.
+  En `k` partes o por encima, el adversario reensambla el texto cifrado y se encuentra con el AEAD extremo a
+  extremo — un cinturón computacional, alimentado desde un secreto simétrico precompartido, de modo que
+  incluso este nivel resiste a un adversario post-cuántico de «recolecta ahora, descifra después» (spec SP-1a).
+  La afirmación es la permanencia del umbral, no la irrompibilidad del cinturón.
 - El **enlace** (metadatos) sobre una única ruta de parte violada sigue siendo una pérdida real: el
   adversario aprende que *algún* flujo corrió entre tú y el recolector de partes de un destino.
   La dispersión estrecha lo que un circuito delata; no lo anula. Las guardias estables, la
