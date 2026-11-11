@@ -71,7 +71,7 @@ Shamir (1979), Rabin's Information Dispersal (1989), Chaum's DC-nets (1988), Sph
 ## Roadmap
 
 1. **Threat model** — published, and under attack in the [issues](../../issues). ✔ first pass
-2. **Wire specification** — share packet, gossip record, rendezvous and path selection are drafted ([docs/spec/](docs/spec/)); chameleon transports (Part 4) and blackout framing (Part 5) are next.
+2. **Wire specification** — share packet, gossip record, rendezvous and path selection are drafted ([docs/en/spec/](docs/en/spec/)); chameleon transports (Part 4) and blackout framing (Part 5) are next.
 3. **Proof-of-concept** — the dispersal core, dead-drop delivery, and an adversary simulator run today in [poc/](poc/). ✔ first pass
 4. **Reference node** — one small, boring node, mobile-capable (likely Rust), once path selection (Part 3) settles. Anonymity that only runs on a new laptop is not for the people who need it most.
 5. **Reference client** — a demonstrative chat client, once there is a node to carry it. Not before: a client that promises what the network cannot yet deliver would be the opposite of asking for no acts of faith.

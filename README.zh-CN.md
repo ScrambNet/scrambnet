@@ -4,7 +4,7 @@
 
 [English](README.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · **[中文](README.zh-CN.md)**
 
-**状态：pre-alpha（预览前期）。** 一个威胁模型、一份不断扩充的协议规范，以及一个可运行的概念验证——还不是一个可以用来保护真实秘密的系统。这个仓库是愿意参与建设者、以及愿意攻击它的人的聚集点。参见[它如何比较](COMPARISON.md)与[如何报告漏洞](SECURITY.md)。
+**状态：pre-alpha（预览前期）。** 一个威胁模型、一份不断扩充的协议规范，以及一个可运行的概念验证——还不是一个可以用来保护真实秘密的系统。这个仓库是愿意参与建设者、以及愿意攻击它的人的聚集点。参见[它如何比较](docs/zh-CN/COMPARISON.md)与[如何报告漏洞](docs/zh-CN/SECURITY.md)。
 
 ## 三个拒绝
 
@@ -41,7 +41,7 @@ flowchart LR
 | L3 | 传输 | 变色龙外壳：流量模仿普通 TLS（uTLS、ECH）或 WebRTC 通话。封锁它的代价必须高于审查者的收益。 |
 | L4 | 断网 | 当互联网被切断时：本地网状网络（Wi-Fi Direct、蓝牙）、存储转发。网络只会降级，不会死亡。 |
 
-完整细节：[docs/architecture.md](docs/architecture.md) · 坦诚的局限：[docs/threat-model.md](docs/threat-model.md)（英文；欢迎翻译） · 协议规范：[docs/spec/](docs/spec/) · 定位对照：[COMPARISON.md](COMPARISON.md)
+完整细节：[docs/zh-CN/architecture.md](docs/zh-CN/architecture.md) · 坦诚的局限：[docs/zh-CN/threat-model.md](docs/zh-CN/threat-model.md) · 协议规范：[docs/zh-CN/spec/](docs/zh-CN/spec/) · 定位对照：[COMPARISON](docs/zh-CN/COMPARISON.md)
 
 ## 运行概念验证
 
@@ -69,14 +69,14 @@ Shamir（1979）、Rabin 的信息分散算法（1989）、Chaum 的 DC 网络�
 ## 路线图
 
 1. **威胁模型** —— 已发布，并正在 [issues](../../issues) 中接受攻击。✔ 第一轮
-2. **协议规范** —— 份额数据包、gossip 记录、会合与路径选择已有草稿（[docs/spec/](docs/spec/)）；变色龙传输（第 4 部分）与断网封装（第 5 部分）是接下来的工作。
+2. **协议规范** —— 份额数据包、gossip 记录、会合与路径选择已有草稿（[docs/zh-CN/spec/](docs/zh-CN/spec/)）；变色龙传输（第 4 部分）与断网封装（第 5 部分）是接下来的工作。
 3. **概念验证** —— 分散核心、死信箱投递与一个对手模拟器，如今都已在 [poc/](poc/) 中运行。✔ 第一轮
 4. **参考节点** —— 一个小而乏味的节点，支持移动端（很可能用 Rust），待路径选择（第 3 部分）尘埃落定后开始。只能在崭新笔记本上运行的匿名工具，帮不到最需要它的人。
 5. **参考客户端** —— 一个示范性的聊天客户端，待有节点可承载它之后再做。不会更早：一个承诺网络尚无法兑现之物的客户端，恰恰与「不要求任何信仰」背道而驰。
 
 ## 参与贡献
 
-欢迎并期待化名贡献——见 [CONTRIBUTING.md](CONTRIBUTING.md)。目前讨论在本仓库的 issues 中进行。翻译文档是一种极受重视的首次贡献。
+欢迎并期待化名贡献——见 [CONTRIBUTING.md](docs/zh-CN/CONTRIBUTING.md)。目前讨论在本仓库的 issues 中进行。翻译文档是一种极受重视的首次贡献。
 
 最重要的一条规则：**这个网络传输的是数据包，不是观点。** 它用同一套数学保护异见者及其对手。政治对手不是敌人，而一个基础设施只有在无法选边站队时才值得信任。
 

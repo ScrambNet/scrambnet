@@ -1,6 +1,6 @@
 """ScrambNet dispersal core -- reference implementation (DRAFT).
 
-Executable companion to docs/spec/01-share-packet.md. Pure Python 3
+Executable companion to docs/en/spec/01-share-packet.md. Pure Python 3
 standard library, written to be read: every requirement implemented here
 is cited by number (SP-n, I-n).
 

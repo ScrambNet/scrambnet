@@ -4,7 +4,7 @@
 
 [English](README.md) · [Italiano](README.it.md) · **[Español](README.es.md)** · [Deutsch](README.de.md) · [Français](README.fr.md) · [中文](README.zh-CN.md)
 
-**Estado: pre-alpha.** Un modelo de amenazas, una especificación del protocolo en crecimiento y una prueba de concepto ejecutable — todavía no un sistema con el que proteger secretos reales. Este repositorio es el punto de encuentro para quienes quieran construirla, y atacarla. Mira [cómo se compara](COMPARISON.md) y [cómo informar de una brecha](SECURITY.md).
+**Estado: pre-alpha.** Un modelo de amenazas, una especificación del protocolo en crecimiento y una prueba de concepto ejecutable — todavía no un sistema con el que proteger secretos reales. Este repositorio es el punto de encuentro para quienes quieran construirla, y atacarla. Mira [cómo se compara](docs/es/COMPARISON.md) y [cómo informar de una brecha](docs/es/SECURITY.md).
 
 ## Tres rechazos
 
@@ -41,7 +41,7 @@ El precio se declara de entrada: `n` partes cuestan `n` veces el ancho de banda.
 | L3 | Transporte | Envolturas camaleón: el tráfico imita TLS corriente (uTLS, ECH) o llamadas WebRTC. Bloquearlo debe costarle al censor más de lo que le rinde. |
 | L4 | Apagón | Cuando apagan internet: malla local (Wi-Fi Direct, Bluetooth), store-and-forward. La red se degrada; no muere. |
 
-Detalles completos: [docs/architecture.md](docs/architecture.md) · Límites declarados: [docs/threat-model.md](docs/threat-model.md) *(en inglés; las traducciones son bienvenidas)* · Especificación del protocolo: [docs/spec/](docs/spec/) · Posicionamiento: [COMPARISON.md](COMPARISON.md)
+Detalles completos: [docs/es/architecture.md](docs/es/architecture.md) · Límites declarados: [docs/es/threat-model.md](docs/es/threat-model.md) · Especificación del protocolo: [docs/es/spec/](docs/es/spec/) · Posicionamiento: [COMPARISON](docs/es/COMPARISON.md)
 
 ## Ejecuta la prueba de concepto
 
@@ -69,14 +69,14 @@ Shamir (1979), la dispersión de información de Rabin (1989), las DC-nets de Ch
 ## Hoja de ruta
 
 1. **Modelo de amenazas** — publicado, y bajo ataque en las [issues](../../issues). ✔ primera pasada
-2. **Especificación del protocolo** — el paquete de parte, el registro de gossip, el rendezvous y la selección de rutas están esbozados ([docs/spec/](docs/spec/)); los transportes camaleón (Parte 4) y el encuadre para el apagón (Parte 5) son lo siguiente.
+2. **Especificación del protocolo** — el paquete de parte, el registro de gossip, el rendezvous y la selección de rutas están esbozados ([docs/es/spec/](docs/es/spec/)); los transportes camaleón (Parte 4) y el encuadre para el apagón (Parte 5) son lo siguiente.
 3. **Prueba de concepto** — el núcleo de dispersión, la entrega por dead-drop y un simulador de adversario funcionan hoy en [poc/](poc/). ✔ primera pasada
 4. **Nodo de referencia** — un único nodo pequeño y aburrido, apto para móviles (probablemente en Rust), una vez que se asiente la selección de rutas (Parte 3). El anonimato que solo corre en un portátil nuevo no es para quien más lo necesita.
 5. **Cliente de referencia** — un cliente de chat demostrativo, una vez que exista un nodo que lo lleve. No antes: un cliente que promete lo que la red todavía no puede entregar sería lo contrario de no pedir actos de fe.
 
 ## Contribuir
 
-Las contribuciones seudónimas son bienvenidas y esperadas — ver [CONTRIBUTING.md](CONTRIBUTING.md). Por ahora la discusión ocurre en las issues de este repositorio. Traducir la documentación es una primera contribución muy valorada.
+Las contribuciones seudónimas son bienvenidas y esperadas — ver [CONTRIBUTING.md](docs/es/CONTRIBUTING.md). Por ahora la discusión ocurre en las issues de este repositorio. Traducir la documentación es una primera contribución muy valorada.
 
 Una regla por encima de todas: **esta red transporta paquetes, no opiniones.** Protege a los disidentes y a sus adversarios con la misma matemática. Los adversarios políticos no son enemigos, y una infraestructura solo es creíble si no puede tomar partido.
 

@@ -4,7 +4,7 @@
 
 [English](README.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md) · **[Français](README.fr.md)** · [中文](README.zh-CN.md)
 
-**État : pré-alpha.** Un modèle de menace, une spécification du protocole qui s'étoffe et une preuve de concept exécutable — pas encore un système avec lequel protéger de vrais secrets. Ce dépôt est le point de rencontre de celles et ceux qui veulent le construire, et l'attaquer. Voir [comment il se compare](COMPARISON.md) et [comment signaler une faille](SECURITY.md).
+**État : pré-alpha.** Un modèle de menace, une spécification du protocole qui s'étoffe et une preuve de concept exécutable — pas encore un système avec lequel protéger de vrais secrets. Ce dépôt est le point de rencontre de celles et ceux qui veulent le construire, et l'attaquer. Voir [comment il se compare](docs/fr/COMPARISON.md) et [comment signaler une faille](docs/fr/SECURITY.md).
 
 ## Trois refus
 
@@ -41,7 +41,7 @@ Le prix est annoncé d'emblée : `n` parts coûtent `n` fois la bande passante. 
 | L3 | Transport | Enveloppes caméléon : le trafic imite du TLS ordinaire (uTLS, ECH) ou des appels WebRTC. Le bloquer doit coûter au censeur plus que cela ne lui rapporte. |
 | L4 | Blackout | Quand on coupe Internet : maillage local (Wi-Fi Direct, Bluetooth), store-and-forward. Le réseau se dégrade ; il ne meurt pas. |
 
-Détails complets : [docs/architecture.md](docs/architecture.md) · Limites assumées : [docs/threat-model.md](docs/threat-model.md) *(en anglais ; les traductions sont bienvenues)* · Spécification du protocole : [docs/spec/](docs/spec/) · Positionnement : [COMPARISON.md](COMPARISON.md)
+Détails complets : [docs/fr/architecture.md](docs/fr/architecture.md) · Limites assumées : [docs/fr/threat-model.md](docs/fr/threat-model.md) · Spécification du protocole : [docs/fr/spec/](docs/fr/spec/) · Positionnement : [COMPARISON](docs/fr/COMPARISON.md)
 
 ## Exécuter la preuve de concept
 
@@ -69,14 +69,14 @@ Shamir (1979), la dispersion d'information de Rabin (1989), les DC-nets de Chaum
 ## Feuille de route
 
 1. **Modèle de menace** — publié, et sous le feu dans les [issues](../../issues). ✔ première passe
-2. **Spécification du protocole** — le paquet de part, l'enregistrement de gossip, le rendezvous et la sélection des chemins sont ébauchés ([docs/spec/](docs/spec/)) ; les transports caméléon (Partie 4) et l'encadrement pour le blackout (Partie 5) viennent ensuite.
+2. **Spécification du protocole** — le paquet de part, l'enregistrement de gossip, le rendezvous et la sélection des chemins sont ébauchés ([docs/fr/spec/](docs/fr/spec/)) ; les transports caméléon (Partie 4) et l'encadrement pour le blackout (Partie 5) viennent ensuite.
 3. **Preuve de concept** — le cœur de dispersion, la livraison par dead-drop et un simulateur d'adversaire tournent aujourd'hui dans [poc/](poc/). ✔ première passe
 4. **Nœud de référence** — un seul nœud, petit et ennuyeux, adapté au mobile (probablement en Rust), une fois la sélection des chemins (Partie 3) stabilisée. Un anonymat qui ne tourne que sur un ordinateur portable neuf n'est pas pour ceux qui en ont le plus besoin.
 5. **Client de référence** — un client de messagerie à titre de démonstration, une fois qu'un nœud existe pour le porter. Pas avant : un client qui promet ce que le réseau ne peut pas encore livrer serait le contraire de n'exiger aucun acte de foi.
 
 ## Contribuer
 
-Les contributions pseudonymes sont bienvenues et attendues — voir [CONTRIBUTING.md](CONTRIBUTING.md). La discussion se tient pour l'instant dans les issues de ce dépôt. Traduire la documentation est une première contribution appréciée.
+Les contributions pseudonymes sont bienvenues et attendues — voir [CONTRIBUTING.md](docs/fr/CONTRIBUTING.md). La discussion se tient pour l'instant dans les issues de ce dépôt. Traduire la documentation est une première contribution appréciée.
 
 Une règle au-dessus de toutes : **ce réseau transporte des paquets, pas des opinions.** Il protège les dissidents et leurs adversaires avec les mêmes mathématiques. Les adversaires politiques ne sont pas des ennemis, et une infrastructure n'est crédible que si elle ne peut pas choisir son camp.
 

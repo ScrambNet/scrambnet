@@ -1,6 +1,6 @@
 """ScrambNet rendezvous -- reference implementation (DRAFT).
 
-Executable companion to docs/spec/06-rendezvous.md. Pure Python 3 standard
+Executable companion to docs/en/spec/06-rendezvous.md. Pure Python 3 standard
 library. Requirements implemented here are cited by number (RZ-n); sizes come
 from Part 1 via dispersal.py.
 

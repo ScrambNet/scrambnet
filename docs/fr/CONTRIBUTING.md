@@ -28,7 +28,7 @@ moment, par ordre :
 
 Les vrais noms ne sont pas requis et ne le seront jamais. Les contributions pseudonymes et
 anonymes sont de premier plan. Il n'y a pas de CLA ; en contribuant, vous publiez votre
-contribution à la documentation sous [CC0 1.0](LICENSE).
+contribution à la documentation sous [CC0 1.0](../../LICENSE).
 
 Si votre propre modèle de menace l'exige, protégez-vous :
 

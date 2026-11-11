@@ -1,7 +1,7 @@
 # Dispersionskern — Referenz-PoC
 
-Ausführbarer Begleiter zu den Teilen [1](../docs/spec/01-share-packet.md) und
-[6](../docs/spec/06-rendezvous.md) der Spezifikation.
+Ausführbarer Begleiter zu den Teilen [1](../docs/de/spec/01-share-packet.md) und
+[6](../docs/de/spec/06-rendezvous.md) der Spezifikation.
 Reines Python 3, nur Standardbibliothek, geschrieben, um gelesen und
 angegriffen zu werden: eine ausführbare Spezifikation, nicht der künftige
 Knoten.

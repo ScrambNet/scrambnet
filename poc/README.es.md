@@ -1,7 +1,7 @@
 # Núcleo de dispersión — PoC de referencia
 
-Compañero ejecutable de las Partes [1](../docs/spec/01-share-packet.md) y
-[6](../docs/spec/06-rendezvous.md) de la especificación.
+Compañero ejecutable de las Partes [1](../docs/es/spec/01-share-packet.md) y
+[6](../docs/es/spec/06-rendezvous.md) de la especificación.
 Python 3 puro, solo biblioteca estándar, escrito para ser leído y atacado:
 es una especificación ejecutable, no el futuro nodo.
 

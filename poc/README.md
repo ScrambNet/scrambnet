@@ -1,7 +1,7 @@
 # Dispersal core — reference PoC
 
-Executable companion to spec [Part 1](../docs/spec/01-share-packet.md) and
-[Part 6](../docs/spec/06-rendezvous.md). Pure
+Executable companion to spec [Part 1](../docs/en/spec/01-share-packet.md) and
+[Part 6](../docs/en/spec/06-rendezvous.md). Pure
 Python 3, standard library only, written to be read and attacked: this is an
 executable specification, not the future node.
 

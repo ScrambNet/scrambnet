@@ -25,7 +25,7 @@ in ordine:
 
 I nomi reali non sono richiesti e non lo saranno mai. I contributi pseudonimi e anonimi
 sono di prima classe. Non c'è alcun CLA; contribuendo rilasci il tuo contributo alla
-documentazione sotto [CC0 1.0](LICENSE).
+documentazione sotto [CC0 1.0](../../LICENSE).
 
 Se il tuo modello di minaccia lo richiede, proteggiti:
 

@@ -4,7 +4,7 @@
 
 [English](README.md) · **[Italiano](README.it.md)** · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [中文](README.zh-CN.md)
 
-**Stato: pre-alpha.** Un modello di minaccia, una specifica di protocollo in crescita e una proof-of-concept eseguibile — non ancora un sistema con cui proteggere segreti veri. Questo repository è il punto d'incontro per chi vuole costruirla, e attaccarla. Vedi [come si colloca](COMPARISON.md) e [come segnalare una falla](SECURITY.md).
+**Stato: pre-alpha.** Un modello di minaccia, una specifica di protocollo in crescita e una proof-of-concept eseguibile — non ancora un sistema con cui proteggere segreti veri. Questo repository è il punto d'incontro per chi vuole costruirla, e attaccarla. Vedi [come si colloca](docs/it/COMPARISON.md) e [come segnalare una falla](docs/it/SECURITY.md).
 
 ## Tre rifiuti
 
@@ -41,7 +41,7 @@ Il prezzo è dichiarato in partenza: `n` quote costano `n` volte la banda. È lo
 | L3 | Trasporto | Involucri camaleonte: il traffico imita TLS qualunque (uTLS, ECH) o videochiamate WebRTC. Bloccarlo deve costare al censore più di quanto gli renda. |
 | L4 | Blackout | Quando spengono internet: mesh locale (Wi-Fi Direct, Bluetooth), store-and-forward. La rete degrada, non muore. |
 
-Dettagli completi: [docs/architecture.md](docs/architecture.md) · Limiti dichiarati: [docs/threat-model.md](docs/threat-model.md) *(in inglese; le traduzioni sono benvenute)* · Specifica di protocollo: [docs/spec/](docs/spec/) · Posizionamento: [COMPARISON.md](COMPARISON.md)
+Dettagli completi: [docs/it/architecture.md](docs/it/architecture.md) · Limiti dichiarati: [docs/it/threat-model.md](docs/it/threat-model.md) · Specifica di protocollo: [docs/it/spec/](docs/it/spec/) · Posizionamento: [COMPARISON](docs/it/COMPARISON.md)
 
 ## Esegui la proof-of-concept
 
@@ -69,14 +69,14 @@ Shamir (1979), l'Information Dispersal di Rabin (1989), le DC-net di Chaum (1988
 ## Roadmap
 
 1. **Modello di minaccia** — pubblicato, e sotto attacco nelle [issue](../../issues). ✔ prima passata
-2. **Specifica di protocollo** — pacchetto quota, record di gossip, rendezvous e selezione dei percorsi sono abbozzati ([docs/spec/](docs/spec/)); i trasporti camaleonte (Parte 4) e l'incapsulamento per il blackout (Parte 5) sono i prossimi.
+2. **Specifica di protocollo** — pacchetto quota, record di gossip, rendezvous e selezione dei percorsi sono abbozzati ([docs/it/spec/](docs/it/spec/)); i trasporti camaleonte (Parte 4) e l'incapsulamento per il blackout (Parte 5) sono i prossimi.
 3. **Proof-of-concept** — il nucleo di dispersione, la consegna via dead-drop e un simulatore d'avversario girano oggi in [poc/](poc/). ✔ prima passata
 4. **Nodo di riferimento** — un nodo unico, piccolo e noioso, adatto ai telefoni (probabilmente in Rust), una volta assestata la selezione dei percorsi (Parte 3). L'anonimato che gira solo su un laptop nuovo non è per chi ne ha più bisogno.
 5. **Client di riferimento** — un client di chat dimostrativo, una volta che esista un nodo a trasportarlo. Non prima: un client che promette ciò che la rete non può ancora offrire sarebbe l'opposto del non chiedere atti di fede.
 
 ## Contribuire
 
-I contributi pseudonimi sono benvenuti e attesi — vedi [CONTRIBUTING.md](CONTRIBUTING.md). Per ora la discussione avviene nelle issue di questo repository. Le traduzioni della documentazione sono un ottimo primo contributo.
+I contributi pseudonimi sono benvenuti e attesi — vedi [CONTRIBUTING.md](docs/it/CONTRIBUTING.md). Per ora la discussione avviene nelle issue di questo repository. Le traduzioni della documentazione sono un ottimo primo contributo.
 
 Una regola sopra tutte: **questa rete trasporta pacchetti, non opinioni.** Protegge i dissidenti e i loro avversari con la stessa matematica. Gli avversari politici non sono nemici, e un'infrastruttura è credibile solo se non può scegliere da che parte stare.
 

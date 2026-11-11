@@ -46,6 +46,7 @@ cifrado propio del destino es inexistente o está roto, el contenido. Bajo la di
   protege a los disidentes y a sus adversarios con la misma matemática. Una infraestructura
   solo es creíble si no puede tomar partido.
 
+<a id="open-problems"></a>
 ## Problemas abiertos
 
 Marcados para el ataque. Cada problema se discute en **un** solo lugar: una

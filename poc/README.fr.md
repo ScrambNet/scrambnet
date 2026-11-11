@@ -1,7 +1,7 @@
 # Cœur de dispersion — PoC de référence
 
-Compagnon exécutable des Parties [1](../docs/spec/01-share-packet.md) et
-[6](../docs/spec/06-rendezvous.md) de la spécification.
+Compagnon exécutable des Parties [1](../docs/fr/spec/01-share-packet.md) et
+[6](../docs/fr/spec/06-rendezvous.md) de la spécification.
 Python 3 pur, bibliothèque standard uniquement, écrit pour être lu et
 attaqué : une spécification exécutable, pas le futur nœud.
 

@@ -25,7 +25,7 @@ Moment, der Reihe nach:
 
 Echte Namen sind nicht erforderlich und werden es nie sein. Pseudonyme und anonyme Beiträge
 sind erstklassig. Es gibt kein CLA; mit deinem Beitrag gibst du deinen Beitrag zur
-Dokumentation unter [CC0 1.0](LICENSE) frei.
+Dokumentation unter [CC0 1.0](../../LICENSE) frei.
 
 Wenn dein eigenes Bedrohungsmodell es verlangt, schütze dich:
 

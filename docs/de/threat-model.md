@@ -46,6 +46,7 @@ wo die eigene Verschlüsselung des Ziels fehlt oder gebrochen ist, den Inhalt. U
   es schützt Dissidenten und ihre Gegner mit derselben Mathematik. Eine Infrastruktur
   ist nur glaubwürdig, wenn sie keine Seite wählen kann.
 
+<a id="open-problems"></a>
 ## Offene Probleme
 
 Zum Angriff markiert. Jedes Problem wird an **einem** Ort diskutiert: einem

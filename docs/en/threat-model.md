@@ -46,6 +46,7 @@ destination's own encryption is absent or broken, content. Under dispersal:
   it protects dissidents and their opponents with the same mathematics. An infrastructure
   is credible only if it cannot choose sides.
 
+<a id="open-problems"></a>
 ## Open problems
 
 Marked for attack. Each problem is discussed in **one** place: a single

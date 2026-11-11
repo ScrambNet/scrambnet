@@ -25,7 +25,7 @@ momento, por orden:
 
 No se exigen nombres reales y nunca se exigirán. Las contribuciones seudónimas y anónimas son
 de primera clase. No hay CLA; al contribuir liberas tu contribución a la documentación bajo
-[CC0 1.0](LICENSE).
+[CC0 1.0](../../LICENSE).
 
 Si tu propio modelo de amenazas lo requiere, protégete:
 

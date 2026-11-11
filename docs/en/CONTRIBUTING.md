@@ -23,7 +23,7 @@ in order:
 
 Real names are not required and never will be. Pseudonymous and anonymous contributions
 are first-class. There is no CLA; by contributing you release your contribution to the
-documentation under [CC0 1.0](LICENSE).
+documentation under [CC0 1.0](../../LICENSE).
 
 If your own threat model calls for it, protect yourself:
 

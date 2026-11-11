@@ -1,7 +1,7 @@
 # Cuore di dispersione — PoC di riferimento
 
-Compagno eseguibile delle Parti [1](../docs/spec/01-share-packet.md) e
-[6](../docs/spec/06-rendezvous.md) della specifica.
+Compagno eseguibile delle Parti [1](../docs/it/spec/01-share-packet.md) e
+[6](../docs/it/spec/06-rendezvous.md) della specifica.
 Python 3 puro, solo libreria standard, scritto per essere letto e attaccato:
 è una specifica eseguibile, non il futuro nodo.
 

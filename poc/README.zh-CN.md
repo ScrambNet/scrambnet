@@ -1,6 +1,6 @@
 # 分散核心 — 参考 PoC
 
-[规范第 1 部分](../docs/spec/01-share-packet.md)与[第 6 部分](../docs/spec/06-rendezvous.md)的可执行伴侣。纯 Python 3，
+[规范第 1 部分](../docs/zh-CN/spec/01-share-packet.md)与[第 6 部分](../docs/zh-CN/spec/06-rendezvous.md)的可执行伴侣。纯 Python 3，
 仅用标准库，为被阅读和被攻击而写：这是一份可执行的规范，不是未来的节点。
 
 它演示了什么：
