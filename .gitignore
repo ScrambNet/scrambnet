@@ -5,6 +5,9 @@
 *.pfx
 *.gpg
 *.asc
+# exception: the project PUBLIC key is meant to be published (0.4).
+# every other .asc (private/secret exports, revocation certs) stays ignored.
+!scrambnet-pubkey.asc
 *.kbx
 id_rsa*
 id_ed25519*

@@ -21,8 +21,9 @@ break.
   Open discussion is the point of this repository.
 - **Anything you believe should be handled privately first:** email
   `scrambnet@proton.me`. Encrypt sensitive reports to the project key (see
-  below). We aim to acknowledge within a reasonable time; please allow for a
-  pseudonymous, volunteer-paced project.
+  below). We aim to acknowledge **within 7 days**; if you have had no reply by
+  then, treat it as lost in the pseudonymous plumbing and ping again on a public
+  issue (without the sensitive detail) so we notice.
 
 Please do not include your legal identity in a report unless you want it
 public. Pseudonymous reports are welcome and get the same consideration.
@@ -35,10 +36,36 @@ denial of service against this repository.
 
 ## Project key
 
-A PGP key for `scrambnet@proton.me` for encrypted reports will be published
-here and in the repository. Until a signed key is listed in this file, treat
-email as confidential-but-unauthenticated and keep the most sensitive details
-for a channel you can verify.
+A PGP key for `scrambnet@proton.me` is published in the repository as
+[`scrambnet-pubkey.asc`](../../scrambnet-pubkey.asc). Encrypt sensitive reports
+to it.
+
+```
+Fingerprint: E5B5 399D 751F 830D 35CB  5F4A 3087 9F3B F93D 44F7
+Algorithm:   Ed25519 (sign) + Cv25519 (encrypt)
+Created:     2026-11-11   Expires: 2028-11-10
+```
+
+Verify the fingerprint against this file (and, ideally, against a second copy of
+this document on a different mirror) before trusting the key — the point of
+publishing it in-band *and* as a committed file is that the two must agree.
+
+To use it:
+
+```
+gpg --import scrambnet-pubkey.asc
+gpg --fingerprint scrambnet@proton.me     # must match the line above
+gpg --encrypt --armor -r scrambnet@proton.me your-report.txt
+```
+
+**Rotation (why the key expires, invariant I-3).** The key expires in two years;
+it is deliberately not an immortal singleton. Before it lapses, the next key
+will be published here and **signed by this one** while this one is still valid,
+so the handover is verifiable rather than an act of faith. If this key is ever
+lost or compromised before expiry, a revocation certificate (generated and held
+offline at creation time) will be published here and pushed to
+`keys.openpgp.org`, and a new key announced the same way. No single disclosure
+key is a permanent point of trust.
 
 ## Disclosure
 
