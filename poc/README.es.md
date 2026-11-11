@@ -26,6 +26,8 @@ Ejecución:
     python3 rendezvous.py       # demostración Parte 6: drops y sondeo
     python3 test_rendezvous.py  # pruebas Parte 6
     python3 network_sim.py      # experimento: adversario k-path vs tamaño red
+    python3 test_properties.py  # pruebas estadísticas de propiedades (uniformidad, SP-7)
+    python3 run_all.py          # cada demo + cada prueba, un veredicto
 
 ## El experimento: qué compra el adversario, en números
 

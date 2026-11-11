@@ -26,6 +26,8 @@ Exécution :
     python3 rendezvous.py       # démonstration Partie 6 : drops et sondage
     python3 test_rendezvous.py  # tests Partie 6
     python3 network_sim.py      # expérience : adversaire k-chemins vs taille
+    python3 test_properties.py  # tests statistiques de propriétés (uniformité, SP-7)
+    python3 run_all.py          # chaque démo + chaque test, un verdict
 
 ## L'expérience : ce que l'adversaire achète, en chiffres
 

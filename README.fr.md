@@ -4,7 +4,7 @@
 
 [English](README.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md) · **[Français](README.fr.md)** · [中文](README.zh-CN.md)
 
-**État : pré-spécification.** Pas encore de code, à dessein : d'abord le modèle de menace, puis la spécification du protocole, puis le code. Ce dépôt est le point de rencontre de celles et ceux qui veulent le construire.
+**État : pré-alpha.** Un modèle de menace, une spécification du protocole qui s'étoffe et une preuve de concept exécutable — pas encore un système avec lequel protéger de vrais secrets. Ce dépôt est le point de rencontre de celles et ceux qui veulent le construire, et l'attaquer. Voir [comment il se compare](COMPARISON.md) et [comment signaler une faille](SECURITY.md).
 
 ## Trois refus
 
@@ -41,7 +41,22 @@ Le prix est annoncé d'emblée : `n` parts coûtent `n` fois la bande passante. 
 | L3 | Transport | Enveloppes caméléon : le trafic imite du TLS ordinaire (uTLS, ECH) ou des appels WebRTC. Le bloquer doit coûter au censeur plus que cela ne lui rapporte. |
 | L4 | Blackout | Quand on coupe Internet : maillage local (Wi-Fi Direct, Bluetooth), store-and-forward. Le réseau se dégrade ; il ne meurt pas. |
 
-Détails complets : [docs/architecture.md](docs/architecture.md) · Limites assumées : [docs/threat-model.md](docs/threat-model.md) *(en anglais ; les traductions sont bienvenues)*
+Détails complets : [docs/architecture.md](docs/architecture.md) · Limites assumées : [docs/threat-model.md](docs/threat-model.md) *(en anglais ; les traductions sont bienvenues)* · Spécification du protocole : [docs/spec/](docs/spec/) · Positionnement : [COMPARISON.md](COMPARISON.md)
+
+## Exécuter la preuve de concept
+
+Les parties porteuses sont exécutables, comme une spécification que vous pouvez attaquer :
+
+```
+cd poc
+python3 dispersal.py      # dispersion k-sur-n et le seuil I-2, par force brute
+python3 rendezvous.py     # livraison par dead-drop et sondage discipliné
+python3 network_sim.py    # un adversaire à k-chemins face à la taille du réseau, en chiffres
+```
+
+Pure bibliothèque standard de Python, aucune dépendance, aucun réseau. C'est un
+jouet à dessein (voir [poc/README.md](poc/README.md)) : ne protégez rien avec.
+Son rôle est de rendre la conception assez concrète pour la casser.
 
 ## Ce qu'il ne promet pas
 
@@ -53,9 +68,11 @@ Shamir (1979), la dispersion d'information de Rabin (1989), les DC-nets de Chaum
 
 ## Feuille de route
 
-1. **Modèle de menace** — en discussion dès maintenant, dans les issues. Attaquez-le.
-2. **Spécification du protocole** — le paquet de part, l'enregistrement de gossip, le handshake. Style RFC, publique.
-3. **Client de référence** — un seul client, petit et ennuyeux. Mobile d'abord : un anonymat qui ne tourne que sur un ordinateur portable neuf n'est pas pour ceux qui en ont le plus besoin.
+1. **Modèle de menace** — publié, et sous le feu dans les [issues](../../issues). ✔ première passe
+2. **Spécification du protocole** — le paquet de part, l'enregistrement de gossip, le rendezvous et la sélection des chemins sont ébauchés ([docs/spec/](docs/spec/)) ; les transports caméléon (Partie 4) et l'encadrement pour le blackout (Partie 5) viennent ensuite.
+3. **Preuve de concept** — le cœur de dispersion, la livraison par dead-drop et un simulateur d'adversaire tournent aujourd'hui dans [poc/](poc/). ✔ première passe
+4. **Nœud de référence** — un seul nœud, petit et ennuyeux, adapté au mobile (probablement en Rust), une fois la sélection des chemins (Partie 3) stabilisée. Un anonymat qui ne tourne que sur un ordinateur portable neuf n'est pas pour ceux qui en ont le plus besoin.
+5. **Client de référence** — un client de messagerie à titre de démonstration, une fois qu'un nœud existe pour le porter. Pas avant : un client qui promet ce que le réseau ne peut pas encore livrer serait le contraire de n'exiger aucun acte de foi.
 
 ## Contribuer
 

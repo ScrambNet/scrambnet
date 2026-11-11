@@ -4,7 +4,7 @@
 
 [English](README.md) · [Italiano](README.it.md) · [Español](README.es.md) · **[Deutsch](README.de.md)** · [Français](README.fr.md) · [中文](README.zh-CN.md)
 
-**Status: Vor-Spezifikation.** Noch kein Code, mit Absicht: zuerst das Bedrohungsmodell, dann die Protokollspezifikation, dann der Code. Dieses Repository ist der Treffpunkt für alle, die mitbauen wollen.
+**Status: Pre-Alpha.** Ein Bedrohungsmodell, eine wachsende Protokollspezifikation und ein lauffähiger Proof-of-Concept — noch kein System, mit dem man echte Geheimnisse schützt. Dieses Repository ist der Treffpunkt für alle, die es bauen wollen — und die es angreifen wollen. Siehe [wie es sich einordnet](COMPARISON.md) und [wie man einen Bruch meldet](SECURITY.md).
 
 ## Drei Verweigerungen
 
@@ -41,7 +41,22 @@ Der Preis wird offen ausgewiesen: `n` Anteile kosten die `n`-fache Bandbreite. D
 | L3 | Transport | Chamäleon-Hüllen: Der Verkehr imitiert gewöhnliches TLS (uTLS, ECH) oder WebRTC-Anrufe. Ihn zu blockieren muss den Zensor mehr kosten, als es ihm einbringt. |
 | L4 | Blackout | Wenn das Internet abgeschaltet wird: lokales Mesh (Wi-Fi Direct, Bluetooth), Store-and-Forward. Das Netz degradiert; es stirbt nicht. |
 
-Alle Details: [docs/architecture.md](docs/architecture.md) · Ehrliche Grenzen: [docs/threat-model.md](docs/threat-model.md) *(auf Englisch; Übersetzungen sind willkommen)*
+Alle Details: [docs/architecture.md](docs/architecture.md) · Ehrliche Grenzen: [docs/threat-model.md](docs/threat-model.md) *(auf Englisch; Übersetzungen sind willkommen)* · Protokollspezifikation: [docs/spec/](docs/spec/) · Einordnung: [COMPARISON.md](COMPARISON.md)
+
+## Den Proof-of-Concept ausführen
+
+Die tragenden Teile sind ausführbar, als eine Spezifikation, die man angreifen kann:
+
+```
+cd poc
+python3 dispersal.py      # k-von-n-Streuung und die I-2-Schwelle, per Brute Force
+python3 rendezvous.py     # Dead-Drop-Zustellung und diszipliniertes Polling
+python3 network_sim.py    # ein k-Pfad-Gegner gegen die Netzgröße, in Zahlen
+```
+
+Reine Python-Standardbibliothek, keine Abhängigkeiten, kein Netz. Es ist mit
+Absicht ein Spielzeug (siehe [poc/README.md](poc/README.md)): schütze nichts
+damit. Seine Aufgabe ist, den Entwurf konkret genug zu machen, um ihn zu brechen.
 
 ## Was es nicht verspricht
 
@@ -53,9 +68,11 @@ Shamir (1979), Rabins Information Dispersal (1989), Chaums DC-Netze (1988), Sphi
 
 ## Fahrplan
 
-1. **Bedrohungsmodell** — wird jetzt in den Issues diskutiert. Greift es an.
-2. **Protokollspezifikation** — das Anteil-Paket, der Gossip-Eintrag, der Handshake. RFC-Stil, öffentlich.
-3. **Referenz-Client** — ein einziger kleiner, langweiliger Client. Mobile zuerst: Anonymität, die nur auf einem neuen Laptop läuft, ist nichts für die, die sie am dringendsten brauchen.
+1. **Bedrohungsmodell** — veröffentlicht und in den [Issues](../../issues) unter Beschuss. ✔ erster Durchgang
+2. **Protokollspezifikation** — Anteil-Paket, Gossip-Eintrag, Rendezvous und Pfadauswahl sind entworfen ([docs/spec/](docs/spec/)); Chamäleon-Transporte (Teil 4) und Blackout-Rahmung (Teil 5) kommen als Nächstes.
+3. **Proof-of-Concept** — der Streuungskern, die Dead-Drop-Zustellung und ein Gegner-Simulator laufen heute in [poc/](poc/). ✔ erster Durchgang
+4. **Referenz-Knoten** — ein einziger kleiner, langweiliger Knoten, mobiltauglich (wahrscheinlich in Rust), sobald die Pfadauswahl (Teil 3) steht. Anonymität, die nur auf einem neuen Laptop läuft, ist nichts für die, die sie am dringendsten brauchen.
+5. **Referenz-Client** — ein vorführbarer Chat-Client, sobald es einen Knoten gibt, der ihn trägt. Nicht früher: Ein Client, der verspricht, was das Netz noch nicht liefern kann, wäre das Gegenteil davon, keine Glaubensakte zu verlangen.
 
 ## Mitmachen
 

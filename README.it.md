@@ -4,7 +4,7 @@
 
 [English](README.md) · **[Italiano](README.it.md)** · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [中文](README.zh-CN.md)
 
-**Stato: pre-specifica.** Nessuna riga di codice, ed è una scelta: prima il modello di minaccia, poi la specifica di protocollo, poi il codice. Questo repository è il punto d'incontro per chi vuole costruirla.
+**Stato: pre-alpha.** Un modello di minaccia, una specifica di protocollo in crescita e una proof-of-concept eseguibile — non ancora un sistema con cui proteggere segreti veri. Questo repository è il punto d'incontro per chi vuole costruirla, e attaccarla. Vedi [come si colloca](COMPARISON.md) e [come segnalare una falla](SECURITY.md).
 
 ## Tre rifiuti
 
@@ -41,7 +41,22 @@ Il prezzo è dichiarato in partenza: `n` quote costano `n` volte la banda. È lo
 | L3 | Trasporto | Involucri camaleonte: il traffico imita TLS qualunque (uTLS, ECH) o videochiamate WebRTC. Bloccarlo deve costare al censore più di quanto gli renda. |
 | L4 | Blackout | Quando spengono internet: mesh locale (Wi-Fi Direct, Bluetooth), store-and-forward. La rete degrada, non muore. |
 
-Dettagli completi: [docs/architecture.md](docs/architecture.md) · Limiti dichiarati: [docs/threat-model.md](docs/threat-model.md) *(in inglese; le traduzioni sono benvenute)*
+Dettagli completi: [docs/architecture.md](docs/architecture.md) · Limiti dichiarati: [docs/threat-model.md](docs/threat-model.md) *(in inglese; le traduzioni sono benvenute)* · Specifica di protocollo: [docs/spec/](docs/spec/) · Posizionamento: [COMPARISON.md](COMPARISON.md)
+
+## Esegui la proof-of-concept
+
+Le parti portanti sono eseguibili, come una specifica che puoi attaccare:
+
+```
+cd poc
+python3 dispersal.py      # dispersione k-su-n e la soglia I-2, per forza bruta
+python3 rendezvous.py     # consegna via dead-drop e polling disciplinato
+python3 network_sim.py    # un avversario a k-percorsi contro la dimensione della rete, in numeri
+```
+
+Pura libreria standard di Python, nessuna dipendenza, nessuna rete. È un
+giocattolo per scelta (vedi [poc/README.md](poc/README.md)): non proteggerci
+nulla. Il suo compito è rendere il progetto abbastanza concreto da poterlo rompere.
 
 ## Cosa non promette
 
@@ -53,9 +68,11 @@ Shamir (1979), l'Information Dispersal di Rabin (1989), le DC-net di Chaum (1988
 
 ## Roadmap
 
-1. **Modello di minaccia** — in discussione ora, nelle issue. Attaccatelo.
-2. **Specifica di protocollo** — il pacchetto quota, il record di gossip, l'handshake. Stile RFC, pubblica.
-3. **Client di riferimento** — un client unico, piccolo e noioso. Prima i telefoni: l'anonimato che gira solo su un laptop nuovo non è per chi ne ha più bisogno.
+1. **Modello di minaccia** — pubblicato, e sotto attacco nelle [issue](../../issues). ✔ prima passata
+2. **Specifica di protocollo** — pacchetto quota, record di gossip, rendezvous e selezione dei percorsi sono abbozzati ([docs/spec/](docs/spec/)); i trasporti camaleonte (Parte 4) e l'incapsulamento per il blackout (Parte 5) sono i prossimi.
+3. **Proof-of-concept** — il nucleo di dispersione, la consegna via dead-drop e un simulatore d'avversario girano oggi in [poc/](poc/). ✔ prima passata
+4. **Nodo di riferimento** — un nodo unico, piccolo e noioso, adatto ai telefoni (probabilmente in Rust), una volta assestata la selezione dei percorsi (Parte 3). L'anonimato che gira solo su un laptop nuovo non è per chi ne ha più bisogno.
+5. **Client di riferimento** — un client di chat dimostrativo, una volta che esista un nodo a trasportarlo. Non prima: un client che promette ciò che la rete non può ancora offrire sarebbe l'opposto del non chiedere atti di fede.
 
 ## Contribuire
 

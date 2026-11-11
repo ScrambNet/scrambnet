@@ -4,7 +4,7 @@
 
 **[English](README.md)** · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · [中文](README.zh-CN.md)
 
-**Status: pre-specification.** No code yet, by design: threat model first, then the wire specification, then code. This repository is the meeting point for people who want to build it.
+**Status: pre-alpha.** A threat model, a growing wire specification, and a runnable proof-of-concept — not a system to protect real secrets with yet. This repository is the meeting point for people who want to build it, and to attack it. See [how it compares](COMPARISON.md) and [how to report a break](SECURITY.md).
 
 ## Three refusals
 
@@ -41,7 +41,22 @@ The cost is declared up front: `n` shares cost `n×` the bandwidth. That is the 
 | L3 | Transport | Chameleon wrappers: the traffic imitates ordinary TLS (uTLS, ECH) or WebRTC calls. Blocking it must cost the censor more than it earns. |
 | L4 | Blackout | When the internet is switched off: local mesh (Wi-Fi Direct, Bluetooth), store-and-forward. The network degrades; it does not die. |
 
-Full details: [docs/architecture.md](docs/architecture.md) · Honest limits: [docs/threat-model.md](docs/threat-model.md)
+Full details: [docs/architecture.md](docs/architecture.md) · Honest limits: [docs/threat-model.md](docs/threat-model.md) · Wire spec: [docs/spec/](docs/spec/) · Positioning: [COMPARISON.md](COMPARISON.md)
+
+## Run the proof-of-concept
+
+The load-bearing parts are executable, as a specification you can attack:
+
+```
+cd poc
+python3 dispersal.py      # k-of-n dispersal and the I-2 floor, by brute force
+python3 rendezvous.py     # dead-drop delivery and disciplined polling
+python3 network_sim.py    # a k-path adversary vs network size, in numbers
+```
+
+Pure Python standard library, no dependencies, no network. It is a toy by
+design (see [poc/README.md](poc/README.md)): do not protect anything with it.
+Its job is to make the design concrete enough to break.
 
 ## What it does not promise
 
@@ -53,9 +68,11 @@ Shamir (1979), Rabin's Information Dispersal (1989), Chaum's DC-nets (1988), Sph
 
 ## Roadmap
 
-1. **Threat model** — under discussion now, in the issues. Attack it.
-2. **Wire specification** — the share packet, the gossip record, the handshake. RFC-style, public.
-3. **Reference client** — one small, boring client. Mobile-first: anonymity that only runs on a new laptop is not for the people who need it most.
+1. **Threat model** — published, and under attack in the [issues](../../issues). ✔ first pass
+2. **Wire specification** — share packet, gossip record, rendezvous and path selection are drafted ([docs/spec/](docs/spec/)); chameleon transports (Part 4) and blackout framing (Part 5) are next.
+3. **Proof-of-concept** — the dispersal core, dead-drop delivery, and an adversary simulator run today in [poc/](poc/). ✔ first pass
+4. **Reference node** — one small, boring node, mobile-capable (likely Rust), once path selection (Part 3) settles. Anonymity that only runs on a new laptop is not for the people who need it most.
+5. **Reference client** — a demonstrative chat client, once there is a node to carry it. Not before: a client that promises what the network cannot yet deliver would be the opposite of asking for no acts of faith.
 
 ## Contributing
 

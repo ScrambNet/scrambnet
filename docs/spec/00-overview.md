@@ -67,9 +67,11 @@ planned upgrade, not an emergency.
    one share of one message through one circuit.
 2. [Part 2 — Gossip record](02-gossip-record.md): the self-signed relay descriptor
    and the rules for exchanging and sampling them.
-3. [Part 6 — Rendezvous and delivery](06-rendezvous.md): contact cards,
-   dispersed dead drops, and retrieval by polling. (Numbered 6 because parts
-   3–5 keep the scopes announced below.)
+3. [Part 3 — Circuit construction and path selection](03-path-selection.md):
+   disjointness targets, inference without self-declaration, guards, and the
+   small-network fallback (OP-1).
+4. [Part 6 — Rendezvous and delivery](06-rendezvous.md): contact cards,
+   dispersed dead drops, and retrieval by polling.
 
-Planned, not yet drafted: Part 3 — circuit construction and path selection
-(OP-1); Part 4 — chameleon transports; Part 5 — blackout mode framing.
+Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
+mode framing.

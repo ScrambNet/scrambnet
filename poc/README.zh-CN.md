@@ -21,6 +21,8 @@
     python3 rendezvous.py       # 第 6 部分演示：信箱与轮询
     python3 test_rendezvous.py  # 第 6 部分测试
     python3 network_sim.py      # 实验：k 路径对手 vs 网络规模
+    python3 test_properties.py  # 性质的统计检验（均匀性、SP-7）
+    python3 run_all.py          # 全部演示 + 全部测试，一个结论
 
 ## 实验：对手买到了什么，用数字说话
 

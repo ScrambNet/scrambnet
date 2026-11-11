@@ -27,6 +27,8 @@ Ausführen:
     python3 rendezvous.py       # Demo Teil 6: Drops und Polling
     python3 test_rendezvous.py  # Tests Teil 6
     python3 network_sim.py      # Experiment: k-Pfad-Gegner vs Netzgröße
+    python3 test_properties.py  # statistische Eigenschaftstests (Uniformität, SP-7)
+    python3 run_all.py          # jede Demo + jeder Test, ein Urteil
 
 ## Das Experiment: was der Gegner bekommt, in Zahlen
 

@@ -26,6 +26,8 @@ Esecuzione:
     python3 rendezvous.py       # dimostrazione Parte 6: drop e polling
     python3 test_rendezvous.py  # test Parte 6
     python3 network_sim.py      # esperimento: avversario k-path vs taglia rete
+    python3 test_properties.py  # dimostrazione statistica delle proprietà (uniformità, SP-7)
+    python3 run_all.py          # ogni demo + ogni test, un verdetto
 
 ## L'esperimento: cosa compra l'avversario, in numeri
 

@@ -4,7 +4,7 @@
 
 [English](README.md) · [Italiano](README.it.md) · [Español](README.es.md) · [Deutsch](README.de.md) · [Français](README.fr.md) · **[中文](README.zh-CN.md)**
 
-**状态：规范前期。** 尚无代码，这是有意为之：先有威胁模型，再有协议规范，最后才是代码。这个仓库是愿意参与建设者的聚集点。
+**状态：pre-alpha（预览前期）。** 一个威胁模型、一份不断扩充的协议规范，以及一个可运行的概念验证——还不是一个可以用来保护真实秘密的系统。这个仓库是愿意参与建设者、以及愿意攻击它的人的聚集点。参见[它如何比较](COMPARISON.md)与[如何报告漏洞](SECURITY.md)。
 
 ## 三个拒绝
 
@@ -41,7 +41,22 @@ flowchart LR
 | L3 | 传输 | 变色龙外壳：流量模仿普通 TLS（uTLS、ECH）或 WebRTC 通话。封锁它的代价必须高于审查者的收益。 |
 | L4 | 断网 | 当互联网被切断时：本地网状网络（Wi-Fi Direct、蓝牙）、存储转发。网络只会降级，不会死亡。 |
 
-完整细节：[docs/architecture.md](docs/architecture.md) · 坦诚的局限：[docs/threat-model.md](docs/threat-model.md)（英文；欢迎翻译）
+完整细节：[docs/architecture.md](docs/architecture.md) · 坦诚的局限：[docs/threat-model.md](docs/threat-model.md)（英文；欢迎翻译） · 协议规范：[docs/spec/](docs/spec/) · 定位对照：[COMPARISON.md](COMPARISON.md)
+
+## 运行概念验证
+
+承重的部分都是可运行的，是一份你可以攻击的规范：
+
+```
+cd poc
+python3 dispersal.py      # k-of-n 分散与 I-2 下界，以暴力穷举验证
+python3 rendezvous.py     # 死信箱投递与有纪律的轮询
+python3 network_sim.py    # k-路径对手对阵网络规模，用数字说话
+```
+
+纯 Python 标准库，无依赖，无网络。它是有意为之的玩具（见
+[poc/README.md](poc/README.md)）：别拿它保护任何东西。它的职责是把设计变得
+足够具体，好让人去攻破。
 
 ## 它不承诺什么
 
@@ -53,9 +68,11 @@ Shamir（1979）、Rabin 的信息分散算法（1989）、Chaum 的 DC 网络�
 
 ## 路线图
 
-1. **威胁模型** —— 正在 issues 中讨论。欢迎攻击它。
-2. **协议规范** —— 份额数据包、gossip 记录、握手。RFC 风格，完全公开。
-3. **参考客户端** —— 一个小而乏味的客户端。移动端优先：只能在崭新笔记本上运行的匿名工具，帮不到最需要它的人。
+1. **威胁模型** —— 已发布，并正在 [issues](../../issues) 中接受攻击。✔ 第一轮
+2. **协议规范** —— 份额数据包、gossip 记录、会合与路径选择已有草稿（[docs/spec/](docs/spec/)）；变色龙传输（第 4 部分）与断网封装（第 5 部分）是接下来的工作。
+3. **概念验证** —— 分散核心、死信箱投递与一个对手模拟器，如今都已在 [poc/](poc/) 中运行。✔ 第一轮
+4. **参考节点** —— 一个小而乏味的节点，支持移动端（很可能用 Rust），待路径选择（第 3 部分）尘埃落定后开始。只能在崭新笔记本上运行的匿名工具，帮不到最需要它的人。
+5. **参考客户端** —— 一个示范性的聊天客户端，待有节点可承载它之后再做。不会更早：一个承诺网络尚无法兑现之物的客户端，恰恰与「不要求任何信仰」背道而驰。
 
 ## 参与贡献
 

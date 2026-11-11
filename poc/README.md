@@ -26,6 +26,8 @@ Run:
     python3 rendezvous.py       # Part 6 demo: drops, disciplined polling
     python3 test_rendezvous.py  # Part 6 test suite
     python3 network_sim.py      # experiment: k-path adversary vs network size
+    python3 test_properties.py  # statistical property tests (uniformity, SP-7)
+    python3 run_all.py          # every demo + every test, one verdict
 
 ## The experiment: what the adversary buys, in numbers
 

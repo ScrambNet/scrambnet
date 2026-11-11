@@ -50,9 +50,12 @@ destination's own encryption is absent or broken, content. Under dispersal:
 
 Marked for attack — each deserves its own issue:
 
-1. **Disjointness enforcement.** How does a client *verify* that `n` paths do not share an
-   AS, a jurisdiction, a data center — using only its gossip sample, against relays that
-   can lie about location?
+1. **Disjointness enforcement.** A first path-selection mechanism now exists in draft
+   ([spec Part 3](spec/03-path-selection.md)) with an executable strawman in
+   `poc/network_sim.py`; what remains open is the hard core: how does a client *verify*
+   that `n` paths do not share an AS, a jurisdiction, a data center — using only its gossip
+   sample and a trustlessly distributed inference dataset (I-3), against relays that can lie
+   about everything except their signatures?
 2. **Sybil and eclipse resistance** of gossip sampling without a central allocator.
    Walking Onions assumes an authority-signed snapshot; we removed the authority. What
    replaces its anti-sybil function — proof of long-term keys? social-graph weighting?
@@ -60,8 +63,11 @@ Marked for attack — each deserves its own issue:
 3. **Parameter economics.** Defaults for `n`, `k` per traffic class; when does Rabin IDA
    (cheaper, computational) replace Shamir (unconditional) for bulk data, and is that
    downgrade ever acceptable by default?
-4. **Share-timing correlation.** `n` shares entering the network within milliseconds are
-   themselves a fingerprint. Jitter, batching, decoy shares: what does each cost?
+4. **Share-timing correlation.** Content unlinkability between shares (SP-7) is settled and
+   implemented in the PoC; *timing* is not. `n` shares entering the network within
+   milliseconds are themselves a fingerprint. Jitter, batching, decoy shares: what does each
+   cost in latency, and what does it actually buy against an adversary watching several
+   exits?
 5. **Cover traffic economics** in paranoid mode on metered mobile connections.
 6. **Blackout addressing.** Identity-based routing over mesh store-and-forward without a
    DHT reachable from inside the blackout.
