@@ -26,6 +26,33 @@ Ausführen:
     python3 test_dispersal.py   # Tests, einschließlich vectors.json
     python3 rendezvous.py       # Demo Teil 6: Drops und Polling
     python3 test_rendezvous.py  # Tests Teil 6
+    python3 network_sim.py      # Experiment: k-Pfad-Gegner vs Netzgröße
+
+## Das Experiment: was der Gegner bekommt, in Zahlen
+
+`network_sim.py` macht aus den offenen Fragen der Issues #2/#4/#10 eine
+Tabelle. Es modelliert eine Nachricht als n=4 Anteile über 4 disjunkte
+Schaltkreise zu 4 Drops; ein k-Pfad-Gegner besitzt einen Anteil der Relays und
+"sieht" einen Schaltkreis, wenn er dessen Guard und Exit zugleich hält:
+
+    Sender                                         Drops (je ein Anteil)
+      |  Anteil 1 --[guard]--[mid]--[exit]-->  box 1  \
+      |  Anteil 2 --[guard]--[mid]--[exit]-->  box 2   |  Empfänger holt,
+      |  Anteil 3 --[guard]--[mid]--[exit]-->  box 3   |  nimmt 3 beliebige,
+      |  Anteil 4 --[guard]--[mid]--[exit]-->  box 4  /   rekonstruiert
+
+- **gesehen >= k** -> Inhaltsbruch (und nur dann; unter k hält die I-2-
+  Untergrenze bedingungslos, bei jeder Netzgröße);
+- **gesehen < k** -> Inhalt sicher, aber jeder gesehene Schaltkreis verrät
+  dennoch, dass *irgendein* Fluss lief — der Metadatenverlust, den das
+  Bedrohungsmodell einräumt: Dispersion verengt ihn, hebt ihn nicht auf.
+
+Das gedruckte Ergebnis: Inhaltsbrüche sind selten und verschwinden, sobald das
+Netz groß genug für AS-disjunkte Schaltkreise ist; der Verknüpfungs-Leak ist
+klein, aber ungleich null und am schlimmsten in einem winzigen Netz, das sie
+*nicht* bauen kann — genau darum muss ein junges Netz einen degradierten
+„Kleinnetz-Modus" fahren und ihn ansagen (Issue #4). Vorläufige Zahlen:
+reproduziere sie, brich das Modell, diskutiere in den Issues.
 
 `vectors.json` enthält Vektoren für andere Implementierungen: wer sie
 reproduziert, interoperiert auf dieser Schicht.

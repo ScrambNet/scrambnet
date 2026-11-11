@@ -25,6 +25,33 @@ Exécution :
     python3 test_dispersal.py   # tests, y compris vectors.json
     python3 rendezvous.py       # démonstration Partie 6 : drops et sondage
     python3 test_rendezvous.py  # tests Partie 6
+    python3 network_sim.py      # expérience : adversaire k-chemins vs taille
+
+## L'expérience : ce que l'adversaire achète, en chiffres
+
+`network_sim.py` transforme les questions ouvertes des issues #2/#4/#10 en une
+table. Il modélise un message comme n=4 parts sur 4 circuits disjoints vers 4
+drops ; un adversaire à k chemins possède une fraction des relais et « voit »
+un circuit quand il en détient à la fois le guard et l'exit :
+
+    expéditeur                                     drops (une part chacun)
+      |  part 1 --[guard]--[mid]--[exit]-->  box 1  \
+      |  part 2 --[guard]--[mid]--[exit]-->  box 2   |  le destinataire
+      |  part 3 --[guard]--[mid]--[exit]-->  box 3   |  relève, prend 3
+      |  part 4 --[guard]--[mid]--[exit]-->  box 4  /   au choix, reconstr.
+
+- **vus >= k** -> rupture du contenu (et seulement alors ; sous k le plancher
+  I-2 tient inconditionnellement, à toute taille) ;
+- **vus < k** -> contenu sauf, mais chaque circuit vu révèle tout de même
+  qu'*un* flux a circulé — la perte de métadonnées que le modèle de menace
+  admet : la dispersion la réduit, ne l'annule pas.
+
+Le résultat imprimé : les ruptures de contenu sont rares et disparaissent
+quand le réseau grandit assez pour bâtir des circuits AS-disjoints ; la fuite
+de lien est petite mais non nulle et pire sur un réseau minuscule qui *ne peut
+pas* les bâtir — d'où la nécessité, pour un jeune réseau, d'un « mode petit
+réseau » dégradé et déclaré (issue #4). Chiffres provisoires : reproduisez-les,
+cassez le modèle, discutez sur les issues.
 
 `vectors.json` contient des vecteurs pour d'autres implémentations : qui les
 reproduit interopère à cette couche.

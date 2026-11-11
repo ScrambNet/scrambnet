@@ -25,6 +25,33 @@ Run:
     python3 test_dispersal.py   # test suite, includes vectors.json
     python3 rendezvous.py       # Part 6 demo: drops, disciplined polling
     python3 test_rendezvous.py  # Part 6 test suite
+    python3 network_sim.py      # experiment: k-path adversary vs network size
+
+## The experiment: what the adversary buys, in numbers
+
+`network_sim.py` turns the open questions of issues #2/#4/#10 into a table. It
+models one message as n=4 shares over 4 disjoint circuits into 4 drops; a
+k-path adversary owns a fraction of relays and "sees" a circuit when it holds
+both its guard and its exit:
+
+    sender                                         drops (one share each)
+      |  share 1 --[guard]--[mid]--[exit]-->  box 1  \
+      |  share 2 --[guard]--[mid]--[exit]-->  box 2   |  recipient polls,
+      |  share 3 --[guard]--[mid]--[exit]-->  box 3   |  takes any 3,
+      |  share 4 --[guard]--[mid]--[exit]-->  box 4  /   reconstructs
+
+- **seen >= k** -> content break (and only then; below k the I-2 floor holds
+  unconditionally, at any network size);
+- **seen < k** -> content safe, but each seen circuit still leaks that *some*
+  flow ran — the metadata loss the threat model admits dispersal narrows but
+  never nullifies.
+
+The result it prints: content breaks are rare and vanish as the network grows
+enough to build AS-disjoint circuits; linkage leak is small but nonzero and
+worst on a tiny network that *cannot* build them — which is exactly why a young
+network must run, and declare, a degraded "small-network mode" (issue #4).
+These numbers are strawman: reproduce them, break the model, argue on the
+issues.
 
 `vectors.json` carries cross-implementation vectors: an implementation that
 matches them interoperates at this layer.
