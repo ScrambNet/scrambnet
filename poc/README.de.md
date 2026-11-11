@@ -8,6 +8,13 @@ Knoten.
 
 Was es zeigt:
 
+- die **vollständige SP-1-Komposition**, ausgeführt, nicht behauptet: `e2e.py`
+  verschlüsselt die Nachricht unter einem vorab geteilten Paarschlüssel
+  (ChaCha20-Poly1305, gegen die RFC 8439-Testvektoren verifiziert), dann teilt
+  `dispersal.send()` den *Chiffretext* und `receive()` rekonstruiert und
+  entschlüsselt — encrypt → split → reconstruct → decrypt, wobei ein gekippter
+  Anteil am AEAD geschlossen fehlschlägt, nie zu Müll rekonstruiert (SP-1,
+  SP-1a);
 - (n, k)-Shamir-Teilung über GF(2^8), byteweise, und Rekonstruktion aus
   beliebigen k Anteilen (SP-1, SP-2);
 - die bedingungslose Untergrenze (I-2), per Brute Force: `floor_demo()`
@@ -22,7 +29,9 @@ Was es zeigt:
 
 Ausführen:
 
-    python3 dispersal.py        # Demo
+    python3 e2e.py              # SP-1-Gürtel: AEAD-KAT + seal/open-Rundlauf
+    python3 test_e2e.py         # AEAD-Testsuite (RFC 8439-Vektoren)
+    python3 dispersal.py        # Demo: SP-1 komplett encrypt->split->...->decrypt
     python3 test_dispersal.py   # Tests, einschließlich vectors.json
     python3 rendezvous.py       # Demo Teil 6: Drops und Polling
     python3 test_rendezvous.py  # Tests Teil 6
@@ -59,6 +68,8 @@ reproduziere sie, brich das Modell, diskutiere in den Issues.
 `vectors.json` enthält Vektoren für andere Implementierungen: wer sie
 reproduziert, interoperiert auf dieser Schicht.
 
-Was es **nicht** ist: Produktionscode. Keine Constant-Time-Arithmetik, kein
-Netzwerk, keine Onion-Schicht, kein Ende-zu-Ende-AEAD (nach SP-1 sieht diese
-Schicht nur opaken Chiffretext). Schützt damit nichts.
+Was es **nicht** ist: Produktionscode. Das AEAD in `e2e.py` ist reines Python
+und **nicht konstantzeitig** — es ist korrekt (es passt zu den RFC 8439-
+Vektoren), leckt aber über das Timing, daher MUSS ein echter Knoten eine
+geprüfte konstantzeitige Bibliothek verwenden. Keine Constant-Time-Arithmetik
+irgendwo, kein Netzwerk, keine Onion-Schicht. Schützt damit nichts.

@@ -13,7 +13,7 @@ der bedingungslosen Untergrenze (I-2) und der Draht-Uniformität (I-4).
 
 ```
 Klartext-Nachricht
-  └─ Ende-zu-Ende-AEAD (Empfängerschlüssel)              [rechnerisch]
+  └─ Ende-zu-Ende-AEAD (vorab geteilter Paarschlüssel, SP-1a)  [rechnerisch]
        └─ Shamir-Teilung: n Anteile, Schwelle k          [bedingungslose Untergrenze]
             └─ Zwiebel-Verschlüsselung je Anteil, eigener Circuit, Sphinx-Format
                  └─ Chamäleon-Transport (Teil 4)
@@ -24,7 +24,32 @@ Klartext-Nachricht
   Anteilen erfährt der Gegner nichts über den Chiffretext, bedingungslos
   (Shamir); mit `k` oder mehr Anteilen steht er immer noch dem Ende-zu-Ende-AEAD gegenüber. Die
   bedingungslose Untergrenze und der rechnerische Gürtel komponieren; keiner ersetzt den
-  anderen.
+  anderen. Der Gürtel wird in `poc/e2e.py` durchgängig (Ende-zu-Ende) vorgeführt
+  (verschlüsseln → teilen → rekonstruieren → entschlüsseln, fail-closed bei Manipulation).
+- **SP-1a (Aufbau des Inhaltsschlüssels und die post-quanten Konsequenz).** Der
+  Ende-zu-Ende-AEAD-Schlüssel MUSS (MUST) aus dem **vorab geteilten symmetrischen
+  Paargeheimnis** `kpair`, das von der Kontaktkarte getragen wird (Teil 6, RZ-2),
+  mittels einer label-getrennten KDF abgeleitet werden:
+  `content_key = HKDF-BLAKE2s(kpair, "e2e-content")`, verschieden vom SP-7-Tag-Schlüssel
+  und vom Box-ID-Schlüssel, die aus demselben `kpair` abgeleitet werden. Im Inhaltspfad
+  DARF ES KEINE (MUST NOT) asymmetrische Schlüsseleinigung geben. Dies ist eine bewusste
+  Wahl mit einer tragenden Konsequenz: ein `≥k`-Gegner, der alles aufzeichnet und über
+  einen künftigen großskaligen Quantencomputer verfügt, kann den Inhalt dennoch nicht
+  lesen, denn es gibt kein Diffie-Hellman-Transkript, das Shor brechen könnte — nur ein
+  symmetrisches Geheimnis, das die Parteien bereits teilen, und Grover kostet das AEAD
+  höchstens eine Halbierung seiner Schlüsselstärke (daher ist ein abgeleiteter Schlüssel
+  mit ≥256 Bit EMPFOHLEN (RECOMMENDED), wo die Reserve zählt). "Harvest now, decrypt
+  later" (jetzt ernten, später entschlüsseln) wird daher auf **beiden** Stufen vereitelt:
+  unterhalb von `k` durch Shamir (bedingungslos), bei oder oberhalb von `k` durch ein
+  symmetrisches AEAD unter einem vorab geteilten Schlüssel (keine Public-Key-Annahme zum
+  Ernten). Der ehrliche Preis ist der **Bootstrap**: `kpair` muss den Empfänger zuerst
+  über einen vorherigen vertraulichen Kanal erreichen (der außerbandige Austausch der
+  Kontaktkarte, Teil 6). Jede verbleibende Public-Key- oder PQ-KEM-Annahme lebt dort, im
+  Kartenaustausch — nicht im Inhaltspfad — und einen Kartenaustausch zu tragen, der selbst
+  post-quanten ist, ist eine orthogonale, geschichtete Wahl, keine Voraussetzung für die
+  Untergrenze. Die AEAD-Suite ist ChaCha20-Poly1305 (Suite `0x01`); `msg_nonce` (SP-7) ist
+  die AEAD-Nonce, die die beiden Schichten bindet und eine wiederverwendete Nonce doppelt
+  fatal macht (SP-7-Tag-Kollision *und* Verlust der AEAD-Vertraulichkeit — siehe SP-7).
 - **SP-2.** Standard-Streuungsparameter für Messaging: `n = 4`, `k = 3` (s).
   Massentransfer-Profile DÜRFEN (MAY) stattdessen Rabins IDA statt Shamir nutzen und MÜSSEN (MUST)
   in der Client-Oberfläche als rechnerisch gekennzeichnet werden, denn IDA hat keine bedingungslose

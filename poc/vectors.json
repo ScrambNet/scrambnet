@@ -44,6 +44,14 @@
    "c237fcab5e9ee6d11e358c22fd6739e5"
   ]
  },
+ "e2e": {
+  "comment": "SP-1a end-to-end AEAD: content_key = HKDF-BLAKE2s(kpair,'e2e-content'); ciphertext = ChaCha20-Poly1305(content_key, nonce=0000'0000'||msg_nonce, plaintext), appended 16-byte tag. An impl that reproduces ciphertext interoperates on the content path.",
+  "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
+  "content_key": "5d9ef763ead48f3509c2375dbb52f1f43c2ac8becf3b2bfc394185552b63bd65",
+  "msg_nonce": "0001020304050607",
+  "plaintext": "536372616d624e65742053502d3120766563746f72",
+  "ciphertext": "ccc56551b4e0fe10a699efa46e4ac3eb9f95af83ef32c980a70f871985eeca045b33106503"
+ },
  "rendezvous": {
   "comment": "Part 6 derivations: k_tag = HKDF-BLAKE2s(kpair,'tag'); box_id keys are '<drop>_<epoch>'.",
   "kpair": "0202020202020202020202020202020202020202020202020202020202020202",

@@ -7,6 +7,12 @@ es una especificación ejecutable, no el futuro nodo.
 
 Qué demuestra:
 
+- la **composición SP-1 completa**, ejecutada, no afirmada: `e2e.py` cifra el
+  mensaje bajo una clave de par precompartida (ChaCha20-Poly1305, verificada
+  contra los vectores de prueba RFC 8439), luego `dispersal.send()` divide el
+  *texto cifrado* y `receive()` reconstruye y descifra — encrypt → split →
+  reconstruct → decrypt, con un fragmento invertido que falla en cerrado en el
+  AEAD, nunca reconstruido en basura (SP-1, SP-1a);
 - división Shamir (n, k) sobre GF(2^8), byte a byte, y reconstrucción desde
   k fragmentos cualesquiera (SP-1, SP-2);
 - el suelo incondicional (I-2), por fuerza bruta: `floor_demo()` enumera cada
@@ -21,7 +27,9 @@ Qué demuestra:
 
 Ejecución:
 
-    python3 dispersal.py        # demostración
+    python3 e2e.py              # cinturón SP-1: KAT AEAD + ida y vuelta seal/open
+    python3 test_e2e.py         # suite de pruebas AEAD (vectores RFC 8439)
+    python3 dispersal.py        # demo: SP-1 completo encrypt->split->...->decrypt
     python3 test_dispersal.py   # pruebas, incluye vectors.json
     python3 rendezvous.py       # demostración Parte 6: drops y sondeo
     python3 test_rendezvous.py  # pruebas Parte 6
@@ -58,6 +66,8 @@ modelo, discute en las issues.
 `vectors.json` contiene vectores para otras implementaciones: quien los
 reproduce interopera en esta capa.
 
-Lo que **no** es: código de producción. Sin aritmética de tiempo constante,
-sin red, sin capa onion, sin AEAD de extremo a extremo (por SP-1 esta capa
-solo ve texto cifrado opaco). No lo uséis para proteger nada.
+Lo que **no** es: código de producción. El AEAD en `e2e.py` es Python puro y
+**no es de tiempo constante** — es correcto (reproduce los vectores RFC 8439)
+pero filtra por temporización, así que un nodo real DEBE usar una biblioteca de
+tiempo constante verificada. Sin aritmética de tiempo constante en ninguna
+parte, sin red, sin capa onion. No lo uséis para proteger nada.

@@ -104,6 +104,54 @@ class PayloadAndTags(unittest.TestCase):
             d.recognize(payloads[:2], key, window), {})   # below k: nothing
 
 
+class SP1Composition(unittest.TestCase):
+    """send() = encrypt THEN disperse; receive() = reconstruct THEN decrypt.
+    This is the composition the whole project rests on and that the PoC used
+    to only assert (it split plaintext). Now it is executed."""
+
+    def test_send_receive_roundtrip_with_loss(self):
+        kpair = secrets.token_bytes(32)
+        nonce = (5).to_bytes(8, "big")
+        msg = b"encrypt before you disperse"
+        payloads = d.send(msg, kpair, nonce, n=4, k=3)
+        payloads.pop(2)                                  # lose one circuit
+        window = [i.to_bytes(8, "big") for i in range(8)]
+        self.assertEqual(d.receive(payloads, kpair, window), {nonce: msg})
+
+    def test_dispersal_layer_never_sees_plaintext(self):
+        """The shares carry ciphertext, not the message: the plaintext must
+        not appear in any payload (SP-1 ordering)."""
+        kpair = secrets.token_bytes(32)
+        nonce = (1).to_bytes(8, "big")
+        msg = b"MARKER-PLAINTEXT-SHOULD-NOT-APPEAR"
+        for p in d.send(msg, kpair, nonce):
+            self.assertNotIn(msg, p)
+
+    def test_tampered_share_fails_closed(self):
+        """A hostile drop flips a ciphertext byte in a surviving share: the
+        AEAD rejects the reconstruction, so no plaintext is returned (0.3)."""
+        kpair = secrets.token_bytes(32)
+        nonce = (2).to_bytes(8, "big")
+        payloads = d.send(b"x" * 40, kpair, nonce, n=4, k=3)
+        bad = bytearray(payloads[0])
+        bad[d.TAG_BYTES + 2 + 8] ^= 0x01      # a ciphertext byte, past the length prefix
+        poisoned = [bytes(bad)] + payloads[1:]
+        window = [i.to_bytes(8, "big") for i in range(8)]
+        self.assertEqual(d.receive(poisoned, kpair, window), {})
+
+    def test_one_poisoned_message_does_not_deny_another(self):
+        """recognize()/receive() must deliver a good message even when a
+        second message in the same batch is corrupted (robustness)."""
+        kpair = secrets.token_bytes(32)
+        n1, n2 = (10).to_bytes(8, "big"), (11).to_bytes(8, "big")
+        good = d.send(b"good message", kpair, n1)
+        bad = d.send(b"doomed message", kpair, n2)
+        corrupt = bytearray(bad[0]); corrupt[d.TAG_BYTES + 2 + 8] ^= 0x01
+        batch = good + [bytes(corrupt)] + bad[1:]
+        window = [i.to_bytes(8, "big") for i in range(16)]
+        self.assertEqual(d.receive(batch, kpair, window), {n1: b"good message"})
+
+
 class Vectors(unittest.TestCase):
     """Cross-implementation vectors; see vectors.json next to this file."""
 

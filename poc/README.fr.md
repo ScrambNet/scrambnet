@@ -7,6 +7,12 @@ attaqué : une spécification exécutable, pas le futur nœud.
 
 Ce qu'il démontre :
 
+- la **composition SP-1 complète**, exécutée, non affirmée : `e2e.py` chiffre
+  le message sous une clé de paire pré-partagée (ChaCha20-Poly1305, vérifiée
+  contre les vecteurs de test RFC 8439), puis `dispersal.send()` divise le
+  *chiffré* et `receive()` reconstruit et déchiffre — encrypt → split →
+  reconstruct → decrypt, une part inversée échouant en position fermée à
+  l'AEAD, jamais reconstruite en déchets (SP-1, SP-1a) ;
 - la division Shamir (n, k) sur GF(2^8), octet par octet, et la
   reconstruction à partir de k parts quelconques (SP-1, SP-2) ;
 - le plancher inconditionnel (I-2), par force brute : `floor_demo()` énumère
@@ -21,7 +27,9 @@ Ce qu'il démontre :
 
 Exécution :
 
-    python3 dispersal.py        # démonstration
+    python3 e2e.py              # ceinture SP-1 : KAT AEAD + aller-retour seal/open
+    python3 test_e2e.py         # suite de tests AEAD (vecteurs RFC 8439)
+    python3 dispersal.py        # démo : SP-1 complet encrypt->split->...->decrypt
     python3 test_dispersal.py   # tests, y compris vectors.json
     python3 rendezvous.py       # démonstration Partie 6 : drops et sondage
     python3 test_rendezvous.py  # tests Partie 6
@@ -58,6 +66,8 @@ cassez le modèle, discutez sur les issues.
 `vectors.json` contient des vecteurs pour d'autres implémentations : qui les
 reproduit interopère à cette couche.
 
-Ce que ce n'est **pas** : du code de production. Pas d'arithmétique à temps
-constant, pas de réseau, pas de couche onion, pas d'AEAD de bout en bout
-(par SP-1 cette couche ne voit que du chiffré opaque). N'en protégez rien.
+Ce que ce n'est **pas** : du code de production. L'AEAD dans `e2e.py` est en
+Python pur et **n'est pas à temps constant** — il est correct (il reproduit les
+vecteurs RFC 8439) mais fuit par le timing, donc un vrai nœud DOIT utiliser une
+bibliothèque à temps constant éprouvée. Pas d'arithmétique à temps constant où
+que ce soit, pas de réseau, pas de couche onion. N'en protégez rien.

@@ -7,6 +7,12 @@ Python 3 puro, solo libreria standard, scritto per essere letto e attaccato:
 
 Che cosa dimostra:
 
+- la **composizione SP-1 completa**, eseguita, non asserita: `e2e.py` cifra il
+  messaggio sotto una chiave di coppia pre-condivisa (ChaCha20-Poly1305,
+  verificata contro i vettori di test RFC 8439), poi `dispersal.send()` divide
+  il *ciphertext* e `receive()` ricostruisce e decifra — encrypt → split →
+  reconstruct → decrypt, con una quota invertita che fallisce in modo chiuso
+  all'AEAD, mai ricostruita in spazzatura (SP-1, SP-1a);
 - divisione Shamir (n, k) su GF(2^8), byte per byte, e ricostruzione da
   k quote qualsiasi (SP-1, SP-2);
 - il piano incondizionato (I-2), per forza bruta: `floor_demo()` enumera ogni
@@ -21,7 +27,9 @@ Che cosa dimostra:
 
 Esecuzione:
 
-    python3 dispersal.py        # dimostrazione
+    python3 e2e.py              # cintura SP-1: KAT AEAD + round trip seal/open
+    python3 test_e2e.py         # suite di test AEAD (vettori RFC 8439)
+    python3 dispersal.py        # demo: SP-1 completo encrypt->split->...->decrypt
     python3 test_dispersal.py   # test, inclusi i vettori di vectors.json
     python3 rendezvous.py       # dimostrazione Parte 6: drop e polling
     python3 test_rendezvous.py  # test Parte 6
@@ -58,6 +66,8 @@ rompi il modello, discuti sulle issue.
 `vectors.json` contiene vettori per altre implementazioni: chi li riproduce
 interopera a questo livello.
 
-Che cosa **non** è: codice di produzione. Niente aritmetica a tempo costante,
-niente rete, niente livello onion, niente AEAD end-to-end (per SP-1 questo
-livello vede solo ciphertext opaco). Non usatelo per proteggere alcunché.
+Che cosa **non** è: codice di produzione. L'AEAD in `e2e.py` è in puro Python e
+**non è a tempo costante** — è corretto (riproduce i vettori RFC 8439) ma trapela
+tramite il timing, quindi un nodo reale DEVE usare una libreria a tempo costante
+verificata. Nessuna aritmetica a tempo costante da nessuna parte, niente rete,
+niente livello onion. Non usatelo per proteggere alcunché.

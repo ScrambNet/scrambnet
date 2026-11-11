@@ -15,6 +15,7 @@ import hmac
 import secrets
 
 import dispersal as d
+import e2e
 
 SLOT_BYTES = 1840        # RZ-6: delta minus the 16-byte box id
 BOX_ID_BYTES = 16
@@ -123,9 +124,12 @@ class Drop:
 
 def deposit_message(card: Card, msg: bytes, msg_nonce: bytes, now: float,
                     n: int = 4, k: int = 3) -> None:
-    """RZ-5/RZ-6: one share per drop, n distinct drops. Emission timing
-    (SP-9) and the circuits to each drop (OP-1) are outside this module."""
-    shares = d.split(d.pad(msg), n, k)
+    """RZ-5/RZ-6 + SP-1: encrypt under the pair key, THEN disperse one share
+    per drop across n distinct drops. The drops only ever store ciphertext
+    shares. Emission timing (SP-9) and the circuits to each drop (OP-1) are
+    outside this module."""
+    ciphertext = e2e.seal(card.kpair, msg_nonce, msg)
+    shares = d.split(d.pad(ciphertext), n, k)
     epoch = epoch_of(now)
     for i, share in enumerate(shares):
         slot = build_slot(d.share_tag(card.k_tag, msg_nonce, i + 1),
@@ -152,8 +156,12 @@ def poll_all(card: Card, now: float, nonce_window: list[bytes]) -> dict[bytes, b
         k = next(iter(got.values()))[0]
         if len(got) >= k:
             use = {x: s for x, (_, s) in sorted(got.items())[:k]}
-            done[nonce] = d.unpad(d.reconstruct(use))
-    return done
+            try:
+                ciphertext = d.unpad(d.reconstruct(use))
+                done[nonce] = e2e.open_(card.kpair, nonce, ciphertext)
+            except ValueError:
+                continue    # SP-1 fail-closed: a corrupted slot yields no
+    return done            # plaintext, and never aborts the other messages
 
 
 def poll_schedule(start: float, end: float) -> list[float]:

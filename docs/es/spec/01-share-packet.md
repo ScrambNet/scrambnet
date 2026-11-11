@@ -13,7 +13,7 @@ el umbral incondicional (I-2) y la uniformidad del cable (I-4).
 
 ```
 mensaje en texto en claro
-  └─ AEAD extremo a extremo (claves del destinatario)      [computacional]
+  └─ AEAD extremo a extremo (clave de par precompartida, SP-1a)  [computacional]
        └─ división de Shamir: n partes, umbral k           [umbral incondicional]
             └─ cifrado de cebolla por parte, circuito propio, formato Sphinx
                  └─ transporte camaleón (Parte 4)
@@ -24,7 +24,32 @@ mensaje en texto en claro
   partes el adversario no aprende nada sobre el texto cifrado de forma incondicional
   (Shamir); con `k` partes o más aún se enfrenta al AEAD extremo a extremo. El
   umbral incondicional y el cinturón computacional se componen; ninguno reemplaza al
-  otro.
+  otro. El cinturón se demuestra de extremo a extremo en `poc/e2e.py`
+  (cifrar → dividir → reconstruir → descifrar, fallo cerrado ante manipulación).
+- **SP-1a (establecimiento de la clave de contenido, y la consecuencia poscuántica).**
+  La clave AEAD extremo a extremo DEBE (MUST) derivarse del **secreto simétrico de par
+  precompartido** `kpair` que lleva la tarjeta de contacto (Parte 6, RZ-2), mediante un KDF
+  separado por etiqueta: `content_key = HKDF-BLAKE2s(kpair, "e2e-content")`, distinta de la
+  clave de etiqueta de SP-7 y de la clave de box-id derivadas del mismo `kpair`. NO DEBE
+  (MUST NOT) haber ningún acuerdo de clave asimétrico en la ruta de contenido. Esta es una
+  elección deliberada con una consecuencia portante: un adversario `≥k` que lo registra todo
+  y que dispone en el futuro de un computador cuántico a gran escala aún no puede leer el
+  contenido, porque no existe ninguna transcripción de Diffie-Hellman que Shor pueda romper
+  —solo un secreto simétrico que las partes ya comparten, y Grover le cuesta al AEAD, como
+  mucho, reducir a la mitad la fuerza de su clave (de ahí que se RECOMIENDE (RECOMMENDED)
+  una clave derivada de ≥256 bits allí donde el margen importa). Por tanto, "harvest now,
+  decrypt later" («cosechar ahora, descifrar después») queda derrotado en **ambos** niveles:
+  por debajo de `k` mediante Shamir (incondicional), en `k` o por encima mediante un AEAD
+  simétrico bajo una clave precompartida (sin suposición de clave pública que cosechar). El
+  coste honesto es el **arranque (bootstrap)**: `kpair` debe llegar primero al destinatario
+  por un canal confidencial previo (el intercambio fuera de banda de la tarjeta de contacto,
+  Parte 6). Cualquier suposición residual de clave pública o PQ-KEM vive ahí, en el
+  intercambio de la tarjeta —no en la ruta de contenido—, y llevar un intercambio de tarjeta
+  que sea él mismo poscuántico es una elección ortogonal y estratificada, no una condición
+  previa para el umbral incondicional. La suite AEAD es ChaCha20-Poly1305 (suite `0x01`); `msg_nonce` (SP-7)
+  es el nonce del AEAD, lo que vincula las dos capas y hace que un nonce reutilizado sea
+  doblemente fatal (colisión de etiqueta de SP-7 *y* pérdida de confidencialidad del AEAD
+  —ver SP-7).
 - **SP-2.** Parámetros de dispersión por defecto para mensajería: `n = 4`, `k = 3` (s).
   Los perfiles de transferencia masiva PUEDEN (MAY) usar la IDA de Rabin en lugar de Shamir, y DEBEN (MUST)
   etiquetarse como computacionales en la interfaz del cliente, porque la IDA no tiene umbral

@@ -14,7 +14,7 @@ le plancher inconditionnel (I-2) et l'uniformité sur le fil (I-4).
 
 ```
 message en clair
-  └─ AEAD de bout en bout (clés du destinataire)        [calculatoire]
+  └─ AEAD de bout en bout (clé de paire pré-partagée, SP-1a)  [calculatoire]
        └─ découpe de Shamir : n parts, seuil k           [plancher inconditionnel]
             └─ chiffrement en oignon par part, circuit propre, format Sphinx
                  └─ transport caméléon (Partie 4)
@@ -25,7 +25,30 @@ message en clair
   parts, l'adversaire n'apprend rien sur le texte chiffré, inconditionnellement
   (Shamir) ; avec `k` parts ou plus, il affronte encore l'AEAD de bout en bout. Le
   plancher inconditionnel et la ceinture calculatoire se composent ; aucun ne remplace
-  l'autre.
+  l'autre. La ceinture est démontrée de bout en bout dans `poc/e2e.py` (chiffrer →
+  découper → reconstruire → déchiffrer, fermeture sûre en cas d'altération).
+- **SP-1a (établissement de la clé de contenu, et la conséquence post-quantique).** La clé
+  AEAD de bout en bout DOIT (MUST) être dérivée du **secret symétrique de paire pré-partagé**
+  `kpair` porté par la carte de contact (Partie 6, RZ-2), au moyen d'une KDF séparée par
+  étiquette : `content_key = HKDF-BLAKE2s(kpair, "e2e-content")`, distincte de la clé
+  d'étiquette SP-7 et de la clé d'identifiant de boîte dérivées du même `kpair`. Il NE DOIT
+  PAS (MUST NOT) y avoir d'accord de clé asymétrique dans le chemin du contenu. C'est un choix
+  délibéré à la conséquence porteuse : un adversaire `≥k` qui enregistre tout et dispose d'un
+  futur ordinateur quantique à grande échelle ne peut toujours pas lire le contenu, car il
+  n'existe aucune transcription Diffie-Hellman que Shor puisse casser — seulement un secret
+  symétrique que les parties partagent déjà, et Grover coûte à l'AEAD au plus une division par
+  deux de la force de sa clé (d'où une clé dérivée de ≥256 bits RECOMMANDÉE là où la marge
+  importe). « Harvest now, decrypt later » (récolter maintenant, déchiffrer plus tard) est donc
+  défait aux **deux** niveaux : en dessous de `k` par Shamir (inconditionnel), à `k` ou au-delà
+  par un AEAD symétrique sous une clé pré-partagée (aucune hypothèse de clé publique à
+  récolter). Le prix honnête est le **bootstrap** : `kpair` doit d'abord parvenir au destinataire
+  par un canal confidentiel préalable (l'échange hors bande de carte de contact, Partie 6).
+  Toute hypothèse résiduelle de clé publique ou de PQ-KEM réside là, dans l'échange de carte —
+  pas dans le chemin du contenu — et acheminer un échange de carte lui-même post-quantique est
+  un choix orthogonal et en couches, non une condition préalable au plancher. La suite AEAD est
+  ChaCha20-Poly1305 (suite `0x01`) ; `msg_nonce` (SP-7) est le nonce de l'AEAD, ce qui lie les
+  deux couches et rend un nonce réutilisé doublement fatal (collision d'étiquette SP-7 *et*
+  perte de confidentialité de l'AEAD — voir SP-7).
 - **SP-2.** Paramètres de dispersion par défaut pour la messagerie : `n = 4`, `k = 3` (s).
   Les profils de transfert de volume PEUVENT (MAY) utiliser la dispersion d'information de Rabin au lieu de Shamir, et DOIVENT (MUST) être
   étiquetés comme calculatoires dans l'IU du client, car l'IDA n'a aucun plancher

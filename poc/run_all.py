@@ -13,8 +13,9 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-DEMOS = ["dispersal.py", "rendezvous.py", "network_sim.py"]
-TEST_MODULES = ["test_dispersal", "test_rendezvous", "test_properties"]
+DEMOS = ["e2e.py", "dispersal.py", "rendezvous.py", "network_sim.py"]
+TEST_MODULES = ["test_e2e", "test_dispersal", "test_rendezvous",
+                "test_properties"]
 
 
 def run_demos() -> bool:

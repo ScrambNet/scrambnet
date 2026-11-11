@@ -14,7 +14,7 @@ il livello minimo incondizionato (I-2) e l'uniformità sul filo (I-4).
 
 ```
 messaggio in chiaro
-  └─ AEAD end-to-end (chiavi del destinatario)      [computazionale]
+  └─ AEAD end-to-end (chiave di coppia precondivisa, SP-1a)  [computazionale]
        └─ split di Shamir: n quote, soglia k        [livello minimo incondizionato]
             └─ cifratura a cipolla per quota, circuito proprio, formato Sphinx
                  └─ trasporto camaleonte (Parte 4)
@@ -25,7 +25,30 @@ messaggio in chiaro
   quote l'avversario non apprende nulla sul testo cifrato in modo incondizionato
   (Shamir); con `k` o più quote affronta ancora l'AEAD end-to-end. Il
   livello minimo incondizionato e la cintura computazionale si compongono; nessuno dei due sostituisce
-  l'altro.
+  l'altro. La cintura è dimostrata end-to-end in `poc/e2e.py` (cifra → split →
+  ricostruisci → decifra, fail-closed in caso di manomissione).
+- **SP-1a (stabilimento della chiave di contenuto, e la conseguenza post-quantistica).** La chiave AEAD
+  end-to-end DEVE (MUST) essere derivata dal **segreto simmetrico di coppia precondiviso**
+  `kpair` trasportato dalla carta di contatto (Parte 6, RZ-2), tramite un KDF separato per
+  etichetta: `content_key = HKDF-BLAKE2s(kpair, "e2e-content")`, distinto dalla chiave di tag di
+  SP-7 e dalla chiave di box-id derivate dallo stesso `kpair`. NON DEVE (MUST NOT) esserci alcun
+  accordo di chiave asimmetrico nel percorso del contenuto. Questa è una scelta deliberata con
+  una conseguenza portante: un avversario `≥k` che registra tutto e dispone in futuro di un
+  computer quantistico su larga scala non può comunque leggere il contenuto, perché non esiste
+  alcuna trascrizione Diffie-Hellman che Shor possa rompere — solo un segreto simmetrico che le
+  parti già condividono, e Grover costa all'AEAD al più un dimezzamento della robustezza della
+  chiave (quindi è RACCOMANDATO (RECOMMENDED) una chiave derivata ≥256 bit dove il margine conta).
+  "Harvest now, decrypt later" (raccogli ora, decifra dopo) è quindi sconfitto a **entrambi** i
+  livelli: sotto `k` da Shamir (incondizionatamente), a `k` o oltre da un AEAD simmetrico sotto una
+  chiave precondivisa (nessuna assunzione a chiave pubblica da raccogliere). Il costo onesto è il
+  **bootstrap**: `kpair` deve prima raggiungere il destinatario su un canale confidenziale
+  precedente (lo scambio fuori banda della carta di contatto, Parte 6). Qualsiasi assunzione
+  residua a chiave pubblica o PQ-KEM risiede lì, nello scambio della carta — non nel percorso del
+  contenuto — e trasportare uno scambio di carta che sia esso stesso post-quantistico è una scelta
+  ortogonale e stratificata, non una precondizione per il livello minimo. La suite AEAD è
+  ChaCha20-Poly1305 (suite `0x01`); `msg_nonce` (SP-7) è il nonce AEAD, che lega i due livelli e
+  rende un nonce riutilizzato doppiamente fatale (collisione di tag SP-7 *e* perdita di
+  confidenzialità AEAD — vedi SP-7).
 - **SP-2.** Parametri di dispersione di default per la messaggistica: `n = 4`, `k = 3` (s).
   I profili di trasferimento di massa POSSONO (MAY) usare l'IDA di Rabin invece di Shamir, e DEVONO (MUST)
   essere etichettati come computazionali nell'interfaccia del client, perché l'IDA non ha un livello minimo

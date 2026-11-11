@@ -12,8 +12,8 @@ the unconditional floor (I-2) and wire uniformity (I-4).
 
 ```
 plaintext message
-  └─ end-to-end AEAD (recipient keys)            [computational]
-       └─ Shamir split: n shares, threshold k    [unconditional floor]
+  └─ end-to-end AEAD (pre-shared pair key, SP-1a)  [computational]
+       └─ Shamir split: n shares, threshold k      [unconditional floor]
             └─ per-share onion encryption, own circuit, Sphinx format
                  └─ chameleon transport (Part 4)
 ```
@@ -23,7 +23,31 @@ plaintext message
   shares the adversary learns nothing about the ciphertext unconditionally
   (Shamir); with `k` or more shares it still faces the end-to-end AEAD. The
   unconditional floor and the computational belt compose; neither replaces the
-  other.
+  other. The belt is demonstrated end to end in `poc/e2e.py`
+  (encrypt → split → reconstruct → decrypt, fail-closed on tamper).
+- **SP-1a (content-key establishment, and the post-quantum consequence).**
+  The end-to-end AEAD key MUST be derived from the **pre-shared symmetric pair
+  secret** `kpair` carried by the contact card (Part 6, RZ-2), by a
+  label-separated KDF: `content_key = HKDF-BLAKE2s(kpair, "e2e-content")`,
+  distinct from the SP-7 tag key and the box-id key derived from the same
+  `kpair`. There MUST be no asymmetric key agreement in the content path. This
+  is a deliberate choice with a load-bearing consequence: a `≥k`,
+  record-everything adversary with a future large-scale quantum computer still
+  cannot read content, because there is no Diffie-Hellman transcript for Shor
+  to break — only a symmetric secret the parties already share, and Grover
+  costs the AEAD at most a halving of its key strength (hence a ≥256-bit
+  derived key is RECOMMENDED where margin matters). "Harvest now, decrypt
+  later" is therefore defeated at **both** tiers: below `k` by Shamir
+  (unconditional), at or above `k` by a symmetric AEAD under a pre-shared key
+  (no public-key assumption to harvest). The honest cost is the **bootstrap**:
+  `kpair` must first reach the recipient over a prior confidential channel (the
+  out-of-band contact-card exchange, Part 6). Any residual public-key or PQ-KEM
+  assumption lives there, in the card exchange — not in the content path — and
+  carrying a card exchange that is itself post-quantum is an orthogonal,
+  layered choice, not a precondition for the floor. The AEAD suite is
+  ChaCha20-Poly1305 (suite `0x01`); `msg_nonce` (SP-7) is the AEAD nonce, which
+  binds the two layers and makes a reused nonce doubly fatal (SP-7 tag
+  collision *and* AEAD confidentiality loss — see SP-7).
 - **SP-2.** Default dispersal parameters for messaging: `n = 4`, `k = 3` (s).
   Bulk transfer profiles MAY use Rabin IDA instead of Shamir, and MUST be
   labeled as computational in the client UI, because IDA has no unconditional

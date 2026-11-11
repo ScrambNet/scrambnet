@@ -5,6 +5,11 @@
 
 它演示了什么：
 
+- **完整的 SP-1 组合**，是执行出来的，而非断言出来的：`e2e.py` 用预共享的
+  配对密钥（ChaCha20-Poly1305，已对照 RFC 8439 测试向量验证）加密消息，然后
+  `dispersal.send()` 分割*密文*，`receive()` 重建并解密——encrypt → split →
+  reconstruct → decrypt，被翻转的份额会在 AEAD 处安全失败（fail closed），
+  绝不会被重建成垃圾（SP-1、SP-1a）；
 - GF(2^8) 上逐字节的 (n, k) Shamir 分割，以及从任意 k 份份额的重建
   （SP-1、SP-2）；
 - 用暴力枚举呈现无条件底线（I-2）：`floor_demo()` 枚举与已观察到的 k−1 份
@@ -16,7 +21,9 @@
 
 运行：
 
-    python3 dispersal.py        # 演示
+    python3 e2e.py              # SP-1 保险带：AEAD KAT + seal/open 往返
+    python3 test_e2e.py         # AEAD 测试套件（RFC 8439 向量）
+    python3 dispersal.py        # 演示：SP-1 完整 encrypt->split->...->decrypt
     python3 test_dispersal.py   # 测试，含 vectors.json
     python3 rendezvous.py       # 第 6 部分演示：信箱与轮询
     python3 test_rendezvous.py  # 第 6 部分测试
@@ -48,5 +55,7 @@
 
 `vectors.json` 携带跨实现测试向量：能复现它们的实现即可在这一层互操作。
 
-它**不是**什么：生产代码。没有常数时间运算、没有网络、没有洋葱层、没有
-端到端 AEAD（按 SP-1，这一层只见到不透明的密文）。不要用它保护任何东西。
+它**不是**什么：生产代码。`e2e.py` 中的 AEAD 是纯 Python 实现，且**不是
+常数时间**的——它是正确的（与 RFC 8439 向量相符），但会通过时序泄露，所以
+真实节点必须使用经过审查的常数时间库。任何地方都没有常数时间运算、没有
+网络、没有洋葱层。不要用它保护任何东西。

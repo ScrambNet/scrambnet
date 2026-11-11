@@ -5,14 +5,18 @@ standard library, written to be read: every requirement implemented here
 is cited by number (SP-n, I-n).
 
 NOT PRODUCTION CODE. No constant-time arithmetic, no networking, no onion
-layer, no end-to-end AEAD: per SP-1 the dispersal layer only ever sees
-opaque end-to-end ciphertext, so this module treats its input as opaque
-bytes and the tests feed it random data. Emission scheduling (SP-9) is
-out of scope here. Do not use this file to protect anything.
+layer. Per SP-1 the dispersal layer only ever sees opaque end-to-end
+ciphertext, so disperse()/recognize() take ciphertext and this module never
+touches plaintext; the end-to-end AEAD that produces that ciphertext lives in
+e2e.py, and send()/receive() below compose the two to demonstrate SP-1 in
+full. Emission scheduling (SP-9) is out of scope here. Do not use this file
+to protect anything.
 """
 
 import hashlib
 import secrets
+
+import e2e
 
 # Sizes from spec Part 1 (strawman values, marked (s) there).
 SHARE_BYTES = 1792   # Shamir share length inside delta
@@ -212,8 +216,46 @@ def recognize(payloads: list[bytes], recipient_key: bytes,
         k = next(iter(got.values()))[0]
         if len(got) >= k:
             use = {x: s for x, (_, s) in sorted(got.items())[:k]}
-            done[nonce] = unpad(reconstruct(use))
-    return done
+            try:
+                done[nonce] = unpad(reconstruct(use))
+            except ValueError:
+                continue    # a corrupt length prefix (poisoned share) drops
+    return done            # this message only, never the whole batch
+
+
+# --- SP-1 end to end: encrypt -> disperse, and recognize -> decrypt ---
+
+def send(plaintext: bytes, kpair: bytes, msg_nonce: bytes,
+         n: int = 4, k: int = 3) -> list[bytes]:
+    """The full SP-1 sender: encrypt THEN disperse (never the reverse).
+
+    kpair is the pre-shared pair secret; it yields both the content key
+    (e2e.content_key) and the SP-7 tag key, label-separated. The dispersal
+    layer below this line only ever sees ciphertext.
+    """
+    ciphertext = e2e.seal(kpair, msg_nonce, plaintext)
+    tag_key = e2e._hkdf_blake2s(kpair, b"tag")   # == rendezvous.Card.k_tag
+    return disperse(ciphertext, tag_key, msg_nonce, n, k)
+
+
+def receive(payloads: list[bytes], kpair: bytes,
+            nonce_window: list[bytes]) -> dict[bytes, bytes]:
+    """The full SP-1 recipient: reconstruct THEN decrypt, fail-closed.
+
+    Returns {msg_nonce: plaintext} for each message whose ciphertext both
+    reassembled from >= k shares AND passed the AEAD tag. A reconstruction
+    that fails the tag (corruption, forgery, a hostile drop flipping bits)
+    raises inside e2e.open_ and is dropped, never returned as garbage (0.3).
+    """
+    tag_key = e2e._hkdf_blake2s(kpair, b"tag")   # == rendezvous.Card.k_tag
+    ciphertexts = recognize(payloads, tag_key, nonce_window)
+    out = {}
+    for nonce, ct in ciphertexts.items():
+        try:
+            out[nonce] = e2e.open_(kpair, nonce, ct)
+        except ValueError:
+            continue    # fail-closed: a corrupted message is dropped, not shown
+    return out
 
 
 # --- I-2 made visible: brute-force enumeration of the floor ---
@@ -240,17 +282,34 @@ def floor_demo(k: int = 3, y: tuple[int, int] = (0x5A, 0xC3)) -> dict[int, int]:
 
 
 if __name__ == "__main__":
-    # Round trip with the SP-2 strawman, losing one share on the way.
-    key = secrets.token_bytes(32)
+    # Full SP-1 composition with the SP-2 strawman, losing one share on the way:
+    # encrypt (e2e) -> split (Shamir) -> [transport] -> reconstruct -> decrypt.
+    kpair = secrets.token_bytes(32)
     nonce = (7).to_bytes(8, "big")  # message counter as nonce
     msg = b"the network carries packets, not opinions"
-    payloads = disperse(msg, key, nonce, n=4, k=3)
+    payloads = send(msg, kpair, nonce, n=4, k=3)
     payloads.pop(1)  # one circuit failed: n - k = 1 loss is tolerated
     window = [i.to_bytes(8, "big") for i in range(16)]
-    got = recognize(payloads, key, window)
+    got = receive(payloads, kpair, window)
     assert got == {nonce: msg}
-    print(f"round trip: n=4 k=3, 1 share lost, message intact "
+    print(f"round trip (SP-1 end to end): encrypt -> n=4 k=3 split -> 1 share "
+          f"lost -> reconstruct -> decrypt, message intact "
           f"({len(msg)} bytes in {DELTA_BYTES}-byte payloads, overhead x4)")
+
+    # A hostile drop flips one bit deep in a surviving share: Shamir happily
+    # reconstructs a consistent-but-wrong ciphertext (it has no integrity of its
+    # own), which the end-to-end AEAD then rejects -- fail-closed, no garbage
+    # plaintext handed up. This is the 0.3 residual: a cheap targeted DoS on a
+    # message, but never a confidentiality leak.
+    # Share byte at secret offset 10: past the 2-byte length prefix, inside the
+    # ciphertext the AEAD authenticates (len(pt)=41 + 16-byte tag), not in the
+    # random pad the recipient would strip anyway.
+    tampered = bytearray(payloads[0])
+    tampered[TAG_BYTES + 2 + 10] ^= 0x01
+    poisoned = [bytes(tampered)] + payloads[1:]
+    assert receive(poisoned, kpair, window) == {}
+    print("tamper: one flipped share byte -> AEAD fails closed, message "
+          "dropped rather than reconstructed to garbage (0.3)")
 
     counts = floor_demo()
     vals = set(counts.values())
