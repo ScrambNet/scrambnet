@@ -28,6 +28,31 @@ states precisely why tier 2 cannot be unconditional, and nails the one place the
 two tiers could leak into each other (§4: the AEAD key must be invisible below
 `k`).
 
+```
+  THE TWO TIERS, BY HOW MANY SHARES THE ADVERSARY HOLDS
+
+   shares held:   0 ........... k-1  │  k ........... n
+                  └──── TIER 1 ─────┘ │ └──── TIER 2 ────┘
+                                      │
+   TIER 1  (below k)                  │   TIER 2  (k or more)
+   ─────────────────                  │   ───────────────────
+   the k-1 shares are                 │   adversary reconstructs C,
+   STATISTICALLY INDEPENDENT          │   then meets the end-to-end
+   of the secret (SA-1, SA-2)         │   AEAD under key K
+          │                           │          │
+          ▼                           │          ▼
+   nothing is there to learn,         │   confidentiality = ChaCha20-
+   against UNBOUNDED compute          │   Poly1305 under K the adversary
+   and any quantum computer           │   does not hold (SP-1a)
+          │                           │          │
+          ▼                           │          ▼
+   UNCONDITIONAL (the floor)          │   COMPUTATIONAL (the belt)
+
+   The seam (SA-4): K never appears in anything a below-k adversary sees.
+   That is what stops tier 1 from silently decaying into tier 2 — the floor
+   hides C, and the adversary also gains nothing toward K for a future C.
+```
+
 ## 2. Model and adversary
 
 - A **message** is a byte string `M`. The sender first computes the ciphertext

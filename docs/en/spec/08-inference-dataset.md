@@ -83,6 +83,35 @@ artifact**. Determinism is the whole game: if two honest parties can diverge, ha
 equality (ID-5) stops meaning "same map" and the design collapses into needing an
 authority to break ties.
 
+```
+  PUBLIC INPUTS (pinned by content hash in the manifest, ID-3)
+  ┌────────────────────────┐   ┌────────────────────────┐
+  │ RouteViews + RIPE RIS  │   │ 5 RIR delegation files │
+  │ BGP MRT RIB dumps      │   │ (AS → country)         │
+  │ (prefix → origin-AS)   │   │                        │
+  └───────────┬────────────┘   └───────────┬────────────┘
+              │         epoch = last dump ≤ 00:00 UTC boundary (ID-4)
+              └───────────────┬───────────────┘
+                              ▼
+            ┌───────────────────────────────────┐
+            │  DETERMINISTIC BUILD (pure fn)      │
+            │  fixed order (ID-4a), fixed tie-    │
+            │  breaking (ID-4b), no floating      │
+            │  inputs (ID-4c), canonical          │
+            │  container (ID-4d)                  │
+            └─────────────────┬─────────────────┘
+                              ▼
+                      map artifact
+                              │
+                              ▼
+                   H = BLAKE2s(artifact)   ← the map's ONLY name (ID-2)
+
+  Alice ─ same inputs ─▶ H_A            Two honest parties who pin the same
+  Bob   ─ same inputs ─▶ H_B            inputs get H_A == H_B. Agreement is
+                                        hash equality (ID-5), not trust in a
+                                        signer. Reproduction is the arbiter.
+```
+
 - **ID-3 (public inputs, pinned by content). [normative]** The map MUST be built
   only from inputs that are public, reproducible, and themselves content-pinned
   in the artifact's manifest by their own hashes:
@@ -177,6 +206,31 @@ against an adversary feeding **different** clients **different** maps and keepin
 each client internally consistent — a **split-view (equivocation) attack**. The
 transparency log exists for exactly that threat and for nothing more.
 
+```
+  THE SPLIT-VIEW ATTACK, AND HOW GOSSIP CATCHES IT
+
+  A hostile log tries to show two views that never meet:
+
+     log ──root X (map H_good)──▶  Alice   "my map is corroborated"
+         └─root Y (map H_bad )──▶  Bob     "my map is corroborated"
+
+  Each client alone sees a consistent story. But roots are gossiped
+  over the GR-6 channel (ID-7a), so some third client Carol hears BOTH:
+
+        Alice ──root X──┐
+                        ├──▶  Carol demands a CONSISTENCY PROOF
+        Bob   ──root Y──┘     between X and Y.
+                             If X and Y are not extensions of one
+                             append-only tree, the proof FAILS:
+                             ✗  cryptographic proof the log equivocated
+                                → log marked hostile, gossiped (ID-10)
+
+  The log never says which map is GOOD — reproduction does that (ID-5a).
+  It only makes lying to different people at once detectable. Anyone may
+  append (ID-7, permissionless), so the log is a bulletin board, not an
+  authority — which is what keeps it clear of I-3.
+```
+
 - **ID-6 (what the log is).** The log is an **append-only Merkle tree** (RFC 6962
   / Certificate-Transparency structure: a Merkle tree over a sequence of leaves,
   with inclusion proofs and consistency proofs between two tree sizes). Each
@@ -225,6 +279,37 @@ A fresh client has no relay sample it can evaluate and no prior map; it must fet
 its **first** map over paths whose disjointness it **cannot yet verify** (that
 verification needs the very map it is fetching). This is a genuine circular
 dependency, and this part does not pretend to break it.
+
+```
+  THE FIRST MAP IS TRUST-ON-FIRST-USE (ID-8) — AND ITS DAMAGE IS BOUNDED
+
+  fresh client ──▶ fetch first map over channels it cannot yet evaluate
+                   │
+                   ▼
+        ┌───────────────────────────┐
+        │  state: UNVERIFIED-TOFU    │  UI: "you are trusting your first
+        │  (shown to the user)       │       map; not yet corroborated"
+        └─────────────┬─────────────┘
+                      │  over the next epochs, EITHER:
+         ┌────────────┴─────────────┐
+         ▼                          ▼
+   rebuild from inputs        gossip roots + peer H
+   (ID-5a): H matches?        agree above threshold?
+         │                          │
+    yes ─┴─ no                 yes ─┴─ no (keeps diverging)
+     ▼       ▼                  ▼        ▼
+  VERIFIED  ANOMALY          VERIFIED   ANOMALY gossiped (ID-10),
+            (ID-5b,10)                  user warned (ID-8b)
+
+  Even a FULLY adversarial first map is bounded (ID-8a):
+    1. content stays FLOORED — a bad map misjudges disjointness, which
+       erodes linkage; a content break still needs the adversary on ≥k
+       circuits AT ONCE (I-2). A bad map is a metadata attack, not content.
+    2. temporary + detectable — the adversary must eclipse the client
+       FOREVER to keep it hidden (that is OP-2, not a new weakness here).
+    3. unforgeable — the adversary cannot make public inputs rebuild to a
+       bad H. One rebuild, or one honest peer who did, converges to truth.
+```
 
 - **ID-8 (bootstrap is trust-on-first-use, declared). [normative]** The first map
   a fresh client obtains is a **TOFU** decision. The client MUST obtain it over as
