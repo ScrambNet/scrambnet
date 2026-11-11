@@ -83,6 +83,27 @@ relés que mienten sobre todo salvo lo que sus firmas vinculan (GR-2).
   que un adversario no pueda inflar la red con sybils para engañar a los
   clientes y que usen parámetros plenos cuya diversidad es falsa (se vincula a
   OP-2).
+- **PS-11 (la disjunción creída no es disjunción real).** La protección que
+  construye un cliente solo es tan buena como su conjunto de datos de inferencia,
+  y el cliente DEBE (MUST) tratar la tasa de error del conjunto de datos como un
+  parámetro de seguridad de primera clase, no como un detalle de implementación.
+  El simulador (`poc/network_sim.py`, §1) separa la *verdad de base* — que el
+  adversario explota — de la *creencia* del cliente, y barre la tasa de error de
+  inferencia: a medida que el error crece, la selección disjunta por AS se vuelve
+  en parte ilusoria y tanto la tasa de ruptura de contenido como la fuga de
+  vinculación crecen de forma monótona. Dos consecuencias son normativas: (a) el
+  error erosiona la **vinculación mucho más rápido que el contenido** — una
+  ruptura de contenido todavía requiere que el adversario esté en `≥ k` circuitos
+  a la vez, así que el umbral incondicional se sostiene mientras los metadatos se degradan
+  primero; la interfaz NO DEBE (MUST NOT) presentar una cifra baja de ruptura de
+  contenido como si acotara también la vinculación; (b) una **muestra de gossip**
+  más fina (PS-10, I-3) fuerza el repliegue antes: un cliente que conoce
+  demasiado pocos relés no puede construir circuitos disjuntos por AS en absoluto
+  y cae a `none`, donde la tasa de ruptura se dispara (§2). La estimación de
+  tamaño viable (PS-10) DEBE (MUST) por tanto contabilizar la muestra
+  *alcanzable*, no la red entera. Las cifras de error cero y vista completa son
+  el mejor caso; un cliente conforme DEBE (MUST) presentar el nivel alcanzado
+  (PS-9) a partir de su vista real, ruidosa y parcial.
 
 ## 6. Lo que esta parte no decide
 

@@ -83,6 +83,28 @@ un adversaire ne peut pas se poster à bas coût. Tout ce qui suit doit tenir fa
   enregistrements, afin qu'un adversaire ne puisse gonfler le réseau avec des
   sybils pour duper les clients et leur faire adopter des paramètres pleins dont
   la diversité est fausse (se rattache à OP-2).
+- **PS-11 (la disjonction supposée n'est pas la disjonction réelle).** La
+  protection qu'un client construit ne vaut que ce que vaut son jeu de données
+  d'inférence, et le client DOIT (MUST) traiter le taux d'erreur du jeu de
+  données comme un paramètre de sécurité de premier plan, non comme un détail
+  d'implémentation. Le simulateur (`poc/network_sim.py`, §1) sépare la *vérité
+  de terrain* — que l'adversaire exploite — de la *croyance* du client, et
+  balaie le taux d'erreur d'inférence : à mesure que l'erreur croît, la sélection
+  disjointe par AS devient en partie illusoire et tant le taux de rupture du
+  contenu que la fuite de liaison croissent de façon monotone. Deux conséquences
+  sont normatives : (a) l'erreur érode **la liaison bien plus vite que le
+  contenu** — une rupture de contenu exige toujours que l'adversaire soit sur
+  `≥ k` circuits à la fois, de sorte que le plancher tient tandis que les
+  métadonnées se dégradent d'abord ; l'UI NE DOIT PAS (MUST NOT) présenter un
+  faible chiffre de rupture de contenu comme s'il bornait aussi la liaison ;
+  (b) un **échantillon de gossip** plus mince (PS-10, I-3) force le repli plus
+  tôt : un client qui connaît trop peu de relais ne peut pas construire du tout
+  de circuits disjoints par AS et retombe à `none`, où le taux de rupture bondit
+  (§2). L'estimation de taille viable (PS-10) DOIT (MUST) par conséquent tenir
+  compte de l'échantillon *atteignable*, non du réseau entier. Les chiffres à
+  erreur nulle et vue complète sont le meilleur cas ; un client conforme DOIT
+  (MUST) présenter le niveau atteint (PS-9) depuis sa vue réelle, bruitée et
+  partielle.
 
 ## 6. Ce que cette partie ne décide pas
 

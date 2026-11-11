@@ -71,6 +71,24 @@ except what their signatures bind (GR-2).
   count only independently verified relays and observed AS diversity, never
   raw record count, so that an adversary cannot inflate the network with sybils
   to trick clients into full parameters whose diversity is fake (ties to OP-2).
+- **PS-11 (believed disjointness is not real disjointness).** The protection a
+  client builds is only as good as its inference dataset, and the client MUST
+  treat the dataset's error rate as a first-class security parameter, not an
+  implementation detail. The simulator (`poc/network_sim.py`, §1) separates
+  *ground truth* — which the adversary exploits — from the client's *belief*,
+  and sweeps the inference-error rate: as error rises, AS-disjoint selection
+  becomes partly illusory and both the content-break rate and the linkage leak
+  rise monotonically. Two consequences are normative:
+  (a) the error erodes **linkage far faster than content** — a content break
+  still needs the adversary on `≥ k` circuits at once, so the floor holds while
+  metadata degrades first; the UI MUST NOT present a low content-break number
+  as if it also bounded linkage;
+  (b) a thinner **gossip sample** (PS-10, I-3) forces fallback sooner: a client
+  that knows too few relays cannot build AS-disjoint circuits at all and drops
+  to `none`, where the break rate jumps (§2). The viable-size estimate (PS-10)
+  MUST therefore account for the *reachable* sample, not the whole network.
+  The zero-error, full-view numbers are the best case; a conforming client MUST
+  present the achieved level (PS-9) from its real, noisy, partial view.
 
 ## 6. What this part does not decide
 

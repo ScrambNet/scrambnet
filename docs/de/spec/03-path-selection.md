@@ -82,6 +82,28 @@ Gegner nicht billig setzen kann. Alles hier muss gegen Relais standhalten, die
   AS-Vielfalt zählen, niemals die rohe Eintragszahl, damit ein Gegner das Netz
   nicht mit Sybils aufblähen kann, um Clients zu vollen Parametern zu verleiten,
   deren Vielfalt falsch ist (bindet an OP-2).
+- **PS-11 (vermutete Disjunktheit ist keine echte Disjunktheit).** Der Schutz,
+  den ein Client aufbaut, ist nur so gut wie sein Schlussfolgerungs-Datensatz,
+  und der Client MUSS (MUST) die Fehlerrate des Datensatzes als
+  erstrangigen Sicherheitsparameter behandeln, nicht als Implementierungsdetail.
+  Der Simulator (`poc/network_sim.py`, §1) trennt die *Grundwahrheit* — die der
+  Gegner ausnutzt — von der *Annahme* des Clients und variiert die
+  Schlussfolgerungs-Fehlerrate: Steigt der Fehler, wird die AS-disjunkte Auswahl
+  teilweise illusorisch, und sowohl die Inhaltsbruchrate als auch der
+  Verknüpfungsleck steigen monoton. Zwei Folgerungen sind normativ: (a) Der
+  Fehler untergräbt die **Verknüpfung weit schneller als den Inhalt** — ein
+  Inhaltsbruch erfordert weiterhin, dass der Gegner auf `≥ k` Circuits
+  gleichzeitig sitzt, sodass die Untergrenze hält, während die Metadaten zuerst
+  degradieren; die UI DARF NICHT (MUST NOT) eine niedrige Inhaltsbruchzahl so
+  darstellen, als begrenze sie auch die Verknüpfung; (b) eine dünnere
+  **Gossip-Stichprobe** (PS-10, I-3) erzwingt das Zurückfallen früher: Ein
+  Client, der zu wenige Relais kennt, kann überhaupt keine AS-disjunkten
+  Circuits aufbauen und fällt auf `none` zurück, wo die Bruchrate springt (§2).
+  Die Schätzung der tragfähigen Größe (PS-10) MUSS (MUST) daher die
+  *erreichbare* Stichprobe berücksichtigen, nicht das gesamte Netz. Die Zahlen
+  bei null Fehler und voller Sicht sind der beste Fall; ein konformer Client MUSS
+  (MUST) die erreichte Stufe (PS-9) aus seiner realen, verrauschten, partiellen
+  Sicht darstellen.
 
 ## 6. Was dieser Teil nicht entscheidet
 

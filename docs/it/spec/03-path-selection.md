@@ -82,6 +82,28 @@ che mentono su tutto tranne ciò che le loro firme vincolano (GR-2).
   record, così che un avversario non possa gonfiare la rete con sybil per
   ingannare i client e indurli a usare parametri pieni la cui diversità è falsa
   (si lega a OP-2).
+- **PS-11 (la disgiunzione creduta non è disgiunzione reale).** La protezione
+  che un client costruisce vale solo quanto il suo insieme di dati per
+  l'inferenza, e il client DEVE (MUST) trattare il tasso di errore dell'insieme
+  di dati come un parametro di sicurezza di prim'ordine, non come un dettaglio
+  implementativo. Il simulatore (`poc/network_sim.py`, §1) separa la *verità di
+  base* — che l'avversario sfrutta — dalla *convinzione* del client, e fa variare
+  il tasso di errore dell'inferenza: al crescere dell'errore, la selezione
+  disgiunta per AS diventa in parte illusoria e sia il tasso di rottura del
+  contenuto sia la perdita di collegamento crescono in modo monotòno. Due
+  conseguenze sono normative: (a) l'errore erode il **collegamento molto più
+  rapidamente del contenuto** — una rottura del contenuto richiede comunque che
+  l'avversario sia su `≥ k` circuiti contemporaneamente, quindi il livello minimo
+  garantito regge mentre i metadati si degradano per primi; l'interfaccia NON
+  DEVE (MUST NOT) presentare un valore basso di rottura del contenuto come se
+  limitasse anche il collegamento; (b) un **campione di gossip** più sottile
+  (PS-10, I-3) costringe al ripiego prima: un client che conosce troppo pochi
+  relay non riesce a costruire affatto circuiti disgiunti per AS e precipita a
+  `none`, dove il tasso di rottura balza (§2). La stima della dimensione viabile
+  (PS-10) DEVE (MUST) quindi tenere conto del campione *raggiungibile*, non
+  dell'intera rete. I valori a errore zero e con vista completa sono il caso
+  migliore; un client conforme DEVE (MUST) presentare il livello raggiunto (PS-9)
+  a partire dalla sua vista reale, rumorosa e parziale.
 
 ## 6. Cosa questa parte non decide
 

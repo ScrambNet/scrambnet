@@ -123,16 +123,18 @@ bounded-trust dataset; an adversary that co-locates relays while advertising
 disjoint prefixes is likely undetectable.** The job is to bound what that
 adversary gains, not to pretend it away.
 
-- **2.1 — Simulator realism pass.** `[keystone]`
-  Today `network_sim.py` uses *ground-truth* AS labels — i.e. it assumes the
-  verification problem is already solved. Add: an AS/jurisdiction **inference
-  layer with injectable error** (so "unknown ⇒ assume shared" is exercised),
-  **persistent guards** across a message stream (a bad guard is bad for months),
-  a **partial gossip sample** per client instead of the god's-eye pool, and an
-  **upgraded adversary** (AS-level correlation, the drop counted as an exit
-  vantage, optional middle-hop confirmation). **Done:** break and linkage curves
-  as a function of inference-error rate, showing today's zero-error numbers were
-  optimistic. **Effort L.** Unblocks almost everything below.
+- **2.1 — Simulator realism pass.** `[keystone]` **DONE.**
+  `network_sim.py` now separates *ground truth* (which the adversary exploits)
+  from the client's *belief* (a noisy, gap-ridden inference dataset), with an
+  injectable inference-error rate exercising "unknown ⇒ assume shared"; adds
+  **persistent guards** across a message stream, a **partial gossip sample** per
+  client, and an **AS-level adversary** that counts the drop as an exit vantage.
+  The demo prints break and linkage curves vs inference error (both rise
+  monotonically; linkage erodes far faster than content, the honest shape of the
+  gap) and vs gossip fraction (a thin view forces fallback, where break jumps).
+  Written up as PS-11. `test_network_sim.py` locks the belief-vs-truth
+  separation. The zero-error, full-view numbers are now visibly the best case,
+  not the expected one. **Effort L.** Unblocks almost everything below.
 
 - **2.2 — Draft the Part 3 verification procedure.** `[flagship]`
   The expansion the OP-1 issue asks for: given a sample, an inference dataset, and
