@@ -53,14 +53,14 @@
   "ciphertext": "ccc56551b4e0fe10a699efa46e4ac3eb9f95af83ef32c980a70f871985eeca045b33106503"
  },
  "rendezvous": {
-  "comment": "Part 6 derivations: k_tag = HKDF-BLAKE2s(kpair,'tag'); box_id keys are '<drop>_<epoch>'.",
+  "comment": "Part 6 derivations, one KDF discipline (RZ-11): k_tag = HKDF-BLAKE2s(kpair,'tag'); box_id = HKDF-BLAKE2s(kpair, 'box'||drop||epoch_be8)[:16]. box_id keys are '<drop>_<epoch>'.",
   "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
   "k_tag": "2fa9ae241a816387b22c715329119bf2e001ab828a58428f4538c0568b03ca96",
   "box_ids": {
-   "0_20000": "1d37f45eefa0ac124b5b0796cc3f6ab5",
-   "0_20001": "2bccdbfba57cb7164ace80d561cd8bed",
-   "1_20000": "0d529a140949939deb5b51bc36e3c12e",
-   "1_20001": "c109308d32b2aaddce0f694a4f27b19b"
+   "0_20000": "4f36e33bc857c2894ebc2b2332a617ac",
+   "0_20001": "0c5789597ba312a69562c4006ed5959c",
+   "1_20000": "e88b03b6f3fee12c332b729b5f8fdc33",
+   "1_20001": "4b527d30a3ca70e747529870211b92f5"
   }
  }
 }

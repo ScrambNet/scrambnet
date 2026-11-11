@@ -297,10 +297,15 @@ all the others here: **state where the umbrella ends.**
 
 ## Suggested critical path
 
-**Now:** Tier 0 (0.1–0.4) — correct the known overclaims and the missing key.
-**Then the spine:** 1.1 → 1.2 → 1.3 → 1.4 (prove or break I-2), with 0.2 (the
-e2e AEAD) folded in since it unblocks the real composition demo.
-**Then in parallel:** 2.1 (simulator keystone) and 2.3 (the XL dataset, started
+**Done:** Tier 0 (0.1–0.4) — overclaims reconciled to the two-tier regime,
+the e2e AEAD implemented, the share-integrity verdict (SP-7a) written, the
+project PGP key published. Tier 1 (1.1–1.4) — the spine holds: Part 7 proves
+the floor (SA-1…SA-4), the coefficient-randomness and key-separation conditions
+are stated and tested, SP-7b nails no-equal-tag and nonce ownership, and one
+KDF discipline plus the UTC-epoch grace rule (RZ-13/RZ-14) are in. The
+load-bearing claim I-2 is now argued, not asserted; the invitation is to break
+Part 7.
+**Next:** Tier 2 — 2.1 (simulator keystone) and 2.3 (the XL dataset, started
 early) → 2.2 (flagship Part 3 verification); 4.1 (governance) and 4.2
 (reproducible builds) can proceed independently at any time.
 **Closing out:** 2.4, Tier 3 hardening, Tier 4 economics, then the unwritten

@@ -120,6 +120,27 @@ Déchiffrée par le destinataire seul :
   disponibilité est critique ; elle n'est délibérément pas imposée ici. `k,n` est verrouillé par
   vecteurs (ordre des quartets, vecteurs de la Partie 3 §3.2), de sorte qu'une implémentation ne peut
   pas être en désaccord *par accident*, seule une partie malveillante peut mentir.
+- **SP-7b (aucune `tag` égale parmi des drops en collusion, et propriété du nonce).** La propriété
+  qui doit tenir : aucun deux paquets qu'une coalition de drops peut voir ne portent une `tag` égale
+  à moins que l'expéditeur n'ait réutilisé une paire `(msg_nonce, index)`. *Argument :*
+  `tag = PRF(K_r, msg_nonce ‖ index)` avec `msg_nonce` fixé à 8 octets et `index` fixé à 1 octet, de
+  sorte que l'entrée de la PRF est un encodage à largeur fixe non ambigu de `(msg_nonce, index)` — l'application
+  `(msg_nonce, index) ↦ entrée` est injective. Une PRF BLAKE2s à clé ne donne des sorties égales que
+  sur des entrées égales (hormis une collision de ~`2^-128`), de sorte que des étiquettes égales
+  impliquent un `(msg_nonce, index)` égal. Les `n` parts d'un message partagent un seul `msg_nonce`
+  mais utilisent des index *distincts* `1..n`, d'où des entrées distinctes, d'où des étiquettes
+  distinctes : une coalition de drops ne peut pas distinguer deux parts d'un message de deux paquets
+  sans rapport. Deux messages *différents* ne font collisionner une `tag` que s'ils réutilisent un
+  `msg_nonce`. Par conséquent **la propriété du nonce est un DOIT (MUST)** : un expéditeur NE DOIT PAS
+  (MUST NOT) réutiliser un `msg_nonce` sous un même `kpair`. La réutilisation est doublement fatale —
+  elle fait collisionner les étiquettes SP-7 (rendant un ensemble de parts liable) *et*, parce que
+  `msg_nonce` est le nonce de l'AEAD (SP-1a), elle détruit la confidentialité de ChaCha20-Poly1305 (un
+  masque jetable réutilisé, épinglé par `test_nonce_reuse_is_detectable_catastrophe`). Un compteur de
+  messages par `kpair` strictement croissant satisfait cela ; la ligne de crue du compteur DOIT (MUST)
+  survivre aux redémarrages. À la couche de stockage, un drop DOIT (MUST) écarter un re-dépôt d'un
+  `(box_id, slot)` déjà stocké (rejeu) et expulse le plus ancien d'abord sous le plafond par boîte
+  (RZ-7), de sorte qu'un dépôt rejoué ne multiplie ni ne déplace le courrier honnête au-delà du plafond
+  déclaré.
 - **SP-8.** Un message qui ne remplit pas la charge utile de la part (`1792` octets, moins
   le préfixe de longueur de 2 octets) DOIT (MUST) être complété d'octets aléatoires avant la découpe ;
   un message qui la dépasse est fragmenté à une couche au-dessus de celle-ci

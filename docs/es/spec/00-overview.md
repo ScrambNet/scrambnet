@@ -9,7 +9,8 @@ no una decisión. Atácalo a través de las issues; cámbialo a través de PRs.
 - Las palabras clave **MUST** (DEBE), **MUST NOT** (NO DEBE), **SHOULD** (DEBERÍA),
   **SHOULD NOT** (NO DEBERÍA), **MAY** (PUEDE) se interpretan como se describe en el RFC 2119.
 - Los requisitos están numerados y son estables: `SP-n` (paquete de parte, Parte 1), `GR-n`
-  (registro de gossip, Parte 2). Las issues y PRs hacen referencia a los requisitos por número.
+  (registro de gossip, Parte 2), `PS-n` (selección de rutas, Parte 3), `RZ-n` (rendezvous, Parte 6),
+  `SA-n` (argumento de seguridad, Parte 7). Las issues y PRs hacen referencia a los requisitos por número.
 - Las referencias `OP-n` apuntan a la lista de problemas abiertos en
   [threat-model.md](../threat-model.md#problemas-abiertos).
 - Una implementación conforme implementa todo MUST de toda parte que declara.
@@ -73,6 +74,10 @@ actualización planificada, no una emergencia.
    repliegue para redes pequeñas (OP-1).
 4. [Parte 6 — Rendezvous y entrega](06-rendezvous.md): tarjetas de contacto,
    dead-drops dispersos y recuperación por sondeo.
+5. [Parte 7 — El argumento de seguridad para I-2](07-security-argument.md): la demostración de que
+   cualesquiera `k−1` partes son independientes del secreto, las dos condiciones sobre las que
+   descansa (aleatoriedad de los coeficientes, separación de claves), y un enunciado honesto de
+   lo que no se demuestra.
 
 Planificadas, aún no redactadas: Parte 4 — transportes camaleón; Parte 5 — encuadre
 del modo apagón.

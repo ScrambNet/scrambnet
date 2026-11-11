@@ -90,7 +90,13 @@ hinter seinen eigenen Circuits ab. Niemand stellt je *an* eine Person zu.
   begrenzt den Flutungsschaden auf eine Beziehung; die Ablage-Bepreisung (Client-
   Puzzles?) und die Speicherökonomie des Drops sind offen (OP-9).
 
-## 7. Was dieser Teil nicht entscheidet
+## 7. Schlüsselableitung und Epochengrenzen
+
+- **RZ-13 (eine KDF-Disziplin).** Jeder Schlüssel und jeder Bezeichner, den ein Paar aus `kpair` ableitet, MUSS (MUST) aus einer einzigen Disziplin stammen: HKDF-BLAKE2s mit einem eindeutigen, zweckbindenden Label. Konkret: der Inhaltsschlüssel ist `HKDF(kpair, "e2e-content")` (SP-1a), der SP-7-Tag-Schlüssel ist `HKDF(kpair, "tag")`, und der Postfach-Bezeichner ist `box_id = HKDF(kpair, "box" ‖ drop_index ‖ epoch)`, abgeschnitten auf `BOX_ID_BYTES`. Kein Wert wird durch rohes keyed-BLAKE2s auf `kpair` oder durch irgendeine zweite Konstruktion abgeleitet — ein früherer Entwurf leitete `box_id` auf diese Weise ab, was diese Anforderung abschafft. Label-Trennung bedeutet, dass die Erfassung oder Schwäche eines abgeleiteten Schlüssels einem Gegner nichts über die Geschwister verrät, und die gesamte Beziehung wird von einer einzigen auditierbaren Ableitung bestimmt (das `SA-4`-Schlüsseltrennungsargument, Teil 7, hängt genau davon ab).
+- **RZ-13a (box_id-Breite).** `BOX_ID_BYTES = 16` (128 Bit) (s). Ein Drop sieht nur dieses opake Handle, niemals `kpair`; 128 Bit sind kollisionssicher für die Anzahl der `(pair, drop, epoch)`-Postfächer, die irgendein realistisches Netz hält, und halten die `box_id ‖ slot`-Nutzlast innerhalb eines `delta`.
+- **RZ-14 (UTC-Epochengrenzen-Toleranz).** Da `box_id` je UTC-Epoche rotiert (RZ-10), würden ein Absender, der um 23:59 (Epoche `E`) ablegt, und ein Empfänger, der um 00:01 (Epoche `E+1`) pollt, verschiedene Postfächer adressieren, und der Empfänger würde die Post still verpassen. Um dies zu verhindern, MUSS (MUST) ein Empfänger, der innerhalb eines Toleranzfensters einer Epochengrenze pollt, die Postfächer **beider** angrenzenden Epochen pollen: die aktuelle Epoche stets, die vorherige Epoche, wenn innerhalb des Toleranzfensters nach einer Grenze, und die nächste Epoche, wenn innerhalb des Toleranzfensters vor einer. Das Toleranzfenster MUSS (MUST) die ungünstigste Absender-/Empfänger-Taktabweichung plus die Ablage-zu-Poll-Latenz übersteigen (Strohmann `EPOCH_GRACE_SECONDS = 3600` (s)), und `SLOT_TTL_EPOCHS` (RZ-7) MUSS (MUST) ein Postfach mindestens eine Epoche über seine eigene hinaus lesbar halten, damit das zusätzliche Postfach die Post noch hält. Absender legen unter der einzigen `epoch_of(now)` ab; die Toleranz ist eine empfängerseitige Leseregel. Demonstriert in `poc/rendezvous.py` (`epochs_to_poll`, Test `test_deposit_before_boundary_polled_after_boundary`).
+
+## 8. Was dieser Teil nicht entscheidet
 
 Die Minimierung der Abrufmetadaten (schlaueres-als-Polling-Abrufen, PIR-artige
 Tricks und ihre echten Kosten), die Löschsemantik, die Ablage-Bepreisung, die Drop-

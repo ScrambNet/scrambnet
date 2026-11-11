@@ -73,7 +73,12 @@ def split(secret: bytes, n: int, k: int, coeffs: bytes | None = None) -> list[by
 
     Each byte position is an independent degree-(k-1) polynomial with
     uniformly random coefficients; share i is the evaluation at x = i.
-    `coeffs` exists only so test vectors can be deterministic.
+    The independence and uniformity of these coefficients IS the floor
+    (spec Part 7, SA-3: "coefficient randomness is floor-critical") -- reuse
+    across positions or a low-entropy RNG breaks I-2, not just weakens it.
+    `secrets.token_bytes` is a CSPRNG; `coeffs` is injectable ONLY so test
+    vectors can be deterministic and so the reuse break can be demonstrated
+    (test_properties.test_coefficient_reuse_breaks_the_floor).
     """
     _check_params(n, k)
     need = (k - 1) * len(secret)

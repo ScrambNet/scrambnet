@@ -10,7 +10,9 @@ non une décision. Attaquez-le par les issues ; changez-le par les PR.
 - Les mots-clés **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** doivent être
   interprétés comme décrit dans la RFC 2119.
 - Les exigences sont numérotées et stables : `SP-n` (paquet de part, Partie 1), `GR-n`
-  (enregistrement de gossip, Partie 2). Les issues et les PR référencent les exigences par numéro.
+  (enregistrement de gossip, Partie 2), `PS-n` (sélection des chemins, Partie 3), `RZ-n`
+  (rendezvous, Partie 6), `SA-n` (argument de sécurité, Partie 7). Les issues et les PR
+  référencent les exigences par numéro.
 - Les références `OP-n` pointent vers la liste des problèmes ouverts dans
   [threat-model.md](../threat-model.md#open-problems).
 - Une implémentation conforme implémente chaque MUST de chaque partie qu'elle revendique.
@@ -74,6 +76,10 @@ amélioration planifiée, non une urgence.
    repli pour petit réseau (OP-1).
 4. [Partie 6 — Rendezvous et livraison](06-rendezvous.md) : cartes de contact,
    dead-drops dispersés, et récupération par sondage.
+5. [Partie 7 — L'argument de sécurité pour I-2](07-security-argument.md) : la preuve
+   que `k−1` parts quelconques sont indépendantes du secret, les deux conditions sur
+   lesquelles elle repose (aléa des coefficients, séparation des clés), et un énoncé
+   honnête de ce qui n'est pas démontré.
 
 Planifiées, pas encore ébauchées : Partie 4 — transports caméléon ; Partie 5 — encadrement du
 mode blackout.

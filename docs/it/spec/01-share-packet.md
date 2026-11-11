@@ -100,8 +100,8 @@ Decifrato solo dal destinatario:
   degrada in una comodità di enumerazione per l'avversario.
 - **SP-7a (integrità della quota: residuo fail-closed accettato).** Il `tag` dice *a quale*
   messaggio un pacchetto afferma di appartenere; **non** autentica i byte di `share` né il byte
-  dei `params` (`k,n`). La ricostruzione di Shamir non ha un'integrità propria, perciò una tratta
-  ostile, o un'uscita, che inverte dei bit in una quota — o mente su `k,n` — produce un candidato
+  dei `params` (`k,n`). La ricostruzione di Shamir non ha un'integrità propria, perciò un
+  drop ostile, o un'uscita, che inverte dei bit in una quota — o mente su `k,n` — produce un candidato
   in chiaro coerente-ma-sbagliato che Shamir non può rilevare. Questo è **intercettato un livello
   più in alto**: l'AEAD end-to-end (SP-1a) fallisce il suo tag su qualsiasi ricostruzione corrotta
   e il destinatario scarta il messaggio invece di agire su spazzatura (dimostrato in
@@ -120,6 +120,27 @@ Decifrato solo dal destinatario:
   quota per i profili critici per la disponibilità; qui deliberatamente non è imposto. `k,n` è
   bloccato da vettori (ordine dei nibble, vettori Parte 3 §3.2) affinché un'implementazione non
   possa essere *accidentalmente* in disaccordo, solo una parte malevola può mentire.
+- **SP-7b (nessun `tag` uguale tra drop in collusione, e proprietà del nonce).** La proprietà
+  che deve valere: nessuna coppia di pacchetti che una coalizione di drop può osservare porta un
+  `tag` uguale a meno che il mittente non abbia riusato una coppia `(msg_nonce, index)`.
+  *Argomento:* `tag = PRF(K_r, msg_nonce ‖ index)` con `msg_nonce` fisso a 8 byte e `index` fisso a
+  1 byte, perciò l'ingresso della PRF è una codifica a larghezza fissa non ambigua di
+  `(msg_nonce, index)` — la mappa `(msg_nonce, index) ↦ input` è iniettiva. Una PRF BLAKE2s con
+  chiave dà uscite uguali solo su ingressi uguali (salvo una collisione da ~`2^-128`), quindi `tag`
+  uguali implicano un `(msg_nonce, index)` uguale. Le `n` quote di un messaggio condividono un solo
+  `msg_nonce` ma usano indici *distinti* `1..n`, dunque ingressi distinti, dunque `tag` distinti:
+  una coalizione di drop non può distinguere due quote di un messaggio da due pacchetti scorrelati.
+  Due messaggi *diversi* producono un `tag` in collisione solo se riusano un `msg_nonce`. Perciò **la
+  proprietà del nonce è un DEVE (MUST)**: un mittente NON DEVE (MUST NOT) riusare un `msg_nonce`
+  sotto una stessa `kpair`. Il riuso è doppiamente fatale — fa collidere i `tag` di SP-7 (rendendo
+  collegabile un insieme di quote) *e*, poiché `msg_nonce` è il nonce dell'AEAD (SP-1a), distrugge la
+  confidenzialità di ChaCha20-Poly1305 (un two-time pad, fissato da
+  `test_nonce_reuse_is_detectable_catastrophe`). Un contatore di messaggi strettamente crescente per
+  `kpair` soddisfa questo requisito; il valore massimo raggiunto (high-water mark) del contatore DEVE
+  (MUST) sopravvivere ai riavvii. A livello di memorizzazione, un drop DEVE (MUST) scartare un
+  rideposito di un `(box_id, slot)` già memorizzato (replay) e sfratta il più vecchio per primo sotto
+  il limite per casella (RZ-7), così un deposito replicato non moltiplica né sposta la posta onesta
+  oltre il limite dichiarato.
 - **SP-8.** Un messaggio che non riempie il payload della quota (`1792` byte, meno
   il prefisso di lunghezza di 2 byte) DEVE (MUST) essere riempito con byte casuali prima dello split;
   un messaggio che lo supera è frammentato a un livello superiore a questo

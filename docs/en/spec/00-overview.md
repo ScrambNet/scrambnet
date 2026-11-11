@@ -8,7 +8,9 @@ not a decision. Attack it through the issues; change it through PRs.
 - The key words **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** are to be
   interpreted as described in RFC 2119.
 - Requirements are numbered and stable: `SP-n` (share packet, Part 1), `GR-n`
-  (gossip record, Part 2). Issues and PRs reference requirements by number.
+  (gossip record, Part 2), `PS-n` (path selection, Part 3), `RZ-n` (rendezvous,
+  Part 6), `SA-n` (security argument, Part 7). Issues and PRs reference
+  requirements by number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
 - A conforming implementation implements every MUST of every part it claims.
@@ -72,6 +74,10 @@ planned upgrade, not an emergency.
    small-network fallback (OP-1).
 4. [Part 6 — Rendezvous and delivery](06-rendezvous.md): contact cards,
    dispersed dead drops, and retrieval by polling.
+5. [Part 7 — The security argument for I-2](07-security-argument.md): the
+   proof that any `k−1` shares are independent of the secret, the two
+   conditions it rests on (coefficient randomness, key separation), and an
+   honest statement of what is not proved.
 
 Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
 mode framing.

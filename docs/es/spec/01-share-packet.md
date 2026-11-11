@@ -122,6 +122,27 @@ Descifrada solo por el destinatario:
   opcional para perfiles críticos en disponibilidad; deliberadamente no se exige aquí. `k,n`
   está bloqueado por vectores (orden de nibbles, vectores de la Parte 3 §3.2) de modo que una
   implementación no puede discrepar *accidentalmente*, solo una parte maliciosa puede mentir.
+- **SP-7b (sin `tag` igual entre drops coludidos, y propiedad del nonce).** La propiedad que debe
+  cumplirse: ningún par de paquetes que una coalición de drops pueda ver lleva un `tag` igual a
+  menos que el remitente haya reutilizado un par `(msg_nonce, index)`. *Argumento:*
+  `tag = PRF(K_r, msg_nonce ‖ index)` con `msg_nonce` unos 8 bytes fijos e `index` un byte fijo, de
+  modo que la entrada de la PRF es una codificación de anchura fija e inequívoca de
+  `(msg_nonce, index)` —la aplicación `(msg_nonce, index) ↦ entrada` es inyectiva. Una PRF BLAKE2s
+  con clave da salidas iguales solo ante entradas iguales (salvo una colisión de ~`2^-128`), así que
+  etiquetas iguales implican un `(msg_nonce, index)` igual. Las `n` partes de un mensaje comparten un
+  mismo `msg_nonce` pero usan índices *distintos* `1..n`, de ahí entradas distintas, de ahí etiquetas
+  distintas: una coalición de drops no puede distinguir dos partes de un mensaje de dos paquetes sin
+  relación. Dos mensajes *diferentes* colisionan un `tag` solo si reutilizan un `msg_nonce`. Por tanto
+  **la propiedad del nonce es un DEBE (MUST)**: un remitente NO DEBE (MUST NOT) reutilizar un
+  `msg_nonce` bajo un mismo `kpair`. La reutilización es doblemente fatal —colisiona las etiquetas de
+  SP-7 (haciendo enlazable un conjunto de partes) *y*, porque `msg_nonce` es el nonce del AEAD
+  (SP-1a), destruye la confidencialidad de ChaCha20-Poly1305 (un bloc de un solo uso usado dos veces,
+  fijado por `test_nonce_reuse_is_detectable_catastrophe`). Un contador de mensajes por `kpair`
+  estrictamente creciente satisface esto; la marca de nivel máximo (high-water mark) del contador DEBE
+  (MUST) sobrevivir a los reinicios. En la capa de almacenamiento, un drop DEBE (MUST) descartar un
+  redepósito de un `(box_id, slot)` ya almacenado (repetición) y desaloja primero el más antiguo bajo
+  el tope por buzón (RZ-7), de modo que un depósito repetido ni multiplica ni desplaza correo honesto
+  más allá del tope declarado.
 - **SP-8.** Un mensaje que no llena la carga útil de la parte (`1792` bytes, menos
   el prefijo de longitud de 2 bytes) DEBE (MUST) rellenarse con bytes aleatorios antes de dividirse;
   un mensaje que la excede se fragmenta en una capa por encima de esta

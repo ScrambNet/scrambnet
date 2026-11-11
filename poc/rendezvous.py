@@ -23,6 +23,8 @@ B_SLOTS = 8              # RZ-9 (s): retrieval always returns exactly this many
 BOX_CAP = 64             # RZ-7 (s): slots per box, oldest-first eviction
 SLOT_TTL_EPOCHS = 7      # RZ-7 (s): expiry, with epoch = one day
 EPOCH_SECONDS = 86400    # RZ-3 (s)
+EPOCH_GRACE_SECONDS = 3600  # RZ-14 (s): near a UTC epoch boundary, poll both
+                            # adjacent epochs (> worst-case clock skew + latency)
 POLL_PERIOD = 900        # RZ-9 (s): poll every 15 min ...
 POLL_JITTER = 300        # ... plus/minus uniform 5 min
 
@@ -42,25 +44,69 @@ def epoch_of(unix_time: float) -> int:
     return int(unix_time // EPOCH_SECONDS)
 
 
+def epochs_to_poll(unix_time: float) -> list[int]:
+    """RZ-14 (UTC-epoch-boundary grace): the epochs a recipient MUST check.
+
+    Box ids rotate per UTC epoch (RZ-3/RZ-10). Without a grace rule a sender
+    depositing at 23:59 (epoch E) and a recipient polling at 00:01 (epoch E+1)
+    would look in different boxes, and mail deposited near the boundary would
+    be silently missed -- a real delivery bug, not a theoretical one. So near
+    a boundary the recipient polls BOTH adjacent epochs:
+
+      - always the current epoch E;
+      - also E-1 if within EPOCH_GRACE_SECONDS after the boundary (catch mail
+        deposited late in the previous epoch);
+      - also E+1 if within EPOCH_GRACE_SECONDS before the next boundary (catch
+        mail from a sender whose clock is slightly ahead).
+
+    The grace window must exceed the worst-case sender/recipient clock skew
+    plus deposit-to-poll latency; SLOT_TTL_EPOCHS keeps the extra box alive
+    long enough to be read. Senders deposit under the single epoch_of(now).
+    """
+    e = epoch_of(unix_time)
+    offset = unix_time - e * EPOCH_SECONDS          # seconds into epoch E
+    out = [e]
+    if offset < EPOCH_GRACE_SECONDS:
+        out.append(e - 1)
+    if offset > EPOCH_SECONDS - EPOCH_GRACE_SECONDS:
+        out.append(e + 1)
+    return out
+
+
 class Card:
     """RZ-2/RZ-3: per-relationship contact card (encoding out of PoC scope).
 
-    Everything derives from kpair. The drop index MUST enter the box
-    derivation: with one id per epoch, two colluding drops could link the
-    pair's boxes within that epoch.
+    Everything derives from kpair through ONE KDF discipline (RZ-13, the 1.4
+    unification): a single master PRK = HKDF-Extract(kpair), then every
+    sub-key is HKDF-Expand with a distinct label. No raw keyed-BLAKE2s on
+    kpair anymore -- content, tag and box keys are label-separated siblings,
+    so a weakness or capture of one says nothing about the others, and the
+    whole relationship is governed by one auditable derivation.
+
+    The drop index MUST enter the box derivation: with one id per epoch, two
+    colluding drops could link the pair's boxes within that epoch.
     """
 
     def __init__(self, recipient_id: bytes, kpair: bytes, drops: list):
         self.recipient_id = recipient_id
         self.kpair = kpair
         self.drops = drops                      # RZ-5: chosen by the recipient
-        self.k_tag = hkdf_blake2s(kpair, b"tag")   # the SP-7 key for this pair
+        # SP-7 tag key for this pair: label "tag", same discipline as the
+        # content key ("e2e-content", in e2e.py) and the box key ("box").
+        self.k_tag = hkdf_blake2s(kpair, b"tag")
 
     def box_id(self, drop_index: int, epoch: int) -> bytes:
-        """RZ-3/RZ-10: per-drop, per-epoch rotating box identifier."""
-        msg = b"box" + bytes([drop_index]) + epoch.to_bytes(8, "big")
-        return hashlib.blake2s(msg, key=self.kpair,
-                               digest_size=BOX_ID_BYTES).digest()
+        """RZ-3/RZ-10: per-drop, per-epoch rotating box identifier.
+
+        Derived through the SAME HKDF discipline as k_tag, not raw keyed
+        BLAKE2s (the 1.4 fix). The label binds the purpose ("box"), the
+        drop index, and the epoch; truncated to BOX_ID_BYTES = 16 (RZ-13:
+        128 bits is collision-safe for the number of (pair, drop, epoch)
+        boxes any realistic network holds, and keeps delta/slot overhead
+        small -- a drop sees only an opaque 16-byte handle, never kpair).
+        """
+        info = b"box" + bytes([drop_index]) + epoch.to_bytes(8, "big")
+        return hkdf_blake2s(self.kpair, info, BOX_ID_BYTES)
 
 
 # --- slot: the Part 1 section 4 share payload, pad 16 bytes shorter (RZ-6) ---
@@ -95,6 +141,9 @@ class Drop:
         box, slot = plaintext[:BOX_ID_BYTES], plaintext[BOX_ID_BYTES:]
         self.log.append(("deposit", int(now), box.hex()[:8]))
         q = self.boxes.setdefault(box, [])
+        if any(s == slot for _, s in q):
+            return                              # SP-7b: drop an exact replay of
+                                                # an already-stored (box, slot)
         q.append((epoch_of(now), slot))
         if len(q) > BOX_CAP:
             q.pop(0)                            # RZ-7: oldest-first eviction
@@ -139,18 +188,22 @@ def deposit_message(card: Card, msg: bytes, msg_nonce: bytes, now: float,
 
 def poll_all(card: Card, now: float, nonce_window: list[bytes]) -> dict[bytes, bytes]:
     """RZ-9: one fixed-size retrieval per drop; recognition by SP-7 tags,
-    exactly as on the wire -- a dummy slot simply matches no expected tag."""
+    exactly as on the wire -- a dummy slot simply matches no expected tag.
+
+    RZ-14: near a UTC epoch boundary the recipient polls both adjacent epoch
+    boxes (epochs_to_poll), so mail deposited just before a boundary is not
+    missed by a recipient who has already rolled to the next epoch."""
     expected = {d.share_tag(card.k_tag, nonce, i): (nonce, i)
                 for nonce in nonce_window for i in range(1, 16)}
     groups: dict[bytes, dict[int, tuple[int, bytes]]] = {}
-    epoch = epoch_of(now)
     for i, drop in enumerate(card.drops):
-        for slot in drop.retrieve(now, card.box_id(i, epoch)):
-            tag, index, k, n, share = parse_slot(slot)
-            hit = expected.get(tag)
-            if hit is None or hit[1] != index:
-                continue
-            groups.setdefault(hit[0], {})[index] = (k, share)
+        for epoch in epochs_to_poll(now):
+            for slot in drop.retrieve(now, card.box_id(i, epoch)):
+                tag, index, k, n, share = parse_slot(slot)
+                hit = expected.get(tag)
+                if hit is None or hit[1] != index:
+                    continue
+                groups.setdefault(hit[0], {})[index] = (k, share)
     done = {}
     for nonce, got in groups.items():
         k = next(iter(got.values()))[0]

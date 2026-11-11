@@ -10,7 +10,9 @@
 - 关键词 **MUST**、**MUST NOT**、**SHOULD**、**SHOULD NOT**、**MAY** 应按
   RFC 2119 所述解释。
 - 需求是编号且稳定的：`SP-n`（share packet，第 1 部分）、`GR-n`
-  （gossip record，第 2 部分）。issues 与 PR 按编号引用需求。
+  （gossip record，第 2 部分）、`PS-n`（path selection，第 3 部分）、`RZ-n`
+  （rendezvous，第 6 部分）、`SA-n`（security argument，第 7 部分）。issues 与
+  PR 按编号引用需求。
 - `OP-n` 引用指向
   [threat-model.md](../threat-model.md#open-problems) 中的开放问题清单。
 - 一个合规的实现，实现它所声称的每一部分的每一条 MUST。
@@ -74,6 +76,9 @@
    小型网络的回退方案（OP-1）。
 4. [第 6 部分 —— 会合与投递](06-rendezvous.md)：联系卡、
    分散的死信箱，以及以轮询进行的取回。
+5. [第 7 部分 —— I-2 的安全性论证](07-security-argument.md)：对任意
+   `k−1` 份额都独立于秘密这一点的证明、它所依赖的两个条件（系数随机性、
+   密钥分离），以及对未被证明之事的一份坦诚陈述。
 
 已规划、尚未起草：第 4 部分 —— 变色龙传输；第 5 部分 —— 断网
 模式封装。

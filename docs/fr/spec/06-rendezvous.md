@@ -91,7 +91,38 @@ derrière ses propres circuits. Nul ne livre jamais *à* une personne.
   borne les dégâts d'inondation à une relation ; la tarification des dépôts (énigmes
   client ?) et l'économie de stockage des drops sont ouvertes (OP-9).
 
-## 7. Ce que cette partie ne décide pas
+## 7. Dérivation des clés et frontières d'époque
+
+- **RZ-13 (une seule discipline de KDF).** Toute clé et tout identifiant qu'une paire dérive
+  de `kpair` DOIT (MUST) provenir d'une discipline unique : HKDF-BLAKE2s avec une étiquette
+  distincte liant l'usage. Concrètement : la clé de contenu est `HKDF(kpair, "e2e-content")`
+  (SP-1a), la clé d'étiquette SP-7 est `HKDF(kpair, "tag")`, et l'identifiant de boîte est
+  `box_id = HKDF(kpair, "box" ‖ drop_index ‖ epoch)` tronqué à `BOX_ID_BYTES`. Aucune valeur
+  n'est dérivée par un BLAKE2s à clé brut sur `kpair` ni par une quelconque seconde
+  construction — un brouillon antérieur dérivait `box_id` de cette manière, ce que cette
+  exigence abolit. La séparation par étiquette signifie que la capture ou la faiblesse d'une clé
+  dérivée n'apprend rien à un adversaire sur ses sœurs, et toute la relation est gouvernée par
+  une seule dérivation auditable (l'argument de séparation des clés `SA-4`, Partie 7, dépend
+  exactement de cela).
+- **RZ-13a (largeur de box_id).** `BOX_ID_BYTES = 16` (128 bits) (s). Un drop ne voit que ce
+  descripteur opaque, jamais `kpair` ; 128 bits sont sûrs vis-à-vis des collisions pour le
+  nombre de boîtes `(pair, drop, epoch)` que tout réseau réaliste détient et maintiennent la
+  charge utile `box_id ‖ slot` dans un seul `delta`.
+- **RZ-14 (grâce de frontière d'époque UTC).** Comme `box_id` tourne par époque UTC (RZ-10), un
+  expéditeur déposant à 23:59 (époque `E`) et un destinataire sondant à 00:01 (époque `E+1`)
+  adresseraient des boîtes différentes et le destinataire manquerait silencieusement le courrier.
+  Pour l'éviter, un destinataire sondant dans une fenêtre de grâce autour d'une frontière d'époque
+  DOIT (MUST) sonder les boîtes des **deux** époques adjacentes : l'époque courante toujours,
+  l'époque précédente si l'on est dans la fenêtre de grâce après une frontière, et l'époque
+  suivante si l'on est dans la fenêtre de grâce avant une frontière. La fenêtre de grâce DOIT
+  (MUST) excéder le pire décalage d'horloge expéditeur/destinataire plus la latence
+  dépôt-à-sondage (homme de paille `EPOCH_GRACE_SECONDS = 3600` (s)), et `SLOT_TTL_EPOCHS` (RZ-7)
+  DOIT (MUST) maintenir une boîte lisible au moins une époque au-delà de la sienne, afin que la
+  boîte supplémentaire détienne encore le courrier. Les expéditeurs déposent sous l'unique
+  `epoch_of(now)` ; la grâce est une règle de lecture côté destinataire. Démontré dans
+  `poc/rendezvous.py` (`epochs_to_poll`, test `test_deposit_before_boundary_polled_after_boundary`).
+
+## 8. Ce que cette partie ne décide pas
 
 La minimisation des métadonnées de récupération (récupération plus maligne que le sondage, astuces
 de style PIR et leurs coûts réels), la sémantique de suppression, la tarification des dépôts, les incitations

@@ -89,7 +89,39 @@ behind its own circuits. Nobody ever delivers *to* a person.
   bounds flooding damage to one relationship; deposit pricing (client
   puzzles?) and drop storage economics are open (OP-9).
 
-## 7. What this part does not decide
+## 7. Key derivation and epoch boundaries
+
+- **RZ-13 (one KDF discipline).** Every key and identifier a pair derives from
+  `kpair` MUST come from a single discipline: HKDF-BLAKE2s with a distinct,
+  purpose-binding label. Concretely: the content key is
+  `HKDF(kpair, "e2e-content")` (SP-1a), the SP-7 tag key is `HKDF(kpair, "tag")`,
+  and the box identifier is `box_id = HKDF(kpair, "box" ‖ drop_index ‖ epoch)`
+  truncated to `BOX_ID_BYTES`. No value is derived by raw keyed-BLAKE2s on
+  `kpair` or by any second construction — an earlier draft derived `box_id` that
+  way, which this requirement retires. Label separation means the capture or
+  weakness of one derived key tells an adversary nothing about the siblings, and
+  the whole relationship is governed by one auditable derivation (the `SA-4`
+  key-separation argument, Part 7, depends on exactly this).
+- **RZ-13a (box_id width).** `BOX_ID_BYTES = 16` (128 bits) (s). A drop sees only
+  this opaque handle, never `kpair`; 128 bits is collision-safe for the number
+  of `(pair, drop, epoch)` boxes any realistic network holds and keeps the
+  `box_id ‖ slot` payload within one `delta`.
+- **RZ-14 (UTC-epoch-boundary grace).** Because `box_id` rotates per UTC epoch
+  (RZ-10), a sender depositing at 23:59 (epoch `E`) and a recipient polling at
+  00:01 (epoch `E+1`) would address different boxes and the recipient would
+  silently miss the mail. To prevent this, a recipient polling within a grace
+  window of an epoch boundary MUST poll **both** adjacent epochs' boxes: the
+  current epoch always, the previous epoch if within the grace window after a
+  boundary, and the next epoch if within the grace window before one. The grace
+  window MUST exceed the worst-case sender/recipient clock skew plus
+  deposit-to-poll latency (strawman `EPOCH_GRACE_SECONDS = 3600` (s)), and
+  `SLOT_TTL_EPOCHS` (RZ-7) MUST keep a box readable at least one epoch past its
+  own, so the extra box still holds the mail. Senders deposit under the single
+  `epoch_of(now)`; the grace is a recipient-side read rule. Demonstrated in
+  `poc/rendezvous.py` (`epochs_to_poll`, test
+  `test_deposit_before_boundary_polled_after_boundary`).
+
+## 8. What this part does not decide
 
 Retrieval metadata minimization (smarter-than-polling retrieval, PIR-style
 tricks and their real costs), deletion semantics, deposit pricing, drop

@@ -77,6 +77,23 @@ class DropBehaviour(unittest.TestCase):
         self.assertEqual(len(drop.boxes[box]), rz.BOX_CAP)
         self.assertNotIn(first, [s for _, s in drop.boxes[box]])
 
+    def test_replay_of_identical_slot_is_dropped(self):
+        """SP-7b: a drop MUST drop an exact redeposit of an already-stored
+        (box, slot), so a replayed deposit cannot multiply or displace mail."""
+        drop = rz.Drop()
+        box = secrets.token_bytes(16)
+        slot = rz.build_slot(secrets.token_bytes(16), 1, 4, 3,
+                             secrets.token_bytes(d.SHARE_BYTES))
+        drop.deposit(T0, box + slot)
+        drop.deposit(T0 + 1, box + slot)        # exact replay
+        drop.deposit(T0 + 2, box + slot)        # and again
+        self.assertEqual(len(drop.boxes[box]), 1)   # stored once, not thrice
+        # a genuinely different slot to the same box is still accepted
+        other = rz.build_slot(secrets.token_bytes(16), 2, 4, 3,
+                              secrets.token_bytes(d.SHARE_BYTES))
+        drop.deposit(T0 + 3, box + other)
+        self.assertEqual(len(drop.boxes[box]), 2)
+
     def test_expiry_by_epoch(self):
         drop = rz.Drop()
         box = secrets.token_bytes(16)
@@ -111,6 +128,43 @@ class EndToEnd(unittest.TestCase):
         gaps = [b - a for a, b in zip(times, times[1:])]
         self.assertTrue(all(rz.POLL_PERIOD - rz.POLL_JITTER <= g <=
                             rz.POLL_PERIOD + rz.POLL_JITTER for g in gaps))
+
+
+class EpochGrace(unittest.TestCase):
+    """RZ-14: the UTC-epoch-boundary grace rule. Without it, mail deposited at
+    23:59 in epoch E is filed in E's box, but a recipient polling at 00:01 has
+    rolled to E+1's box and misses it. The grace rule makes the recipient poll
+    both adjacent epochs near a boundary."""
+
+    def _boundary(self):
+        # A time exactly on an epoch boundary (00:00:00 UTC of some epoch).
+        e = rz.epoch_of(T0) + 1
+        return e * rz.EPOCH_SECONDS
+
+    def test_deposit_before_boundary_polled_after_boundary(self):
+        card = make_card()
+        boundary = self._boundary()
+        deposit_t = boundary - 60      # 23:59, epoch E
+        poll_t = boundary + 60         # 00:01, epoch E+1
+        # sanity: the two times really are in different epochs
+        self.assertNotEqual(rz.epoch_of(deposit_t), rz.epoch_of(poll_t))
+        msg = secrets.token_bytes(120)
+        nonce = (9).to_bytes(8, "big")
+        rz.deposit_message(card, msg, nonce, deposit_t)
+        window = [i.to_bytes(8, "big") for i in range(16)]
+        # RZ-14: the recipient finds it despite having rolled epochs.
+        self.assertEqual(rz.poll_all(card, poll_t, window), {nonce: msg})
+
+    def test_epochs_to_poll_spans_boundary_both_ways(self):
+        boundary = self._boundary()
+        e = rz.epoch_of(boundary)
+        # just after boundary: polls E and E-1
+        self.assertEqual(set(rz.epochs_to_poll(boundary + 60)), {e, e - 1})
+        # just before boundary: polls E-1 and E (E-1 is current, E is next)
+        self.assertEqual(set(rz.epochs_to_poll(boundary - 60)), {e - 1, e})
+        # mid-epoch: single epoch only, no needless extra box fetched
+        mid = (e * rz.EPOCH_SECONDS) + rz.EPOCH_SECONDS // 2
+        self.assertEqual(rz.epochs_to_poll(mid), [e])
 
 
 class Vectors(unittest.TestCase):

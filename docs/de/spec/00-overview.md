@@ -10,7 +10,8 @@ keine Entscheidung. Greife sie über die Issues an; ändere sie über PRs.
   **SHOULD NOT** (SOLLTE NICHT), **MAY** (DARF) sind wie in RFC 2119 beschrieben zu
   interpretieren.
 - Anforderungen sind nummeriert und stabil: `SP-n` (Anteil-Paket, Teil 1), `GR-n`
-  (Gossip-Eintrag, Teil 2). Issues und PRs verweisen auf Anforderungen per Nummer.
+  (Gossip-Eintrag, Teil 2), `PS-n` (Pfadauswahl, Teil 3), `RZ-n` (Rendezvous, Teil 6),
+  `SA-n` (Sicherheitsargument, Teil 7). Issues und PRs verweisen auf Anforderungen per Nummer.
 - `OP-n`-Verweise zeigen auf die Liste offener Probleme in
   [threat-model.md](../threat-model.md#offene-probleme).
 - Eine konforme Implementierung implementiert jedes MUST jedes Teils, den sie beansprucht.
@@ -74,6 +75,10 @@ geplantes Upgrade, kein Notfall.
    Kleinnetz-Rückfall (OP-1).
 4. [Teil 6 — Rendezvous und Zustellung](06-rendezvous.md): Kontaktkarten,
    verstreute Dead-Drops und Abruf per Polling.
+5. [Teil 7 — Das Sicherheitsargument für I-2](07-security-argument.md): der Beweis,
+   dass beliebige `k−1` Anteile unabhängig vom Geheimnis sind, die zwei Bedingungen,
+   auf denen er ruht (Koeffizienten-Zufälligkeit, Schlüsseltrennung), und eine ehrliche
+   Angabe dessen, was nicht bewiesen ist.
 
 Geplant, noch nicht entworfen: Teil 4 — Chamäleon-Transporte; Teil 5 — Blackout-
 Modus-Rahmung.

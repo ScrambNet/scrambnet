@@ -125,6 +125,29 @@ Nur vom Empfänger entschlüsselt:
   hinzufügen; sie wird hier bewusst nicht vorgeschrieben. `k,n` ist vektorverriegelt
   (Nibble-Reihenfolge, Vektoren aus Teil 3 §3.2), sodass eine Implementierung nicht
   *versehentlich* widersprechen kann, nur eine bösartige Partei kann lügen.
+- **SP-7b (kein gleicher `tag` über kolludierende Drops hinweg, und Nonce-Eigentümerschaft).**
+  Die Eigenschaft, die gelten MUSS (MUST): keine zwei Pakete, die eine Koalition von Drops
+  sehen kann, tragen einen gleichen `tag`, es sei denn, der Absender hat ein
+  `(msg_nonce, index)`-Paar wiederverwendet. *Argument:* `tag = PRF(K_r, msg_nonce ‖ index)`
+  mit `msg_nonce` als festen 8 Bytes und `index` als festem 1 Byte, sodass die PRF-Eingabe
+  eine eindeutige Festbreiten-Kodierung von `(msg_nonce, index)` ist — die Abbildung
+  `(msg_nonce, index) ↦ input` ist injektiv. Eine geschlüsselte BLAKE2s-PRF liefert gleiche
+  Ausgaben nur bei gleichen Eingaben (abgesehen von einer ~`2^-128`-Kollision), also
+  implizieren gleiche Tags ein gleiches `(msg_nonce, index)`. Die `n` Anteile einer Nachricht
+  teilen ein `msg_nonce`, verwenden aber *verschiedene* Indizes `1..n`, daher verschiedene
+  Eingaben, daher verschiedene Tags: eine Koalition von Drops kann zwei Anteile einer
+  Nachricht nicht von zwei unverwandten Paketen unterscheiden. Zwei *verschiedene* Nachrichten
+  kollidieren einen `tag` nur, wenn sie ein `msg_nonce` wiederverwenden. Daher ist
+  **Nonce-Eigentümerschaft ein MUSS (MUST)**: ein Absender DARF NICHT (MUST NOT) ein
+  `msg_nonce` unter einem `kpair` wiederverwenden. Wiederverwendung ist doppelt fatal — sie
+  kollidiert SP-7-Tags (wodurch ein Anteil-Satz verknüpfbar wird) *und*, weil `msg_nonce` die
+  AEAD-Nonce ist (SP-1a), zerstört sie die ChaCha20-Poly1305-Vertraulichkeit (ein Two-Time-Pad,
+  festgepinnt durch `test_nonce_reuse_is_detectable_catastrophe`). Ein streng steigender
+  Nachrichtenzähler je `kpair` erfüllt dies; der Höchststand (High-Water-Mark) des Zählers
+  MUSS (MUST) Neustarts überleben. Auf der Speicherschicht MUSS (MUST) ein Drop eine erneute
+  Hinterlegung eines bereits gespeicherten `(box_id, slot)` verwerfen (Replay) und räumt unter
+  der Je-Box-Obergrenze das Älteste zuerst aus (RZ-7), sodass eine wiederholte Hinterlegung
+  ehrliche Post weder vervielfacht noch über die deklarierte Obergrenze hinaus verdrängt.
 - **SP-8.** Eine Nachricht, die die Anteil-Nutzlast (`1792` Bytes, abzüglich
   des 2-Byte-Längenpräfixes) nicht füllt, MUSS (MUST) vor dem Teilen mit Zufallsbytes aufgefüllt werden;
   eine Nachricht, die sie überschreitet, wird auf einer Schicht oberhalb dieser fragmentiert

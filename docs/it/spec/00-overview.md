@@ -10,7 +10,9 @@ non una decisione. Attaccalo attraverso le issue; cambialo attraverso le PR.
 - Le parole chiave **MUST**, **MUST NOT**, **SHOULD**, **SHOULD NOT**, **MAY** vanno
   interpretate come descritto in RFC 2119.
 - I requisiti sono numerati e stabili: `SP-n` (share packet, Parte 1), `GR-n`
-  (gossip record, Parte 2). Issue e PR fanno riferimento ai requisiti per numero.
+  (gossip record, Parte 2), `PS-n` (selezione dei percorsi, Parte 3), `RZ-n`
+  (rendezvous, Parte 6), `SA-n` (argomento di sicurezza, Parte 7). Issue e PR
+  fanno riferimento ai requisiti per numero.
 - I riferimenti `OP-n` puntano all'elenco dei problemi aperti in
   [threat-model.md](../threat-model.md#open-problems).
 - Un'implementazione conforme implementa ogni MUST di ogni parte che dichiara.
@@ -74,6 +76,10 @@ aggiornamento pianificato, non un'emergenza.
    fallback per reti piccole (OP-1).
 4. [Parte 6 — Rendezvous e consegna](06-rendezvous.md): carte di contatto,
    dead drop dispersi e recupero per polling.
+5. [Parte 7 — L'argomento di sicurezza per I-2](07-security-argument.md): la
+   dimostrazione che una qualsiasi `k−1` quote sono indipendenti dal segreto, le
+   due condizioni su cui poggia (casualità dei coefficienti, separazione delle
+   chiavi) e un'affermazione onesta di ciò che non viene dimostrato.
 
 Pianificate, non ancora abbozzate: Parte 4 — trasporti camaleonte; Parte 5 — framing per la
 modalità blackout.

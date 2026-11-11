@@ -121,6 +121,28 @@ Decrypted by the recipient only:
   binding for availability-critical profiles; it is deliberately not mandated
   here. `k,n` is vector-locked (nibble order, Part 3 §3.2 vectors) so an
   implementation cannot *accidentally* disagree, only a malicious party can lie.
+- **SP-7b (no equal tag across colluding drops, and nonce ownership).** The
+  property that must hold: no two packets a coalition of drops can see carry an
+  equal `tag` unless the sender reused a `(msg_nonce, index)` pair. *Argument:*
+  `tag = PRF(K_r, msg_nonce ‖ index)` with `msg_nonce` a fixed 8 bytes and
+  `index` a fixed 1 byte, so the PRF input is an unambiguous fixed-width
+  encoding of `(msg_nonce, index)` — the map `(msg_nonce, index) ↦ input` is
+  injective. A keyed BLAKE2s PRF gives equal outputs only on equal inputs
+  (bar a ~`2^-128` collision), so equal tags imply an equal `(msg_nonce, index)`.
+  The `n` shares of one message share one `msg_nonce` but use *distinct* indices
+  `1..n`, hence distinct inputs, hence distinct tags: a coalition of drops
+  cannot tell two shares of one message apart from two unrelated packets. Two
+  *different* messages collide a tag only if they reuse a `msg_nonce`.
+  Therefore **nonce ownership is a MUST**: a sender MUST NOT reuse a
+  `msg_nonce` under one `kpair`. Reuse is doubly fatal — it collides SP-7 tags
+  (making a share set linkable) *and*, because `msg_nonce` is the AEAD nonce
+  (SP-1a), it destroys ChaCha20-Poly1305 confidentiality (a two-time pad, pinned
+  by `test_nonce_reuse_is_detectable_catastrophe`). A strictly increasing
+  per-`kpair` message counter satisfies this; the counter's high-water mark MUST
+  survive restarts. At the storage layer, a drop MUST drop a redeposit of an
+  already-stored `(box_id, slot)` (replay) and evicts oldest-first under the
+  per-box cap (RZ-7), so a replayed deposit neither multiplies nor displaces
+  honest mail beyond the declared cap.
 - **SP-8.** A message that does not fill the share payload (`1792` bytes, less
   the 2-byte length prefix) MUST be padded with random bytes before splitting;
   a message that exceeds it is fragmented at a layer above this one
