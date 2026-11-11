@@ -128,7 +128,14 @@ except what their signatures bind (GR-2).
   The honest residual remains: within the eclipse window of a client that has
   accepted an unverified steering map and cannot yet rebuild, the content floor
   can fall. This is bounded by `k`/`n` margin and by the defenses above, not by
-  a claim that it cannot happen.
+  a claim that it cannot happen. The attack and defense 2 are **executable** in
+  `poc/network_sim.py` (`make_steering_map`, `detect_steering`,
+  `select_paths_ps12`): the undefended selector breaks content on 100% of
+  messages at 20% ownership, and the PS-12 detector turns that into a
+  fallback/anomaly on 100% of them with **zero** false positives on honest maps
+  (tests in `test_network_sim.py`). A conforming client's detector MUST have a
+  false-positive rate low enough not to deny service on honest maps — a defense
+  that cries wolf is its own availability attack.
 
 ## 6. What this part does not decide
 

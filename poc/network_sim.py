@@ -111,6 +111,76 @@ def _believed_as(r: Relay):
     return r.inferred_asn if r.inferred_asn is not None else ("unknown", r.rid)
 
 
+def make_steering_map(net: Network) -> None:
+    """The PS-12 steering attack, as a map (belief) the adversary installs.
+
+    Ground truth is untouched; only `inferred_asn` (the client's belief) is
+    overwritten. Two levers (spec PS-12):
+      - adversary relays get DISTINCT fake ASes  -> they never exclude each other
+      - honest relays get ONE colliding fake AS  -> after circuit 1 picks one
+        honest relay, every other honest relay looks AS-shared and is filtered
+        out, collapsing the honest pool to nothing.
+    The adversary then fills circuits 2..n and lands on >=k of them.
+    """
+    FAKE_HONEST_AS = 10 ** 9           # one shared fake AS for all honest relays
+    fake = FAKE_HONEST_AS + 1
+    for r in net.relays:
+        if r.adversary:
+            r.inferred_asn = fake      # distinct per adversary relay
+            fake += 1
+        else:
+            r.inferred_asn = FAKE_HONEST_AS   # all honest relays collide
+
+
+def _as_counts(net: Network) -> dict:
+    """How many relays sit in each believed AS (the client's own view)."""
+    counts = {}
+    for r in net.relays:
+        a = _believed_as(r)
+        counts[a] = counts.get(a, 0) + 1
+    return counts
+
+
+def detect_steering(net: Network, singleton_frac: float = 0.5,
+                    giant_frac: float = 0.25) -> bool:
+    """PS-12 defense 2: flag a believed-AS structure that is the signature of a
+    steering map. A benign map spreads relays across many ASes of ordinary size.
+    A steering map collapses the honest majority into ONE giant believed-AS (so
+    they filter each other out) while the adversary's relays are each their own
+    singleton AS (so none excludes another). We flag when BOTH hold:
+      - one believed-AS holds >= giant_frac of all relays (the collapsed honest
+        pool), AND
+      - singletons (ASes with exactly one relay) make up >= singleton_frac of
+        all ASes (the adversary's fake-distinct relays).
+    This is a heuristic on the client's own view -- it needs no ground truth --
+    and a conforming client treats a positive as a fallback/anomaly condition.
+    """
+    counts = _as_counts(net)
+    total = len(net.relays)
+    if total == 0 or not counts:
+        return False
+    biggest = max(counts.values())
+    singletons = sum(1 for c in counts.values() if c == 1)
+    return (biggest >= giant_frac * total
+            and singletons >= singleton_frac * len(counts))
+
+
+def select_paths_ps12(net: Network, n: int, hops: int = 3,
+                      disjoint: str = "as") -> list | str | None:
+    """Path selection WITH the PS-12 defenses. Returns the paths on success, the
+    string 'steering-anomaly' if a steering map is detected (the client MUST then
+    fall back / gossip the anomaly, not proceed as if AS-disjoint was achieved),
+    or None if the network simply cannot supply the circuits.
+
+    This is the defended counterpart of select_paths(): same believed-AS
+    selection, but it refuses to build an 'achieved AS-disjoint' set out of a
+    map that has suspiciously collapsed the honest pool (PS-12 defense 1+2).
+    """
+    if disjoint == "as" and detect_steering(net):
+        return "steering-anomaly"
+    return select_paths(net, n, hops, disjoint)
+
+
 def select_paths(net: Network, n: int, hops: int = 3,
                  disjoint: str = "as", use_truth: bool = False) -> list | None:
     """Best-effort disjoint path selection -- a strawman for Part 3.
@@ -359,3 +429,41 @@ if __name__ == "__main__":
     print(f"  content break: {broken:.2%}   mean linkage leak: {leak:.2f} of 4 circuits")
     print("  -> the worst case the UI MUST warn about; raising n and k is the")
     print("     lever (threat model). Below k, content stays unconditional (I-2).")
+
+    print("\n" + "=" * 68)
+    print("5. The steering attack (PS-12) and its defense -- a hostile MAP, not")
+    print("   random error, reaches CONTENT; the defense detects and blocks it")
+    print("=" * 68)
+    print("A red-team found this: a map that gives adversary relays distinct fake")
+    print("ASes and honest relays ONE colliding fake AS collapses the honest pool")
+    print("and steers selection onto the adversary. Ground truth is unchanged;")
+    print("only the client's belief is attacked. 80 relays, adversary owns 20%.\n")
+
+    def _honest80():
+        return Network.random(80, n_as=26, n_juris=5, adversary_relays=16,
+                              adversary_as=3, infer_error=0.0)
+    T = 2000
+    undef = defended_anom = defended_break = honest_ok = fp = 0
+    for _ in range(T):
+        net = _honest80(); make_steering_map(net)
+        p = select_paths(net, 4, disjoint="as")
+        if p and adversary_breaks_as_level(p, k=3):
+            undef += 1
+        out = select_paths_ps12(net, 4, disjoint="as")
+        if out == "steering-anomaly":
+            defended_anom += 1
+        elif isinstance(out, list) and adversary_breaks_as_level(out, k=3):
+            defended_break += 1
+    for _ in range(T):
+        h = _honest80()
+        if detect_steering(h):
+            fp += 1
+        if isinstance(select_paths_ps12(h, 4, disjoint="as"), list):
+            honest_ok += 1
+    print(f"  undefended selector:   content break {undef/T:.0%} of messages")
+    print(f"  PS-12 defended:        anomaly flagged {defended_anom/T:.0%}, "
+          f"residual break {defended_break/T:.0%}")
+    print(f"  false positives:       honest map flagged as steering {fp/T:.0%}")
+    print(f"  no collateral damage:  honest map still builds circuits {honest_ok/T:.0%}")
+    print("  -> the defense turns a 100% content break into a fallback/anomaly,")
+    print("     with no false positives: PS-12 is verified, not just written.")

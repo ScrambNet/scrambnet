@@ -102,6 +102,70 @@ class Adversaries(unittest.TestCase):
         self.assertLess(mean_leak(0.0), mean_leak(0.6))
 
 
+class SteeringAttackAndPS12Defense(unittest.TestCase):
+    """PS-12: a hostile map steers AS-disjoint selection onto the adversary and
+    breaks CONTENT (the critical hole a red-team found), and the PS-12 defense
+    detects and blocks it. These tests pin both the attack and the fix so a
+    regression that reintroduces the hole fails here."""
+
+    @staticmethod
+    def _honest(size, frac_adv):
+        return ns.Network.random(size, n_as=max(6, size // 3), n_juris=5,
+                                 adversary_relays=round(size * frac_adv),
+                                 adversary_as=3, infer_error=0.0)  # belief=reality
+
+    def _steering(self, size, frac_adv):
+        net = self._honest(size, frac_adv)
+        ns.make_steering_map(net)          # ground truth unchanged; belief attacked
+        return net
+
+    def test_steering_map_breaks_content_without_defense(self):
+        """The attack: with the undefended selector, a steering map puts the
+        adversary on >=k circuits deterministically -> content break, every
+        time, at only 20% ownership."""
+        broken = 0
+        for _ in range(200):
+            net = self._steering(80, 0.20)
+            paths = ns.select_paths(net, 4, disjoint="as")
+            if paths and ns.adversary_breaks_as_level(paths, k=3):
+                broken += 1
+        self.assertGreater(broken, 190)   # ~all 200; the deterministic break
+
+    def test_detect_steering_no_false_positive_on_honest_map(self):
+        """The defense must not cry wolf: an honest map is never flagged."""
+        fp = sum(1 for _ in range(300)
+                 if ns.detect_steering(self._honest(80, 0.20)))
+        self.assertEqual(fp, 0)
+
+    def test_detect_steering_catches_the_attack(self):
+        tp = sum(1 for _ in range(300)
+                 if ns.detect_steering(self._steering(80, 0.20)))
+        self.assertGreater(tp, 290)       # ~all
+
+    def test_ps12_defense_blocks_the_break(self):
+        """With PS-12, the steering map yields a 'steering-anomaly' (the client
+        falls back) instead of compromised circuits -- zero content breaks."""
+        anomaly = breaks = 0
+        for _ in range(200):
+            net = self._steering(80, 0.20)
+            out = ns.select_paths_ps12(net, 4, disjoint="as")
+            if out == "steering-anomaly":
+                anomaly += 1
+            elif isinstance(out, list) and ns.adversary_breaks_as_level(out, k=3):
+                breaks += 1
+        self.assertGreater(anomaly, 190)
+        self.assertEqual(breaks, 0)       # the hole is closed
+
+    def test_ps12_defense_leaves_honest_selection_intact(self):
+        """No collateral damage: an honest map still builds 4 circuits."""
+        ok = 0
+        for _ in range(200):
+            out = ns.select_paths_ps12(self._honest(80, 0.20), 4, disjoint="as")
+            if isinstance(out, list) and len(out) == 4:
+                ok += 1
+        self.assertGreater(ok, 190)
+
+
 class RoundTrip(unittest.TestCase):
     def test_message_survives_simulated_path(self):
         self.assertEqual(ns._demo_full_message_roundtrip(), 4)
