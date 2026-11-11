@@ -11,7 +11,7 @@ keine Entscheidung. Greife sie über die Issues an; ändere sie über PRs.
   interpretieren.
 - Anforderungen sind nummeriert und stabil: `SP-n` (Anteil-Paket, Teil 1), `GR-n`
   (Gossip-Eintrag, Teil 2), `PS-n` (Pfadauswahl, Teil 3), `RZ-n` (Rendezvous, Teil 6),
-  `SA-n` (Sicherheitsargument, Teil 7). Issues und PRs verweisen auf Anforderungen per Nummer.
+  `SA-n` (Sicherheitsargument, Teil 7), `ID-n` (Inferenz-Datensatz, Teil 8). Issues und PRs verweisen auf Anforderungen per Nummer.
 - `OP-n`-Verweise zeigen auf die Liste offener Probleme in
   [threat-model.md](../threat-model.md#offene-probleme).
 - Eine konforme Implementierung implementiert jedes MUST jedes Teils, den sie beansprucht.
@@ -79,6 +79,12 @@ geplantes Upgrade, kein Notfall.
    dass beliebige `k−1` Anteile unabhängig vom Geheimnis sind, die zwei Bedingungen,
    auf denen er ruht (Koeffizienten-Zufälligkeit, Schlüsseltrennung), und eine ehrliche
    Angabe dessen, was nicht bewiesen ist.
+6. [Teil 8 — Der Inferenz-Datensatz](08-inference-dataset.md): wie ein Client die
+   IP-zu-AS- und Grob-Jurisdiktions-Karte erhält, aus der Teil 3 schlussfolgert, ohne
+   Autorität — ein reproduzierbares, inhaltsadressiertes Artefakt, ein
+   erlaubnisfreier Transparenz-Log, erklärtes Trust-on-First-Use und die
+   Fehlerrate, die die Karte einräumt und dem Simulator zuführt (OP-1-Verteilung,
+   Roadmap 2.3).
 
 Geplant, noch nicht entworfen: Teil 4 — Chamäleon-Transporte; Teil 5 — Blackout-
 Modus-Rahmung.

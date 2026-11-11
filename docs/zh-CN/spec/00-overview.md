@@ -11,7 +11,8 @@
   RFC 2119 所述解释。
 - 需求是编号且稳定的：`SP-n`（share packet，第 1 部分）、`GR-n`
   （gossip record，第 2 部分）、`PS-n`（path selection，第 3 部分）、`RZ-n`
-  （rendezvous，第 6 部分）、`SA-n`（security argument，第 7 部分）。issues 与
+  （rendezvous，第 6 部分）、`SA-n`（security argument，第 7 部分）、
+  `ID-n`（推断数据集，第 8 部分）。issues 与
   PR 按编号引用需求。
 - `OP-n` 引用指向
   [threat-model.md](../threat-model.md#open-problems) 中的开放问题清单。
@@ -79,6 +80,10 @@
 5. [第 7 部分 —— I-2 的安全性论证](07-security-argument.md)：对任意
    `k−1` 份额都独立于秘密这一点的证明、它所依赖的两个条件（系数随机性、
    密钥分离），以及对未被证明之事的一份坦诚陈述。
+6. [第 8 部分 —— 推断数据集](08-inference-dataset.md)：客户端如何获取第 3 部分
+   据以推断的 IP-to-AS 与粗粒度司法辖区映射，而没有权威 —— 一个可复现、内容寻址的
+   产物、一个无需许可的透明性日志、被声明的首次使用即信任，以及该映射所承认、并喂给
+   模拟器的那个错误率（OP-1 分布，roadmap 2.3）。
 
 已规划、尚未起草：第 4 部分 —— 变色龙传输；第 5 部分 —— 断网
 模式封装。

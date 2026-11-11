@@ -10,7 +10,7 @@ no una decisión. Atácalo a través de las issues; cámbialo a través de PRs.
   **SHOULD NOT** (NO DEBERÍA), **MAY** (PUEDE) se interpretan como se describe en el RFC 2119.
 - Los requisitos están numerados y son estables: `SP-n` (paquete de parte, Parte 1), `GR-n`
   (registro de gossip, Parte 2), `PS-n` (selección de rutas, Parte 3), `RZ-n` (rendezvous, Parte 6),
-  `SA-n` (argumento de seguridad, Parte 7). Las issues y PRs hacen referencia a los requisitos por número.
+  `SA-n` (argumento de seguridad, Parte 7), `ID-n` (conjunto de datos de inferencia, Parte 8). Las issues y PRs hacen referencia a los requisitos por número.
 - Las referencias `OP-n` apuntan a la lista de problemas abiertos en
   [threat-model.md](../threat-model.md#problemas-abiertos).
 - Una implementación conforme implementa todo MUST de toda parte que declara.
@@ -78,6 +78,12 @@ actualización planificada, no una emergencia.
    cualesquiera `k−1` partes son independientes del secreto, las dos condiciones sobre las que
    descansa (aleatoriedad de los coeficientes, separación de claves), y un enunciado honesto de
    lo que no se demuestra.
+6. [Parte 8 — El conjunto de datos de inferencia](08-inference-dataset.md): cómo un
+   cliente obtiene el mapa de IP-a-AS y jurisdicción gruesa del que la Parte 3
+   infiere, sin autoridad — un artefacto reproducible y direccionado por contenido,
+   un registro de transparencia sin permisos, confianza-en-el-primer-uso declarada,
+   y la tasa de error que el mapa admite y alimenta al simulador (distribución de
+   OP-1, planificación 2.3).
 
 Planificadas, aún no redactadas: Parte 4 — transportes camaleón; Parte 5 — encuadre
 del modo apagón.

@@ -147,17 +147,22 @@ adversary gains, not to pretend it away.
   2.1 and 2.3.
 
 - **2.3 — The trustless IP-to-AS inference dataset.** `[research risk]` `I-3`
-  How to distribute and authenticate an IP-to-AS (and coarse jurisdiction) map
-  with no single authority: reproducible snapshots from public BGP/RIR data, a
-  way for two clients to tell they hold the *same* map (content-addressing +
-  transparency log + gossiped roots), and an honest treatment of the bootstrap
-  paradox (a fresh client fetches the map over paths it cannot yet evaluate — a
-  trust-on-first-use moment). **Merge seam:** the map's signer set and the
-  software-release signer set (OP-8, item 4.1) may want to be the *same*
-  mechanism. **Done:** two honest clients provably hold the same map or detect
-  they don't; the map's error rate feeds 2.1's inference knob. **Effort XL** —
-  the honest outcome may be "TOFU map + transparency log + anomaly gossip," not a
-  canonical map.
+  **DONE — written as spec Part 8 (ID-1…ID-12a).** The research risk resolved
+  the way the roadmap flagged: **not** a canonical signed map (its signer set is
+  a directory authority by another name, I-3-forbidden), but a **reproducible,
+  content-addressed artifact** rebuilt byte-for-byte from pinned public inputs
+  (RouteViews + RIPE RIS BGP, five RIR delegation files) — two clients agree by
+  equal `BLAKE2s` hash, and **reproduction, not signature, is the authority-free
+  arbiter**. Published via a **permissionless** append-only Merkle transparency
+  log (RFC 6962-style) whose gossiped roots + consistency proofs make split-view
+  equivocation detectable; multiple logs, none canonical. Bootstrap is declared
+  **TOFU** (detect, don't prevent); a bad first map is bounded — it erodes
+  linkage, never the I-2 floor, and cannot forge reproduction. Merge seam with
+  4.1: same trust *anchor* (reproducibility) but **separate** signer/appender
+  sets. The declared residual (§10): an adversary co-locating relays behind
+  truthfully-disjoint BGP prefixes is labelled disjoint by the *correct* map —
+  a non-zero error rate the map **measures and ships**, feeding the simulator's
+  `infer_error` (ID-12). **Effort XL.**
 
 - **2.4 — Discovery robustness: sybil and eclipse (OP-2).**
   Model the sampled view under GR-6/GR-8 with per-source-class adversary

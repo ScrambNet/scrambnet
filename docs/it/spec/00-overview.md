@@ -11,7 +11,8 @@ non una decisione. Attaccalo attraverso le issue; cambialo attraverso le PR.
   interpretate come descritto in RFC 2119.
 - I requisiti sono numerati e stabili: `SP-n` (share packet, Parte 1), `GR-n`
   (gossip record, Parte 2), `PS-n` (selezione dei percorsi, Parte 3), `RZ-n`
-  (rendezvous, Parte 6), `SA-n` (argomento di sicurezza, Parte 7). Issue e PR
+  (rendezvous, Parte 6), `SA-n` (argomento di sicurezza, Parte 7), `ID-n`
+  (dataset di inferenza, Parte 8). Issue e PR
   fanno riferimento ai requisiti per numero.
 - I riferimenti `OP-n` puntano all'elenco dei problemi aperti in
   [threat-model.md](../threat-model.md#open-problems).
@@ -80,6 +81,12 @@ aggiornamento pianificato, non un'emergenza.
    dimostrazione che una qualsiasi `k−1` quote sono indipendenti dal segreto, le
    due condizioni su cui poggia (casualità dei coefficienti, separazione delle
    chiavi) e un'affermazione onesta di ciò che non viene dimostrato.
+6. [Parte 8 — Il dataset di inferenza](08-inference-dataset.md): come un client
+   ottiene la mappa IP-to-AS e giurisdizione a grana grossa da cui la Parte 3
+   inferisce, senza autorità — un artefatto riproducibile indirizzato per
+   contenuto, un log di trasparenza senza permessi, trust-on-first-use dichiarato,
+   e il tasso di errore che la mappa ammette e dà in pasto al simulatore
+   (distribuzione OP-1, roadmap 2.3).
 
 Pianificate, non ancora abbozzate: Parte 4 — trasporti camaleonte; Parte 5 — framing per la
 modalità blackout.

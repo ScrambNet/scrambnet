@@ -11,7 +11,8 @@ non une décision. Attaquez-le par les issues ; changez-le par les PR.
   interprétés comme décrit dans la RFC 2119.
 - Les exigences sont numérotées et stables : `SP-n` (paquet de part, Partie 1), `GR-n`
   (enregistrement de gossip, Partie 2), `PS-n` (sélection des chemins, Partie 3), `RZ-n`
-  (rendezvous, Partie 6), `SA-n` (argument de sécurité, Partie 7). Les issues et les PR
+  (rendezvous, Partie 6), `SA-n` (argument de sécurité, Partie 7), `ID-n` (jeu de données
+  d'inférence, Partie 8). Les issues et les PR
   référencent les exigences par numéro.
 - Les références `OP-n` pointent vers la liste des problèmes ouverts dans
   [threat-model.md](../threat-model.md#open-problems).
@@ -80,6 +81,11 @@ amélioration planifiée, non une urgence.
    que `k−1` parts quelconques sont indépendantes du secret, les deux conditions sur
    lesquelles elle repose (aléa des coefficients, séparation des clés), et un énoncé
    honnête de ce qui n'est pas démontré.
+6. [Partie 8 — Le jeu de données d'inférence](08-inference-dataset.md) : comment un client
+   obtient la carte IP-vers-AS et de juridiction grossière dont la Partie 3 infère, sans aucune
+   autorité — un artefact reproductible adressé par contenu, un journal de transparence sans
+   permission, une confiance-à-la-première-utilisation déclarée, et le taux d'erreur que la carte
+   admet et fournit au simulateur (distribution OP-1, roadmap 2.3).
 
 Planifiées, pas encore ébauchées : Partie 4 — transports caméléon ; Partie 5 — encadrement du
 mode blackout.
