@@ -7,6 +7,11 @@ first, because if the load-bearing claim does not hold, nothing downstream
 matters. Every item names what "done" looks like so progress is checkable, not
 asserted.
 
+The six tiers below are mirrored as
+[GitHub milestones](https://github.com/ScrambNet/scrambnet/milestones), with the
+open-problem issues (OP-n) grouped under the tier that addresses them — a
+navigable view of what is done (Tier 0 and Tier 1 are closed) and what is open.
+
 It was built from three parallel reviews — network design, cryptography, and
 security/operations — and the hardest findings are kept in plain sight rather
 than smoothed over. Items reference the specification parts (`SP-n`, `GR-n`,
