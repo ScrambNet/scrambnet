@@ -302,9 +302,10 @@ dependency, and this part does not pretend to break it.
             (ID-5b,10)                  user warned (ID-8b)
 
   Even a FULLY adversarial first map is bounded (ID-8a):
-    1. content stays FLOORED — a bad map misjudges disjointness, which
-       erodes linkage; a content break still needs the adversary on ≥k
-       circuits AT ONCE (I-2). A bad map is a metadata attack, not content.
+    1. the I-2 floor is untouched, BUT a *steering* map can maneuver the
+       adversary past k (collapse the honest pool, PS-12) -> content CAN
+       fall for an unverified map above a ~15% ownership threshold. Not
+       metadata-only. Bounded by k/n margin + PS-12 defenses, not by "can't".
     2. temporary + detectable — the adversary must eclipse the client
        FOREVER to keep it hidden (that is OP-2, not a new weakness here).
     3. unforgeable — the adversary cannot make public inputs rebuild to a
@@ -324,12 +325,23 @@ dependency, and this part does not pretend to break it.
   adversary who controls a fresh client's entire first fetch can hand it a map
   that mislabels ASes so that co-located relays look disjoint. The bound on the
   damage is three-fold and MUST be preserved by the design:
-  1. **Content stays floored.** Even a fully adversarial map cannot lower the I-2
-     content floor: it can only make the client *misjudge disjointness*, which
-     (per PS-11 and the simulator, §10) erodes **linkage far faster than
-     content** — a content break still needs the adversary on ≥`k` circuits at
-     once. A bad map is a metadata attack, not a content attack. This asymmetry
-     is the single most important reason the bootstrap paradox is survivable.
+  1. **The I-2 floor itself is untouched; but a hostile map CAN reach content by
+     steering.** The Shamir floor below `k` is mathematical and a bad map cannot
+     lower it. What a bad map *can* do — and this corrects an earlier
+     overstatement — is **maneuver the adversary past `k`**: a map that gives the
+     adversary's co-located relays distinct fake ASes and gives honest relays
+     colliding fake ASes collapses the honest candidate pool and steers
+     AS-disjoint selection onto `≥ k` adversary circuits deterministically (the
+     full construction and its defenses are **PS-12**; demonstrated against the
+     simulator, ~100% content break at ~15% ownership). So a bad map is **not**
+     a metadata-only attack: for a client that has accepted an unverified map and
+     cannot yet rebuild, the content floor can fall. The honest bound is
+     therefore conditional, not absolute: a bad map reaches content **only** when
+     the adversary already owns enough of the client's *reachable* sample to
+     dominate the post-collapse pool (threshold territory, PS-12) **and** PS-12's
+     defenses are not applied. Random inaccuracy (noise) still erodes linkage far
+     faster than content; a *chosen* map does not. Claims 2 and 3 below are what
+     keep even this bounded.
   2. **It is temporary and detectable, not permanent.** The moment the client
      gossips its root/`H` (ID-9) or rebuilds (ID-5a), a map that no honest peer or
      public input corroborates stands out. The adversary must keep the client
@@ -426,11 +438,50 @@ real:
   cooperation blocs, mutual-legal-assistance reality) is deliberately **not**
   encoded — it would be a judgement call no reproducible build can make without
   importing a trusted opinion, which ID-1 forbids.
+- **An adversarial map can reach content, not only metadata.** The co-location
+  residual above is a *passive* error (the correct map happens to mislabel). An
+  *actively chosen* map is worse: it can steer AS-disjoint selection onto `≥ k`
+  adversary circuits and break content, not just linkage (PS-12, which carries
+  the defenses). This part does **not** claim a bad map is metadata-only; that
+  earlier claim was wrong. The residual is bounded by `k`/`n` margin, by PS-12's
+  pool-collapse defenses, and by rebuild (ID-5a) — not by impossibility.
+- **Reproduction (ID-5a) is the arbiter only while the inputs are fetchable — a
+  liveness bound.** Rebuild resolves a dispute only if the pinned public inputs
+  can still be fetched from some honest source. RouteViews / RIPE RIS MRT dumps
+  and RIR delegation files are **not** permanent archives with a retention
+  guarantee to this project; once a pinned input ages out of every mirror,
+  `rebuild(manifest)` is unexecutable and a dispute about that epoch has **no
+  arbiter** — worst for exactly the old-epoch forensic disputes that need it. A
+  conforming deployment SHOULD escrow the pinned input bytes in a
+  content-addressed store replicated across the same permissionless mirror set as
+  the map, so the arbiter inherits the map's own availability; absent that,
+  ID-5a is declared **liveness-bounded**, not unconditional. (Related determinism
+  hazards not yet pinned in §4.1: mirror-dependent pruning making "last dump ≤
+  boundary" mirror-dependent; RIR single-file-per-day mutation vs a dump series;
+  MRT *input decode* divergence across parser versions, which ID-4d's output
+  canonicalization does not cover.)
+- **ID-1 relocates authority to OP-2; it does not eliminate trust.** No party
+  *signs* the map (ID-1 holds in letter, and for any client that **rebuilds**,
+  reproduction alone carries it). But a client that does not rebuild (ID-5b
+  permits this) rests on the gossiped-quorum corroboration (ID-7b, ID-9), whose
+  vote is authority-free **only if** sybil/eclipse can be resisted — which is
+  **OP-2, open**. Under eclipse, equivocation detection (ID-7a) cannot fire (the
+  victim touches no honest root), a quorum of adversary logs can make a bad map
+  look corroborated, and — the reverse, under-defended direction — an adversary
+  can make a *good* local map look *uncorroborated* and force the victim off it
+  via ID-9a's "treat your map as suspect, re-fetch" (a downgrade through the
+  honesty machinery itself). So for the non-rebuilding or eclipsed client, "no
+  authority" means "trust the quorum," and that holds only as far as OP-2 does.
+  This part **reduces** the map-authority problem to OP-2; it does not dissolve
+  it.
 
 The honest summary: **the dataset's error rate is a declared, non-zero residual,
-not a defect to be fixed to zero.** It is the price of refusing an authority. The
-correct response is not to hide it but to feed it to the simulator and show the
-user the achieved level (PS-9, PS-11).
+not a defect to be fixed to zero** — and, as the three points just added make
+explicit, so are the content-steering ceiling (PS-12), the liveness bound on the
+arbiter, and the reduction of map-authority to OP-2. These are the price of
+refusing an authority. The correct response is not to hide them but to bound
+them, feed the error rate to the simulator, and show the user the achieved level
+(PS-9, PS-11).
 
 ## 11. The error rate feeds the simulator (not hand-waved)
 
@@ -472,8 +523,9 @@ and its measured residual **is** that knob:
   consistency proofs; multiple logs, no canonical one; log holds commitments, not
   the map.
 - **ID-8 / ID-8a / ID-8b** — bootstrap is declared TOFU; the damage of a bad first
-  map is bounded (content stays floored, it is detectable, reproduction cannot be
-  forged); detect, do not claim to prevent.
+  map is bounded but **not metadata-only** — a steering map can reach content
+  (PS-12), so the bound is conditional (k/n margin + PS-12 defenses + rebuild),
+  detectable, and reproduction cannot be forged; detect, do not claim to prevent.
 - **ID-9 / ID-9a / ID-10** — refresh and gossip of `(epoch, H)` and roots under
   GR-8; divergence shown via PS-9; mandatory anomaly gossip for the three attack
   signatures.
@@ -484,9 +536,16 @@ and its measured residual **is** that knob:
   feeds the simulator's `infer_error` knob and Part 3's confidence; the zero-error
   case is the best case, never the expected one.
 
-ID-1, ID-5a, and ID-8a are the load-bearing three: no authority, reproduction is
-the arbiter, and a bad map cannot lower the content floor. Break any of them —
-find a step that needs a trusted party, a map that cannot be rebuilt from its
-inputs, or a way a bad map reaches content and not merely linkage — and you have
-broken this part. That is the invitation. `poc/network_sim.py`'s `infer_error`
-sweep is the executable strawman behind §11; attack the model, then this text.
+ID-1 and ID-5a are the load-bearing two: no authority, and reproduction is the
+arbiter. Both are bounded, not absolute — ID-1 reduces to OP-2 for a client that
+does not rebuild, and ID-5a is liveness-bounded (§10). The third claim this part
+originally made — that a bad map cannot reach content — was **broken** by a
+hostile review: a steering map maneuvers the adversary past `k` and breaks
+content, not just linkage. Rather than hide that, this part now carries it
+openly: the defense is PS-12 and the residual is declared in §10. Break the rest
+the same way — find a step that needs a trusted party, a map that cannot be
+rebuilt from its inputs, a liveness gap we missed, or a *new* way a bad map
+reaches content past PS-12's defenses — and you have broken this part. That is
+the invitation, and it has already been taken once. `poc/network_sim.py`'s
+`infer_error` sweep (and the steering construction of PS-12) is the executable
+strawman behind §11; attack the model, then this text.

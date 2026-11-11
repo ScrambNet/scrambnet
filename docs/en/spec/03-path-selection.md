@@ -80,16 +80,55 @@ except what their signatures bind (GR-2).
   and sweeps the inference-error rate: as error rises, AS-disjoint selection
   becomes partly illusory and both the content-break rate and the linkage leak
   rise monotonically. Two consequences are normative:
-  (a) the error erodes **linkage far faster than content** — a content break
-  still needs the adversary on `≥ k` circuits at once, so the floor holds while
-  metadata degrades first; the UI MUST NOT present a low content-break number
-  as if it also bounded linkage;
+  (a) for **random** inference error (noise, a merely inaccurate map), the error
+  erodes **linkage far faster than content** — a content break still needs the
+  adversary on `≥ k` circuits at once, so the floor holds while metadata
+  degrades first; the UI MUST NOT present a low content-break number as if it
+  also bounded linkage. This asymmetry holds **only for random error**; an
+  *adversarially chosen* map is not noise (see PS-12);
   (b) a thinner **gossip sample** (PS-10, I-3) forces fallback sooner: a client
   that knows too few relays cannot build AS-disjoint circuits at all and drops
   to `none`, where the break rate jumps (§2). The viable-size estimate (PS-10)
   MUST therefore account for the *reachable* sample, not the whole network.
   The zero-error, full-view numbers are the best case; a conforming client MUST
   present the achieved level (PS-9) from its real, noisy, partial view.
+- **PS-12 (a hostile map must not steer selection onto the adversary).**
+  `[claim-critical]` An *adversarially chosen* map is not random error, and the
+  PS-11(a) asymmetry does **not** protect against it. A map the adversary
+  controls has two levers over AS-disjoint selection: give the adversary's own
+  co-located relays *distinct* fake ASes (so they never exclude each other), and
+  give *honest* relays *colliding* fake ASes (so that once circuit 1 picks one
+  honest relay, every other honest relay looks AS-shared and is filtered out).
+  The honest candidate pool then collapses after the first draw and the client
+  selects circuits 2…`n` almost entirely from adversary relays — landing the
+  adversary on guard **and** exit of `≥ k` circuits **deterministically**, a
+  *content* break, while the client still believes it achieved AS-disjointness
+  and raises no fallback warning. Demonstrated against `poc/network_sim.py`: a
+  steering map drives the content-break rate from ~0% to **100% at ~15%**
+  adversary ownership (vs a low single-digit rate for an honest map at 35%). So
+  **a bad map CAN reach content, not only linkage** (this corrects an earlier
+  overstatement; Part 8 ID-8a is corrected to match). The defenses a conforming
+  client MUST apply:
+  1. **Do not let the map alone collapse the honest pool.** A client MUST NOT
+     build a circuit set in which more than a bounded fraction of the circuits
+     depend, for their claimed mutual disjointness, on relays the client cannot
+     *independently* corroborate as distinct (GR-8 source mixing, PS-10 "count
+     only independently verified"). If believed-disjoint selection would draw
+     circuits 2…`n` from a pool the map has made suspiciously small, the client
+     MUST treat that as a fallback/anomaly condition (PS-8, PS-9), not a success.
+  2. **A map that implies an implausible AS structure is itself an anomaly.** A
+     map under which the client's *reachable honest sample* collapses to one or a
+     few ASes while the adversary-shaped remainder is maximally diverse is a
+     signature of steering; the client SHOULD gossip it as a map anomaly
+     (Part 8 ID-10) and fall back.
+  3. **Rebuild is the real defense.** A steering map is not reproducible from
+     public inputs (Part 8 ID-5a); a client that rebuilds, or agrees with one
+     honest peer who did, rejects it. Until then the client MUST treat an
+     unverified map's disjointness claims as unverified, not as achieved (PS-9).
+  The honest residual remains: within the eclipse window of a client that has
+  accepted an unverified steering map and cannot yet rebuild, the content floor
+  can fall. This is bounded by `k`/`n` margin and by the defenses above, not by
+  a claim that it cannot happen.
 
 ## 6. What this part does not decide
 
