@@ -20,7 +20,7 @@ it signs, and the network's map is whatever verifiable sample each client holds.
 |---|---|---|---|
 | 0 | `v` | uint | format version, `1` |
 | 1 | `id` | bytes(32) | Ed25519 identity public key — the relay's name |
-| 2 | `onion` | bytes(32) | X25519 key for circuit handshakes; MUST rotate ≤ 7 days (s) |
+| 2 | `onion` | bytes(32) | X25519 static for the Sphinx per-hop key agreement (Part 1 §5, CH-2/CH-4); MUST rotate ≤ 7 days (s) |
 | 3 | `addrs` | array | endpoints: `[transport-id uint, blob bytes]` pairs |
 | 4 | `bw` | uint | claimed sustained bandwidth, kB/s — a *claim*, see GR-7 |
 | 5 | `created` | uint | unix time, MUST be rounded down to the hour (GR-5) |

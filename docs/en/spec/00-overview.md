@@ -42,7 +42,7 @@ negotiation). Suite `0x01` (strawman):
 
 | Role | Primitive |
 |---|---|
-| Circuit handshake | Noise `XK` pattern, `Noise_XK_25519_ChaChaPoly_BLAKE2s` |
+| Per-hop key agreement | Sphinx ephemeral–static X25519 (no separate handshake; Part 1 §5) |
 | Key exchange | X25519 |
 | AEAD | ChaCha20-Poly1305 |
 | Hash / KDF / PRF | BLAKE2s / HKDF-BLAKE2s |

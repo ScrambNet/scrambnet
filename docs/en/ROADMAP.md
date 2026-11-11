@@ -196,20 +196,28 @@ adversary gains, not to pretend it away.
 - **3.2 — Formal test vectors and cross-implementation conformance.** `I-1`
   Expand `vectors.json` to cover every keyed construction (HKDF PRK, box ids
   across epochs, the end-to-end encrypt→split→deposit→poll→reconstruct→decrypt
-  path, Ed25519 + canonical-CBOR records, the Noise handshake transcript once
-  specified), pin the GF tables as normative, and **vector-lock the `k,n` nibble
+  path, Ed25519 + canonical-CBOR records, the Sphinx per-hop key derivation
+  (`s_i = X25519(alpha_i, onion_i)` and the HKDF-BLAKE2s hop keys under labels
+  `sphinx-rho`/`sphinx-mu`/`sphinx-delta`, Part 1 §5 CH-2 — there is no separate
+  handshake transcript to vector), pin the GF tables as normative, and
+  **vector-lock the `k,n` nibble
   order** (the two PoC parsers disagreed — now fixed; a vector must keep them
   honest). **Done:** a second implementation in another language passes every
   vector. **Effort M.** Incremental: add vectors as each construction settles.
 
-- **3.3 — Specify the circuit handshake (Noise XK) and its forward secrecy.**
-  The suite names `Noise_XK_25519_ChaChaPoly_BLAKE2s` but nothing specifies it,
-  and Sphinx already does per-hop key agreement — so **what is Noise XK for?**
-  Resolve the apparent redundancy (a hostile implementer cannot currently build
-  an interoperable node, violating I-1), state the forward-secrecy properties and
-  the ≤7-day static-key exposure window, and decide whether XK's initiator-hiding
-  is even needed or a simpler pattern suffices. **Done:** the handshake is
-  specified to I-1 completeness, its relation to Sphinx unambiguous. **Effort L.**
+- **3.3 — Resolve the circuit handshake: Noise XK is deleted. (DONE)**
+  The suite named `Noise_XK_25519_ChaChaPoly_BLAKE2s` but nothing specified it,
+  and Sphinx already does per-hop key agreement — so **what was Noise XK for?**
+  The answer, after an adversarial review that tried and failed to name a circuit
+  operation Sphinx cannot perform, is **nothing**: the keyless ScrambNet client
+  has no initiator static for XK to hide, so a second handshake only re-ran the
+  same DH, added round-trips, and put a second wire format on the link (I-4). It
+  is removed. The circuit handshake **is** the Sphinx header, now specified to
+  I-1 completeness in Part 1 §5 (CH-1..CH-9): ephemeral(client)·static(relay) DH,
+  forward-secret at epoch granularity with a ≤7-day static-key exposure window
+  (CH-6), and the one regression the deletion costs — a late static seizure
+  exposing one hop's linkage within the live epoch — bounded and closable without
+  a handshake (CH-5a). **Done.** **Effort L.**
 
 - **3.4 — Gossip-record signatures and canonical CBOR.** `I-1`
   Canonical CBOR is signature-critical: two implementations that disagree on map

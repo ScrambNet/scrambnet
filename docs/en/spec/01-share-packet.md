@@ -154,7 +154,166 @@ Decrypted by the recipient only:
   distribution and its cost on latency are OP-4 and unresolved. Clients MAY
   emit decoy shares (packets with random `tag`) at a configurable rate.
 
-## 5. What this part does not decide
+## 5. The circuit handshake (there is none — it is Sphinx)
+
+The suite once named `Noise_XK_25519_ChaChaPoly_BLAKE2s` as a "circuit handshake"
+that nothing specified, an I-1 defect: a hostile implementer could not build an
+interoperable node, because there was no transcript to build. **The resolution is
+to delete the line.** Sphinx already performs the per-hop key agreement a circuit
+needs, so a separate Noise handshake is a vestige — most likely inherited from the
+WireGuard "Noise handshakes" lineage without noticing Sphinx had already eaten the
+job. This section records that decision and specifies, normatively, the handshake
+that Sphinx *is*, so I-1 is met by specification, not by a second protocol.
+
+**The decision, in one paragraph.** `alpha` (SP-3, 32 B, X25519) is a *per-packet
+client ephemeral*; each relay derives the hop secret from `alpha` and its static
+`onion` key (GR-2 key 2). That is ephemeral–static Diffie–Hellman per hop,
+forward-secret *at epoch granularity* (CH-6), relay-authenticated through the
+gossip record's Ed25519 signature — exactly what a circuit needs and all it needs.
+A second stateful `Noise_XK` handshake would re-run the same DH, add round-trips a
+one-shot dispersed share cannot afford, put a second wire format on the link that
+I-4 would then have to launder, and buy **one** property Sphinx lacks: hiding the
+*initiator's* static key. ScrambNet's circuit client has **no static key at all**
+(it is anonymous by construction), so that property is vacuous. `XK` authenticates
+machinery for a key that does not exist. Replacing Sphinx with XK (more round-trips
+for less), or using XK for a side channel (every stateful client↔relay flow —
+gossip GR-6, probing GR-12/GR-13 — is deliberately tunnelled *through* Sphinx so
+the client stays unnamed, so no such channel wants a direct session) both fail on
+inspection. The spec is better for deleting the line.
+
+```
+  THE "HANDSHAKE" IS THE SPHINX HEADER. NOTHING ELSE EXISTS.
+
+  client (no static key)     guard G          middle M          exit X
+  ─────────────────────     ───────          ────────          ──────
+   per packet: pick ONE ephemeral x ; alpha_0 = x·B   (B = X25519 base)
+        │
+        │  share packet  [ alpha_0 | beta | gamma | delta ]   (SP-3)
+        │────────────────────────▶│
+        │     G: s_G = DH(alpha_0, onion_G) ─► hop key; peel one beta layer
+        │     G: alpha_1 = blind(alpha_0)   (Sphinx re-randomisation)
+        │                          │────────────────▶│
+        │                          │  M: s_M = DH(alpha_1, onion_M) ─► hop key
+        │                          │                  │──────────▶│
+        │                          │                  │  X: s_X = DH(alpha_2, onion_X)
+        ▼                          ▼                  ▼           ▼
+   NO handshake RTT. NO second wire format. NO Noise message. The DH is
+   ephemeral(client)·static(relay) at EACH hop, carried entirely in `alpha`.
+
+   What Noise XK would have added, and why it is deleted:
+      → e ; ← e,ee,s,es ; → s,se   (extra RTT, relay names a session, and the
+      third message carries the INITIATOR static XK exists to hide — which our
+      keyless client does not have, so there is nothing to send and no reason to run it)
+```
+
+- **CH-1 (delete the vestige).** Suite `0x01` has **no** Noise handshake; the
+  Part 0 suite table row is removed. An implementation MUST NOT emit, expect, or
+  negotiate any Noise handshake message on a circuit; a packet that is not a
+  Part-1 share packet is not part of this protocol. *Attack this by naming a
+  circuit operation the Sphinx header cannot perform — a hostile review tried and
+  found none.*
+- **CH-2 (the circuit handshake is the Sphinx header).** Per-hop key agreement
+  MUST be the Sphinx construction of SP-3/SP-4: for each hop `i`, the relay
+  computes `s_i = X25519(alpha_i, onion_i)` where `alpha_i` is the blinded group
+  element it receives and `onion_i` is its static key (GR-2 key 2). All hop keys
+  (routing-info stream cipher, the `gamma` MAC, the `delta` AEAD) MUST be derived
+  from `s_i` by HKDF-BLAKE2s with distinct fixed labels (`"sphinx-rho"`,
+  `"sphinx-mu"`, `"sphinx-delta"` — exact bytes vector-locked under roadmap 3.2).
+  There is no other key agreement in the circuit layer.
+- **CH-3 (the initiator is keyless, by construction).** A circuit client MUST NOT
+  possess or present any long-term static key on the circuit path. Its only
+  asymmetric secret is the **per-packet ephemeral** scalar `x` behind `alpha_0`,
+  which MUST be freshly sampled from a CSPRNG per packet (roadmap 3.1 applies —
+  the forward secrecy below is exactly as strong as this RNG) and destroyed after
+  the packet is built. With no client static key, no initiator-hiding pattern has
+  anything to hide; `XK`/`IK`/`KK` are all inapplicable to the circuit path (CH-7).
+- **CH-4 (relay static authentication, without a handshake signature).** A client
+  MUST obtain each relay's `onion` static key *only* from a gossip record whose
+  Ed25519 signature (GR-2 key 7) over the canonical encoding — which covers key 2
+  — it has verified (GR-4). Relay authentication is **offline and transferable**:
+  once, when the record is validated, not interactively per circuit. There MUST
+  NOT be an in-circuit relay signature (it would be a selector and a wire
+  fingerprint, I-4). The honest limit: a client authenticates *the key*, not an
+  *identity beyond that signature* — the sybil/eclipse residual lives in Part 2
+  (OP-2, GR-19a/GR-20a), not here.
+- **CH-5 (static-key rotation — the ≤7-day exposure window).** A relay MUST rotate
+  its `onion` static key at least every `7` days (s), and MUST zeroize the private
+  half of a retired key once the in-flight grace has passed; a relay that retains
+  old statics enlarges its own exposure window and is non-conforming. Clients MUST
+  reject a record whose `expiry` exceeds `created + 7 days` (GR-2 key 6). The
+  rotation ceiling is enforced at both ends and is the ceiling on the
+  static-compromise window (CH-6).
+- **CH-5a (the `ee` gap, and the fix that is not XK).** A hostile review named the
+  one property the deletion costs: because the hop DH is ephemeral(client)·
+  **static**(relay), an adversary who records a relay's link traffic and then
+  seizes its `onion` static *within the live epoch* can recompute that epoch's
+  per-hop secrets and recover one hop's **linkage** for up to 7 days of recorded
+  packets (never content — CH-6). A Noise `ee` would deny even that. This is a
+  real regression from a *full interactive* handshake, but it is **not** a reason
+  to keep `XK` (whose initiator-hiding does not close it) and is closable without
+  a handshake: a deployment that judges the window too wide MUST either (a)
+  **shorten rotation** below 7 days (CH-5 is a ceiling, not a target), or (b) add
+  an **optional relay pre-key `ee`** — a short-lived ephemeral pre-key published
+  in the gossip record, mixed into the hop secret at **zero** extra round-trips —
+  rotated and destroyed so a late static seizure yields nothing for its lifetime.
+  The pre-key's record field and rotation belong with GR-2 if a deployment adopts
+  it; CH-5a settles only that the gap is real, bounded to linkage, and closable
+  without the deleted handshake.
+- **CH-6 (the forward-secrecy statement, precisely).** `[claim-critical]` An
+  adversary that compromises relay `R`'s **static** `onion` private key at time `T`
+  (and nothing else — ephemerals never left the clients and were destroyed, CH-3):
+  (a) **past traffic is safe across epochs** — packets whose hop at `R` used an
+  earlier, rotated-and-destroyed static are not decryptable (the key is gone,
+  CH-5; the client ephemeral's discrete log is gone, CH-3); forward secrecy is at
+  epoch granularity, the ≤7-day rotation being that granularity. (b) **Within the
+  live epoch, exposure is one hop's *linkage*, never content** — for packets sent
+  while the seized static was live, the adversary recomputes `s_i` for hops at `R`
+  and peels `R`'s layer, learning `R`'s predecessor/successor, i.e. the metadata a
+  malicious relay already sees. It yields **no** content: unconditional below `k`
+  (I-2, Part 7), and above `k` the end-to-end AEAD is keyed from a pre-shared
+  symmetric `kpair` with no DH transcript for the seized key to touch (SP-1a). A
+  seized static buys *one hop's linkage on one epoch's packets* — exactly the
+  guard+exit correlation the dispersal/disjointness design already treats as
+  *mitigated, not eliminated*; compromising the static moves the adversary no
+  further than *running* that relay already does.
+- **CH-7 (initiator-hiding is not needed; the hop is `N`-shaped, not `XK`).**
+  `[claim-critical]` Does the client need XK's hidden-initiator-static property?
+  **No**, dispositively: the client has no initiator static key (CH-3), so the
+  property is vacuous. In Noise's vocabulary the one-shot hop is a one-way,
+  ephemeral-initiator, known-static-responder agreement — the shape of Noise `N`
+  (`→ e, es`), not `XK`. The circuit uses no literal Noise message (CH-2: it is
+  Sphinx, which subsumes this shape); the two messages XK adds past `N` carry
+  nothing and exist only to authenticate a key we do not have. Initiator hiding is
+  already provided more strongly by Sphinx (SP-4 uniformity; the client is never
+  an endpoint a relay can name, GR-12). We replaced XK's initiator-hiding with
+  *"the initiator is anonymous and keyless,"* which needs no pattern to hide what
+  is not there.
+- **CH-8 (relay↔relay sessions, if ever, are out of this part and not `XK`).** A
+  future control or peering channel needing a stateful, bidirectional,
+  mutually-authenticated session between two **named** parties (e.g. relay-to-relay
+  link encryption) is a separate document and MUST still satisfy I-4 (CH-9). Even
+  there `XK` is wrong: both relays' statics are **public** in their gossip records,
+  so there is nothing to hide and an already-known-static pattern (`IK`/`KK`) fits.
+  This section specifies no such channel; it only forecloses re-importing `XK` by
+  reflex.
+- **CH-9 (I-4 by having no second wire format).** `[claim-critical]` The circuit
+  layer puts nothing on the wire but Part-1 share packets, every byte uniform
+  (SP-4). There is **no** Noise handshake message to make uniform — the cleanest
+  I-4 outcome, achieved by *not having* a second protocol. A Noise XK transcript
+  has recognizable structure (message-length pattern, `e`/`s` public-key fields);
+  keeping XK would have *added* an obfuscation requirement that deletion removes.
+  Any future session channel (CH-8) inherits this obligation in its own document.
+
+**What section 5 does not decide.** The Sphinx parameters themselves (group,
+blinding, MAC, exact HKDF labels and chaining) are §3 and roadmap 3.2's vectors;
+CH-2 references them. Post-quantum: suite `0x02` may replace the X25519 hop DH with
+a PQ KEM — CH-6's forward-secrecy *shape* is unchanged (ephemeral + ≤7-day static
+rotation), the primitive changes, and the I-2 content floor is PQ-safe regardless
+(SP-1a). The relay↔relay channel (CH-8) and the optional pre-key `ee` field
+(CH-5a) are left to future parts. CH-4 authenticates a *key a record signed*, not
+an identity beyond it: the gossip/eclipse residual is Part 2's (OP-2).
+
+## 6. What this part does not decide
 
 Path selection and disjointness enforcement (OP-1), mix parameters (OP-5),
 fragmentation (SP-8), decoy economics (SP-9) are open on purpose. Each has a
