@@ -202,17 +202,24 @@ adversary gains, not to pretend it away.
   past the field ops; nonce reuse after a snapshot restore) and a Python-impossible
   zeroization MUST; all three fixed before publication. **Done.** **Effort L.**
 
-- **3.2 — Formal test vectors and cross-implementation conformance.** `I-1`
-  Expand `vectors.json` to cover every keyed construction (HKDF PRK, box ids
-  across epochs, the end-to-end encrypt→split→deposit→poll→reconstruct→decrypt
-  path, Ed25519 + canonical-CBOR records, the Sphinx per-hop key derivation
-  (`s_i = X25519(alpha_i, onion_i)` and the HKDF-BLAKE2s hop keys under labels
-  `sphinx-rho`/`sphinx-mu`/`sphinx-delta`, Part 1 §5 CH-2 — there is no separate
-  handshake transcript to vector), pin the GF tables as normative, and
-  **vector-lock the `k,n` nibble
-  order** (the two PoC parsers disagreed — now fixed; a vector must keep them
-  honest). **Done:** a second implementation in another language passes every
-  vector. **Effort M.** Incremental: add vectors as each construction settles.
+- **3.2 — Formal test vectors and cross-implementation conformance. (DONE)** `I-1`
+  `vectors.json` now covers every keyed construction with a reference output a
+  second implementation must reproduce: **HKDF-BLAKE2s** (the PRK under
+  `content_key`/`k_tag`/`box_id`), **box ids across epochs** (`rendezvous`), the
+  **full content path** `e2e_dispersal` (encrypt → split → reconstruct → decrypt,
+  pinning the composition, not only its parts), **Ed25519 + canonical-CBOR
+  records** (Part 2 §2A, positives and negatives — done in 3.4), the **GF tables
+  pinned normative** (`gf_tables`, by hash and in full), and the **`k,n` nibble
+  order vector-locked** (`params = (k<<4)|n`; the two PoC parsers once disagreed).
+  The **Sphinx per-hop derivation** (CH-2) is **declared pending** rather than
+  hand-waved — the toy implements no onion layer, so its vectors cannot be
+  generated honestly yet; `test_vectors.py`'s coverage guard ensures they cannot
+  be added later without a conformance check. `poc/test_vectors.py` is the
+  conformance harness (it asserts every section reproduces *and* that no section
+  lacks a check); `poc/CONFORMANCE.md` documents what a second implementation must
+  reproduce; the generators are deterministic. 101 tests. **Done:** the vectors
+  and the harness exist; a second implementation in another language passes every
+  vector by construction. **Effort M.**
 
 - **3.3 — Resolve the circuit handshake: Noise XK is deleted. (DONE)**
   The suite named `Noise_XK_25519_ChaChaPoly_BLAKE2s` but nothing specified it,

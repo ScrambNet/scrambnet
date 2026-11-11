@@ -1,5 +1,5 @@
 {
-  "comment": "Cross-implementation vectors for the dispersal core (suite 0x01).",
+  "comment": "Cross-implementation conformance vectors for suite 0x01 (roadmap 3.2). Sections: gf_mul/gf_tables (the GF(2^8) field, tables pinned normative), shamir (split determinism), params (the k,n nibble lock), tags (SP-7), hkdf (HKDF-BLAKE2s, the KDF under every derivation), e2e / e2e_dispersal (the content path, and the full encrypt->split->reconstruct->decrypt composition), rendezvous (box_id across epochs), records (Part 2 2A: canonical CBOR + strict Ed25519, with negatives). sphinx_hop is pending-implementation (no onion layer in this toy). A second implementation conforms iff test_vectors.py's assertions hold against it; see CONFORMANCE.md.",
   "gf_mul": [
     [
       83,
@@ -184,6 +184,164 @@
         "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840328a94dba113c544c809fb230ef52531d11e1634a1db6019d3a20833bba1ad85f700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30a",
         "expect": "reject"
       }
+    ]
+  },
+  "hkdf": {
+    "comment": "HKDF-BLAKE2s (RFC 5869 structure, BLAKE2s as the hash) is the one KDF under every ScrambNet derivation: content_key, the SP-7 tag key, and the box_id all call it. out = HKDF-BLAKE2s(key, info, length). An impl that reproduces these reproduces content_key/k_tag/box_id.",
+    "cases": [
+      {
+        "key": "0202020202020202020202020202020202020202020202020202020202020202",
+        "info": "6532652d636f6e74656e74",
+        "length": 32,
+        "out": "5d9ef763ead48f3509c2375dbb52f1f43c2ac8becf3b2bfc394185552b63bd65"
+      },
+      {
+        "key": "0202020202020202020202020202020202020202020202020202020202020202",
+        "info": "746167",
+        "length": 32,
+        "out": "2fa9ae241a816387b22c715329119bf2e001ab828a58428f4538c0568b03ca96"
+      },
+      {
+        "key": "0202020202020202020202020202020202020202020202020202020202020202",
+        "info": "626f780000000000004e20",
+        "length": 16,
+        "out": "df7868efc46cb5fee1720d4f6961c8c3"
+      },
+      {
+        "key": "000102030405060708090a0b0c0d0e0f101112131415161718191a1b1c1d1e1f",
+        "info": "",
+        "length": 40,
+        "out": "d36c68692b681300676744097a482d8e0161a95bc9ed309b17bd78eafa8c49aed1c083372bc55d11"
+      },
+      {
+        "key": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+        "info": "696e666f2d6c6162656c",
+        "length": 64,
+        "out": "2ea08bad9b33944c40971f2d21b667dbcb8c9e073c7ff2bafa8102f618402fc644c815de18bbc9c45bdd36e06d71b865631d20c7fd98d08a3c5260df1e10b203"
+      }
+    ]
+  },
+  "gf_tables": {
+    "comment": "GF(2^8) with reduction polynomial 0x11b and generator 3 (the AES field). _EXP is 510 entries (doubled so gf_mul can add logs without a mod), _LOG is 256 entries. gf_mul(a,b) = _EXP[_LOG[a]+_LOG[b]] (0 if either operand is 0); gf_inv(a) = _EXP[255-_LOG[a]]. Pinned normative: a conforming impl MUST build byte-identical tables. Verify by the two blake2s hashes; the full tables are included so a second impl can diff directly.",
+    "exp_blake2s": "68ec94f4d2bc342f6e50ad9316e382a3bba870335eebdba69efefde7dd491b0f",
+    "log_blake2s": "1a138ef25f714b313b6c46489c8719c0f64fa8d4ce869135769e7c11e602e864",
+    "exp": "0103050f113355ff1a2e7296a1f813355fe13848d87395a4f702060a1e2266aae5345ce43759eb266abed97090abe63153f5040c143c44cc4fd168b8d36eb2cd4cd467a9e03b4dd762a6f10818287888839eb9d06bbddc7f8198b3ce49db769ab5c457f9103050f00b1d2769bbd661a3fe192b7d8792adec2f7193aee92060a0fb163a4ed26db7c25de73256fa153f41c35ee23d47c940c05bed2c749cbfda759fbad564acef2a7e829dbcdf7a8e89809bb6c158e82365afea256fb1c843c554fc1f2163a5f407091b2d7799b0cb46ca45cf4ade798b8691a8e33e42c651f30e12365aee297b8d8c8f8a8594a7f20d17394bdd7c8497a2fd1c246cb4c752f60103050f113355ff1a2e7296a1f813355fe13848d87395a4f702060a1e2266aae5345ce43759eb266abed97090abe63153f5040c143c44cc4fd168b8d36eb2cd4cd467a9e03b4dd762a6f10818287888839eb9d06bbddc7f8198b3ce49db769ab5c457f9103050f00b1d2769bbd661a3fe192b7d8792adec2f7193aee92060a0fb163a4ed26db7c25de73256fa153f41c35ee23d47c940c05bed2c749cbfda759fbad564acef2a7e829dbcdf7a8e89809bb6c158e82365afea256fb1c843c554fc1f2163a5f407091b2d7799b0cb46ca45cf4ade798b8691a8e33e42c651f30e12365aee297b8d8c8f8a8594a7f20d17394bdd7c8497a2fd1c246cb4c752f6",
+    "log": "0000190132021ac64bc71b6833eedf036404e00e348d81ef4c7108c8f8691cc17dc21db5f9b9276a4de4a6729ac90978652f8a05210fe12412f082453593da8e968fdbbd36d0ce94135cd2f14046833866ddfd30bf068b62b325e298228891107e6e48c3a3b61e423a6b2854fa853dba2b790a159b9f5eca4ed4ace5f373a757af58a850f4ead6744faee9d5e7e6ade82cd7757aeb160bf559cb5fb09ca951a07f0cf66f17c449ecd8431f2da4767bb7ccbb3e5afb60b1863b52a16caa55299d97b2879061bedcfcbc95cfcd373f5bd15339843c41a26d47142a9e5d56f2d3ab441192d923202e89b47cb8267799e3a5674aeddec531fe180d638c80c0f77007",
+    "mul_samples": [
+      [
+        0,
+        5,
+        0
+      ],
+      [
+        1,
+        1,
+        1
+      ],
+      [
+        2,
+        2,
+        4
+      ],
+      [
+        83,
+        202,
+        1
+      ],
+      [
+        255,
+        255,
+        19
+      ],
+      [
+        128,
+        2,
+        27
+      ]
+    ],
+    "inv_samples": [
+      [
+        1,
+        1
+      ],
+      [
+        2,
+        141
+      ],
+      [
+        83,
+        202
+      ],
+      [
+        255,
+        28
+      ]
+    ]
+  },
+  "params": {
+    "comment": "The share-payload params byte packs k and n one nibble each: params = (k << 4) | n, so k = params >> 4 and n = params & 0x0F. This nibble order is vector-locked because the two PoC parsers once disagreed on it (SP-7a); a conforming parser MUST read k from the high nibble and n from the low nibble.",
+    "formula": "params = (k << 4) | n ; k = params >> 4 ; n = params & 0x0F",
+    "cases": [
+      {
+        "k": 3,
+        "n": 4,
+        "packed_byte": 52,
+        "packed_hex": "34"
+      },
+      {
+        "k": 1,
+        "n": 1,
+        "packed_byte": 17,
+        "packed_hex": "11"
+      },
+      {
+        "k": 2,
+        "n": 3,
+        "packed_byte": 35,
+        "packed_hex": "23"
+      },
+      {
+        "k": 15,
+        "n": 15,
+        "packed_byte": 255,
+        "packed_hex": "ff"
+      },
+      {
+        "k": 1,
+        "n": 15,
+        "packed_byte": 31,
+        "packed_hex": "1f"
+      }
+    ]
+  },
+  "e2e_dispersal": {
+    "comment": "The full content path as one vector (SP-1 composition): ciphertext = seal(kpair, msg_nonce, plaintext); shares = split(ciphertext, n=4, k=3, coeffs); any k=3 of the n=4 shares reconstruct the ciphertext, which open_ decrypts back to the plaintext. Pins the composition, not only seal and split in isolation. coeffs are fixed here only to make the split reproducible (a real sender draws them from a CSPRNG, RI-2).",
+    "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
+    "msg_nonce": "0001020304050607",
+    "plaintext": "536372616d624e65742066756c6c2d7061746820766563746f72",
+    "coeffs": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebfc0c1c2c3c4c5c6c7c8c9cacbcccdcecfd0d1d2d3d4d5d6d7d8d9dadbdcdddedfe0e1e2e3e4e5e6e7e8e9eaebecedeeeff0f1f2f3",
+    "n": 4,
+    "k": 3,
+    "ciphertext": "ccc56551b4e0fe10a699da812f17ceed9b82b3cceb23797d90178ffc7498d7881d1e4c80b86e18efcafa",
+    "shares": [
+      "cdc46450b5e1ff11a798db802e16cfec9a83b2cdea22787c91168efd7599d6891c1f4d81b96f19eecbfb",
+      "252094ac6d353fdd2f1c4b1c96a26f40293c196a69ade3eb42c9453a96762d7e6f6026e6fa2042b9d8e4",
+      "242195ad6c343edc2e1d4a1d97a36e41283d186b68ace2ea43c8443b97772c7f6e6127e7fb2143b8d9e5",
+      "84a57d615c204680b5a299ea9c8c2d2612236a3dc222002c42ed0d5606c2f582220923c727d9d708aeb6"
+    ],
+    "reconstruct_from": [
+      1,
+      2,
+      3
+    ]
+  },
+  "sphinx_hop": {
+    "status": "pending-implementation",
+    "comment": "Part 1 \u00a75 CH-2 pins the per-hop key agreement: s_i = X25519(alpha_i, onion_i), and the hop keys (routing-info stream, the gamma MAC, the delta AEAD) via HKDF-BLAKE2s under the fixed labels sphinx-rho / sphinx-mu / sphinx-delta. There is no separate handshake transcript to vector (CH-1). These vectors are DECLARED PENDING, not hand-waved: this PoC implements no onion layer or X25519 (poc/dispersal.py: 'no onion layer'), so a reference output cannot be generated honestly yet. When a node implements the Sphinx layer, this entry is replaced by (alpha_i, onion_i) -> s_i and the three label-derived hop keys. Until then, two implementations are NOT yet proven to interoperate at the circuit layer (I-1), and this is stated openly (see Part 9 RI-10).",
+    "labels": [
+      "sphinx-rho",
+      "sphinx-mu",
+      "sphinx-delta"
     ]
   }
 }
