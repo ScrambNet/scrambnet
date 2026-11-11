@@ -69,9 +69,10 @@ class PayloadAndTags(unittest.TestCase):
     def test_payload_roundtrip(self):
         tag = secrets.token_bytes(d.TAG_BYTES)
         share = secrets.token_bytes(d.SHARE_BYTES)
-        p = d.build_payload(tag, 2, 4, 3, share)
+        p = d.build_payload(tag, 2, 4, 3, share)  # build_payload(tag, index, n, k, share)
         self.assertEqual(len(p), d.DELTA_BYTES)
-        self.assertEqual(d.parse_payload(p), (tag, 2, 4, 3, share))
+        # parse returns (tag, index, k, n, share): k=3, n=4
+        self.assertEqual(d.parse_payload(p), (tag, 2, 3, 4, share))
 
     def test_tags_distinct_and_deterministic(self):
         key = secrets.token_bytes(32)

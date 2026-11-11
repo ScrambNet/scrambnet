@@ -160,6 +160,8 @@ def build_payload(tag: bytes, index: int, n: int, k: int, share: bytes) -> bytes
 
 
 def parse_payload(payload: bytes) -> tuple[bytes, int, int, int, bytes]:
+    # params byte is (k << 4) | n; return (k, n) in that order, matching
+    # rendezvous.parse_slot so the two parsers never disagree on nibble order.
     if len(payload) != DELTA_BYTES:
         raise ValueError("bad payload size")
     tag = payload[:TAG_BYTES]
@@ -167,7 +169,7 @@ def parse_payload(payload: bytes) -> tuple[bytes, int, int, int, bytes]:
     params = payload[TAG_BYTES + 1]
     k, n = params >> 4, params & 0x0F
     share = payload[TAG_BYTES + 2:TAG_BYTES + 2 + SHARE_BYTES]
-    return tag, index, n, k, share
+    return tag, index, k, n, share
 
 
 # --- sender / recipient, dispersal layer only ---
@@ -200,7 +202,7 @@ def recognize(payloads: list[bytes], recipient_key: bytes,
             expected[share_tag(recipient_key, nonce, index)] = (nonce, index)
     groups: dict[bytes, dict[int, tuple[int, bytes]]] = {}
     for p in payloads:
-        tag, index, n, k, share = parse_payload(p)
+        tag, index, k, n, share = parse_payload(p)
         hit = expected.get(tag)
         if hit is None or hit[1] != index:
             continue
