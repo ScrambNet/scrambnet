@@ -13,9 +13,9 @@ import unittest
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
-DEMOS = ["e2e.py", "dispersal.py", "rendezvous.py", "network_sim.py",
-         "sybil_sim.py"]
-TEST_MODULES = ["test_e2e", "test_dispersal", "test_rendezvous",
+DEMOS = ["e2e.py", "dispersal.py", "rendezvous.py", "gossip.py",
+         "network_sim.py", "sybil_sim.py"]
+TEST_MODULES = ["test_e2e", "test_dispersal", "test_rendezvous", "test_gossip",
                 "test_properties", "test_network_sim", "test_sybil_sim"]
 
 

@@ -1,66 +1,189 @@
 {
- "comment": "Cross-implementation vectors for the dispersal core (suite 0x01).",
- "gf_mul": [
-  [
-   83,
-   202,
-   1
+  "comment": "Cross-implementation vectors for the dispersal core (suite 0x01).",
+  "gf_mul": [
+    [
+      83,
+      202,
+      1
+    ],
+    [
+      2,
+      128,
+      27
+    ],
+    [
+      3,
+      255,
+      26
+    ],
+    [
+      16,
+      16,
+      27
+    ]
   ],
-  [
-   2,
-   128,
-   27
-  ],
-  [
-   3,
-   255,
-   26
-  ],
-  [
-   16,
-   16,
-   27
-  ]
- ],
- "shamir": {
-  "secret": "000102030405060708090a0b0c0d0e0f",
-  "n": 4,
-  "k": 3,
-  "coeffs": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf",
-  "shares": [
-   "010003020504070609080b0a0d0c0f0e",
-   "e9e4f3feddd0c7ca818c9b96b5b8afa2",
-   "e8e5f2ffdcd1c6cb808d9a97b4b9aea3",
-   "48611a33ecc5be971b324960bf96edc4"
-  ]
- },
- "tags": {
-  "key": "0101010101010101010101010101010101010101010101010101010101010101",
-  "nonce": "0001020304050607",
-  "tags": [
-   "f4ccf92c7ebd232452dda71545bb6739",
-   "d198ce05946b5edb95c165235f793f89",
-   "97a3683c93acde0a00eab2f6da9af3c9",
-   "c237fcab5e9ee6d11e358c22fd6739e5"
-  ]
- },
- "e2e": {
-  "comment": "SP-1a end-to-end AEAD: content_key = HKDF-BLAKE2s(kpair,'e2e-content'); ciphertext = ChaCha20-Poly1305(content_key, nonce=0000'0000'||msg_nonce, plaintext), appended 16-byte tag. An impl that reproduces ciphertext interoperates on the content path.",
-  "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
-  "content_key": "5d9ef763ead48f3509c2375dbb52f1f43c2ac8becf3b2bfc394185552b63bd65",
-  "msg_nonce": "0001020304050607",
-  "plaintext": "536372616d624e65742053502d3120766563746f72",
-  "ciphertext": "ccc56551b4e0fe10a699efa46e4ac3eb9f95af83ef32c980a70f871985eeca045b33106503"
- },
- "rendezvous": {
-  "comment": "Part 6 derivations, one KDF discipline (RZ-11): k_tag = HKDF-BLAKE2s(kpair,'tag'); box_id = HKDF-BLAKE2s(kpair, 'box'||drop||epoch_be8)[:16]. box_id keys are '<drop>_<epoch>'.",
-  "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
-  "k_tag": "2fa9ae241a816387b22c715329119bf2e001ab828a58428f4538c0568b03ca96",
-  "box_ids": {
-   "0_20000": "4f36e33bc857c2894ebc2b2332a617ac",
-   "0_20001": "0c5789597ba312a69562c4006ed5959c",
-   "1_20000": "e88b03b6f3fee12c332b729b5f8fdc33",
-   "1_20001": "4b527d30a3ca70e747529870211b92f5"
+  "shamir": {
+    "secret": "000102030405060708090a0b0c0d0e0f",
+    "n": 4,
+    "k": 3,
+    "coeffs": "a0a1a2a3a4a5a6a7a8a9aaabacadaeafb0b1b2b3b4b5b6b7b8b9babbbcbdbebf",
+    "shares": [
+      "010003020504070609080b0a0d0c0f0e",
+      "e9e4f3feddd0c7ca818c9b96b5b8afa2",
+      "e8e5f2ffdcd1c6cb808d9a97b4b9aea3",
+      "48611a33ecc5be971b324960bf96edc4"
+    ]
+  },
+  "tags": {
+    "key": "0101010101010101010101010101010101010101010101010101010101010101",
+    "nonce": "0001020304050607",
+    "tags": [
+      "f4ccf92c7ebd232452dda71545bb6739",
+      "d198ce05946b5edb95c165235f793f89",
+      "97a3683c93acde0a00eab2f6da9af3c9",
+      "c237fcab5e9ee6d11e358c22fd6739e5"
+    ]
+  },
+  "e2e": {
+    "comment": "SP-1a end-to-end AEAD: content_key = HKDF-BLAKE2s(kpair,'e2e-content'); ciphertext = ChaCha20-Poly1305(content_key, nonce=0000'0000'||msg_nonce, plaintext), appended 16-byte tag. An impl that reproduces ciphertext interoperates on the content path.",
+    "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
+    "content_key": "5d9ef763ead48f3509c2375dbb52f1f43c2ac8becf3b2bfc394185552b63bd65",
+    "msg_nonce": "0001020304050607",
+    "plaintext": "536372616d624e65742053502d3120766563746f72",
+    "ciphertext": "ccc56551b4e0fe10a699efa46e4ac3eb9f95af83ef32c980a70f871985eeca045b33106503"
+  },
+  "rendezvous": {
+    "comment": "Part 6 derivations, one KDF discipline (RZ-11): k_tag = HKDF-BLAKE2s(kpair,'tag'); box_id = HKDF-BLAKE2s(kpair, 'box'||drop||epoch_be8)[:16]. box_id keys are '<drop>_<epoch>'.",
+    "kpair": "0202020202020202020202020202020202020202020202020202020202020202",
+    "k_tag": "2fa9ae241a816387b22c715329119bf2e001ab828a58428f4538c0568b03ca96",
+    "box_ids": {
+      "0_20000": "4f36e33bc857c2894ebc2b2332a617ac",
+      "0_20001": "0c5789597ba312a69562c4006ed5959c",
+      "1_20000": "e88b03b6f3fee12c332b729b5f8fdc33",
+      "1_20001": "4b527d30a3ca70e747529870211b92f5"
+    }
+  },
+  "records": {
+    "comment": "Part 2 section 2A: canonical CBOR (GR-21..GR-23) + Ed25519 strict profile (GR-25..GR-28). sk is the 32-byte Ed25519 seed; id=A is its public key. signing_input = 'ScrambNet-gossip-v1'||0x00||canon(record without key 7) (GR-24). An impl that reproduces canonical_cbor and signing_input, verifies every positive vector, and rejects every negative vector FOR ITS NAMED CLAUSE, conforms (GR-30). The mixed_order_A/mixed_order_R negatives are rejected only by GR-28's [L]P-test, not by a small-order blacklist; they separate a conforming impl from one that used a permissive (ZIP-215) Ed25519 library.",
+    "sk": "0303030303030303030303030303030303030303030303030303030303030303",
+    "id": "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1",
+    "positive": {
+      "fields_hex": {
+        "0": 1,
+        "1": {
+          "b": "ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d1"
+        },
+        "2": {
+          "b": "1111111111111111111111111111111111111111111111111111111111111111"
+        },
+        "3": [
+          [
+            0,
+            {
+              "b": "cafe"
+            }
+          ],
+          [
+            5,
+            {
+              "b": ""
+            }
+          ]
+        ],
+        "4": 1000,
+        "5": 1731000000,
+        "6": 1731600000
+      },
+      "signing_input": "536372616d624e65742d676f737369702d763100a70001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80",
+      "sig": "328a94dba113c544c809fb230ef52531d11e1634a1db6019d3a20833bba1ad85f700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30b",
+      "canonical_cbor": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840328a94dba113c544c809fb230ef52531d11e1634a1db6019d3a20833bba1ad85f700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30b"
+    },
+    "positive_unknown_key": {
+      "comment": "unknown key 9 is signed (part of canon and signing_input) and ignored for semantics (GR-2/GR-22).",
+      "unknown_key": 9,
+      "unknown_value_hex": "abcd",
+      "signing_input": "536372616d624e65742d676f737369702d763100a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e800942abcd",
+      "canonical_cbor": "a90001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e800758405a02444d456b80a103cc5a4e4ac14dddeeb07a1a4f70bb0b7c0d1ad0038f35cf3740d81487cc482869e63d96d389e27e7ff9fa5f2876b8b02c0855fb310191020942abcd"
+    },
+    "negative": [
+      {
+        "name": "non_shortest_int",
+        "violates": "GR-21",
+        "bytes": "a1001801",
+        "expect": "reject"
+      },
+      {
+        "name": "indefinite_length",
+        "violates": "GR-21",
+        "bytes": "9f00ff",
+        "expect": "reject"
+      },
+      {
+        "name": "disallowed_type",
+        "violates": "GR-21",
+        "bytes": "a100f90000",
+        "expect": "reject"
+      },
+      {
+        "name": "duplicate_key",
+        "violates": "GR-22",
+        "bytes": "a204000400",
+        "expect": "reject"
+      },
+      {
+        "name": "reordered_keys",
+        "violates": "GR-22/GR-23",
+        "bytes": "a201000000",
+        "expect": "reject"
+      },
+      {
+        "name": "top_level_not_map",
+        "violates": "GR-23",
+        "bytes": "83010203",
+        "expect": "reject"
+      },
+      {
+        "name": "trailing_bytes",
+        "violates": "GR-23",
+        "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840328a94dba113c544c809fb230ef52531d11e1634a1db6019d3a20833bba1ad85f700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30b00",
+        "expect": "reject"
+      },
+      {
+        "name": "addrs_bad_shape",
+        "violates": "GR-21a",
+        "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820041aa05041903e8051a672cf6c0061a67361e800758405fed6f9e3e408d3fc5be07471a637fa74d522e11d8e0544b8ae2be98e2c6e6cf2576f259815ad59217d746da444462829419a1c65979f736148c5779cbac1304",
+        "expect": "reject"
+      },
+      {
+        "name": "non_canonical_S",
+        "violates": "GR-26",
+        "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840328a94dba113c544c809fb230ef52531d11e1634a1db6019d3a20833bba1ad85e4d45b87132b04398c608b39c0eddb00f622f23b00d0c01328d11239ae94b31b",
+        "expect": "reject"
+      },
+      {
+        "name": "non_canonical_R_enc",
+        "violates": "GR-27",
+        "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840edfffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30b",
+        "expect": "reject"
+      },
+      {
+        "name": "mixed_order_A",
+        "violates": "GR-28",
+        "bytes": "a8000101582003b5939c1d63adf5410aaf84ecd13a066ab889514141846dbde11596ebb92dd302582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e800758407845ea7c973c75495a166ad646e7e0a1de61adb61451dc9bccdddf12b45db5829033e775491909243b2df1a32757e70f00c0c8d205fa466a59f283640f079704",
+        "expect": "reject"
+      },
+      {
+        "name": "mixed_order_R",
+        "violates": "GR-28",
+        "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840f0e7dbc7a55f38a49b0487329fd05e266e02140894ec3a7128fd1537ca1609e7f700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30b",
+        "expect": "reject"
+      },
+      {
+        "name": "bad_sig",
+        "violates": "GR-25",
+        "bytes": "a80001015820ed4928c628d1c2c6eae90338905995612959273a5c63f93636c14614ac8737d102582011111111111111111111111111111111111111111111111111111111111111110382820042cafe820540041903e8051a672cf6c0061a67361e80075840328a94dba113c544c809fb230ef52531d11e1634a1db6019d3a20833bba1ad85f700662af9c7f1e0b5c39396e1f3fcebf522f23b00d0c01328d11239ae94b30a",
+        "expect": "reject"
+      }
+    ]
   }
- }
 }

@@ -25,7 +25,7 @@ it signs, and the network's map is whatever verifiable sample each client holds.
 | 4 | `bw` | uint | claimed sustained bandwidth, kB/s — a *claim*, see GR-7 |
 | 5 | `created` | uint | unix time, MUST be rounded down to the hour (GR-5) |
 | 6 | `expiry` | uint | unix time, MUST be ≤ `created` + 7 days (s) |
-| 7 | `sig` | bytes(64) | Ed25519 over the canonical encoding with key 7 absent |
+| 7 | `sig` | bytes(64) | Ed25519 over the §2A signing input (GR-24); the profile for encoding and verification is §2A |
 
 - **GR-3.** A relay MUST NOT publish geographic or jurisdictional claims about
   itself. Clients infer AS and jurisdiction from `addrs` with their own data
@@ -37,6 +37,175 @@ it signs, and the network's map is whatever verifiable sample each client holds.
 - **GR-5.** `created` rounding exists to stop clock-skew fingerprinting of
   relays. Clients MUST treat two records with the same `id` as one relay and
   keep only the freshest `created`.
+
+## 2A. Canonical encoding and the verification profile
+
+GR-1 names "canonical CBOR (RFC 8949 §4.2.1)" and GR-4 requires signature
+validity before store or forward, but §4.2.1 leaves encoding choices open and
+Ed25519 verification famously diverges between libraries (Chalkias et al.,
+*Taming the Many EdDSAs*; the ZIP-215 vs RFC 8032 split). For an I-1 network
+either gap is fatal: two nodes that disagree on a record's canonical bytes, or on
+whether a signature is valid, reject each other's valid records (a partition) or
+split on a crafted record (a security-relevant split-view feeding the ID-8/ID-10
+equivocation and PS-17 steering threats). This section pins both to the byte.
+All of GR-21..GR-28 are constituents of "signature validity" as GR-4 uses the
+term and MUST be enforced before a record is stored or forwarded, with GR-4's
+silent uniform failure. The whole profile is made mechanically checkable by the
+`records` vectors (GR-30) and demonstrated in `poc/gossip.py`, whose Ed25519 is
+cross-checked bit-for-bit against an independent library.
+
+- **GR-21 (shortest-form, definite-length, four types only).** Every integer and
+  every length in a record MUST use the shortest CBOR head (preferred
+  serialization, RFC 8949 §4.2.1): a decoder MUST reject any non-shortest head
+  (e.g. `0x18 0x0a` for `10`). All maps, arrays, and byte strings MUST be
+  definite-length; indefinite-length items MUST be rejected. The only CBOR major
+  types permitted anywhere in a record are unsigned integer (major 0), byte
+  string (major 2), array (major 4), and map (major 5) — exactly those GR-2 uses.
+  Negative integers, text strings, floats, tags, simple values (including
+  `false`/`true`/`null`), and any other major type or head MUST be rejected.
+  This, with GR-21a, makes canonicalization **total**: every byte string either
+  decodes to exactly one record or is rejected (I-1).
+- **GR-21a (the shape of keys 0–7 is pinned, not only their CBOR type).** A
+  field whose value is a composite type is a canonicalization ambiguity unless
+  its inner shape is pinned: two implementations would otherwise split on a
+  signature-valid record whose composite field one reads as well-formed and the
+  other does not (key 3 `addrs` is the live case — it is never crypto-decoded, so
+  no later check rescues the split). Therefore the shapes of the known keys MUST
+  be enforced as a reject predicate, not treated as convention: key 0 `v` and key
+  4 `bw`, key 5 `created`, key 6 `expiry` MUST be unsigned integers (GR-21); key
+  1 `id` and key 2 `onion` MUST be byte strings of exactly 32 bytes; key 7 `sig`
+  MUST be a byte string of exactly 64 bytes; key 3 `addrs` MUST be an array (which
+  MAY be empty) each of whose elements MUST be an array of exactly two items, item
+  0 an unsigned integer (the transport id) and item 1 a byte string of length
+  `≤ N_addr = 256` (s) (the endpoint blob). Any other shape of a known key MUST be
+  rejected as a canonicalization failure (GR-23/GR-29). Unknown keys ≥ 8 are
+  signed-but-ignored (GR-2) and MAY carry any GR-21-legal value of any shape;
+  only keys 0–7 are shape-pinned.
+- **GR-22 (ascending integer key order, totally pinned for unknown keys).** Map
+  keys MUST be unsigned integers encoded in shortest form (GR-21) and MUST appear
+  in strictly ascending numeric order. Because keys are shortest-form unsigned
+  integers, RFC 8949 §4.2.1's bytewise-lexicographic order of the encoded key
+  **coincides exactly with ascending numeric order for all key values** (a
+  one-byte head `0x00`–`0x17` always sorts before any multi-byte head, and within
+  a fixed width big-endian order is numeric order); the §4.2.1 "bytewise ≠
+  numeric past 23" subtlety exists only for non-shortest encodings, which GR-21
+  forbids. Unknown keys ≥ 8 are permitted for forward compatibility (GR-2) and
+  MUST sort by this same ascending-numeric rule. Keys MUST be unique; a map
+  containing the same key twice MUST be rejected (the classic signature-bypass
+  where two parsers disagree on which duplicate wins). There is thus exactly one
+  legal key ordering for any set of keys, known or unknown (I-1).
+- **GR-23 (verify over received bytes; the wire encoding MUST already be
+  canonical).** A verifier MUST require the received record bytes to be the
+  canonical encoding defined by GR-21/GR-21a/GR-22 and MUST reject any record
+  whose received bytes are not canonical — wrong key order, non-shortest head,
+  indefinite length, a disallowed type, a duplicate key, a mis-shaped known field
+  (GR-21a), a top-level item that is not a map (major 5), or any trailing byte
+  after the top-level map. (Because every container is definite-length, GR-21,
+  the only place "trailing bytes" can occur is after the top-level item; an
+  implementation MUST NOT invent an inner-trailing-bytes check that would reject a
+  canonical record.) The verifier MUST NOT re-canonicalize and then verify over
+  the re-encoded bytes; it verifies the signature over **exactly the received
+  bytes** (GR-24). This is what makes GR-2's "unknown keys are covered by the
+  signature but ignored for semantics" total: canonicalization is defined over the
+  **full** map including unknown keys, the ordering of unknowns is pinned (GR-22),
+  and a verifier need never reproduce a signer's encoding of a key it does not
+  understand — it only checks that the bytes it received are themselves canonical.
+  A node that tolerates a non-canonical wire record where another node rejects it
+  is an I-1 defect.
+- **GR-24 (the signing input is byte-exact and domain-separated).** The message
+  signed for GR-2 key 7 is
+
+  ```
+  "ScrambNet-gossip-v1" ‖ 0x00 ‖ canon( record without key 7 )
+  ```
+
+  where the label is exactly the 19 ASCII bytes `ScrambNet-gossip-v1`, `0x00` is a
+  single separator byte, and `canon(record without key 7)` is the
+  GR-21/GR-21a/GR-22 canonical encoding of the record map with **key 7 omitted
+  entirely** — the map header count reflects the remaining keys (e.g. 7, not 8),
+  and key 7 is absent, **not** present-with-an-empty value — including every
+  unknown key ≥ 8 in ascending order. The label-plus-separator is a
+  domain-separation prefix (matching the suite-`0x01` label convention of
+  `"e2e-content"`/`"box"`/`"tag"`) that MUST be present, so a record signature can
+  never be reinterpreted as a signature over any other protocol's or version's
+  message. The signature is pure Ed25519 (RFC 8032, no pre-hash) over these exact
+  bytes. To verify, a node reconstructs this signing input from the received
+  canonical record (GR-23) with key 7 removed and checks the key-7 signature
+  against it under public key `A = id` (GR-28). This is the sole definition of the
+  signing input; GR-2's key-7 row defers to it.
+- **GR-25 (one verification equation: RFC 8032 cofactorless).** Signature
+  verification MUST use the RFC 8032 cofactorless equation `[S]·B = R + [k]·A`,
+  where `k = SHA-512(R ‖ A ‖ M) mod L`, `B` is the Ed25519 base point, `M` is the
+  GR-24 signing input, and `R`, `A`, `S` are taken from the signature and `id`.
+  Implementations MUST NOT use the cofactored (`[8]`-multiplied, ZIP-215-style)
+  verification equation, and MUST NOT use a library whose acceptance set differs
+  from this profile unless it is wrapped to match exactly. ScrambNet verifies
+  records one at a time (GR-4), so the batch-verification motive for a cofactored
+  equation does not apply; a single pinned equation is required so every node
+  agrees bit-for-bit on validity (I-1). This prohibition forbids the `[8]`-
+  cofactored *verification equation* only; it does **not** forbid the scalar
+  multiplications GR-28 uses for subgroup membership.
+- **GR-26 (canonical scalar S).** A record MUST be rejected unless
+  `0 ≤ S < L`, where `L = 2^252 + 27742317777372353535851937790883648493` is the
+  Ed25519 group order. A signature with `S ≥ L` (a non-reduced scalar) is the
+  classic Ed25519 malleability and MUST be rejected even if the arithmetic would
+  otherwise check, so no second encoding of the same signature is accepted by one
+  library and rejected by another (I-1).
+- **GR-27 (canonical point encodings for R and A).** The 32-byte encodings of `R`
+  (from the signature) and `A` (the `id`) MUST be canonical: the encoded
+  y-coordinate MUST satisfy `y < p` (`p = 2^255 − 19`), and an encoding with
+  `y ≥ p`, or with the sign bit set on the non-canonical encoding of `x = 0`, MUST
+  be rejected. A non-canonical point encoding is a second name for a point and is
+  exactly an input on which libraries diverge; rejecting it keeps the acceptance
+  set total (I-1).
+- **GR-28 (`id` is the public key; A and R MUST be prime-order — tested by
+  `[L]·P`, not a blacklist).** GR-2 key 1 `id` **is** the Ed25519 public key `A`
+  and the relay's name: verification uses it directly, with no directory or key
+  lookup (I-3, no authority). A record MUST be rejected unless both `A` and `R`
+  decode (GR-27) to points of the **large prime-order subgroup** — equivalently,
+  neither may be a small-order or mixed-order point. This membership MUST be
+  tested as `[L]·P = 𝒪` (the identity) **and** `P ≠ 𝒪`, computed by scalar
+  multiplication by the group order `L`: the first condition admits only the
+  identity and the order-`L` points (since `L` is prime, no order in {2,4,8}
+  divides it), and the `P ≠ 𝒪` condition then rejects the identity itself. A
+  small-order-encoding **blacklist MUST NOT** be used as the test: it admits
+  mixed-order points (order `2L`/`4L`/`8L`, which are not among the eight
+  small-order encodings), and a mixed-order `A` or `R` is precisely an input on
+  which the cofactored and cofactorless equations diverge — so a blacklist-only
+  implementation would accept a signature a conforming node rejects (I-1). After
+  GR-26/GR-27/GR-28 the acceptance set is the single strict set every conforming
+  node computes identically. A record whose `id` is not a valid canonical
+  prime-order point has no verifiable signer and MUST be dropped silently (GR-4).
+- **GR-29 (these are GR-4 checks; failure is silent and uniform).** GR-21 through
+  GR-28 are constituents of "signature validity" as GR-4 uses the term. A node
+  MUST perform them before storing or forwarding a record, and MUST drop a failing
+  record silently with no observable distinction — by error, response, or timing —
+  between a canonicalization failure, a mis-shaped field, an invalid signature, a
+  bad point, a size-cap violation (GR-1), expiry, or timestamp-rounding failure
+  (GR-4/GR-5). The uniform silent drop is the I-4-flavored property GR-4 already
+  requires; the constant-work discipline that makes it hold against a timing
+  observer is a MUST, enforced as Part 9 RI-1b requires (a drop whose work
+  betrays its reason is non-conforming), not a best effort.
+- **GR-29a (check order: a record proves itself before it can affect state).**
+  The checks MUST be applied in this order: (1) the GR-1 size cap (a record larger
+  than the cap is dropped unread); (2) canonical encoding and field shape
+  (GR-21/GR-21a/GR-22/GR-23) and signature validity (GR-24..GR-28); (3) only then
+  may the record participate in GR-5 dedup and freshness. A record that fails (1)
+  or (2) MUST NOT evict, replace, or otherwise affect any stored record. Without
+  this order a relay that dedups before verifying can be made to discard an
+  honest, signed record in favour of a forged one bearing a higher `created`
+  (which then fails verification and is dropped, having already evicted the good
+  record) — a denial of service GR-5 would otherwise invite.
+- **GR-30 (conformance is defined by the records vectors).** A conforming
+  implementation MUST reproduce the canonical encoding and the signing input of
+  every positive record vector (roadmap 3.2, `vectors.json` `records` section)
+  byte-for-byte, MUST verify every positive vector, and MUST reject every negative
+  vector **for the specific GR-clause the vector names**. Accepting a record a
+  vector marks "reject", rejecting a positive vector, or rejecting a negative
+  vector for the wrong reason, is non-conformance: it is exactly the divergence
+  (a record one node accepts and another rejects, or vice versa) that this section
+  exists to prevent (I-1). Vector conformance certifies agreement on the
+  accept/reject predicate; it does not certify timing (GR-29, cf. RI-1b).
 
 ## 3. Exchange and sampling
 
@@ -389,6 +558,30 @@ says *bound*, not *solve*.
 
 ## Requirements introduced here
 
+- **GR-21 / GR-21a** — canonical CBOR: shortest-form, definite-length, four major
+  types only; and the inner shape of keys 0–7 (incl. `addrs` = array of
+  `[uint, bytes]` pairs) pinned as a reject predicate so no composite field is a
+  split.
+- **GR-22** — strictly ascending unsigned-integer map keys (== bytewise order of
+  the shortest-form key for all keys, known or unknown); duplicate keys rejected.
+- **GR-23** — verify over the received bytes: the wire encoding MUST already be
+  canonical (top-level map, no trailing bytes), never re-canonicalized.
+- **GR-24** — the signing input is `"ScrambNet-gossip-v1" ‖ 0x00 ‖ canon(record
+  without key 7)`; the sole definition, domain-separated against cross-protocol
+  reuse.
+- **GR-25** — one verification equation: RFC 8032 cofactorless `[S]B = R + [k]A`;
+  the cofactored/ZIP-215 equation and divergent libraries are forbidden.
+- **GR-26 / GR-27** — canonical scalar `S < L`; canonical point encodings for `R`
+  and `A` (`y < p`).
+- **GR-28** — `id` is the public key; `A` and `R` MUST be prime-order, tested by
+  `[L]·P = 𝒪 ∧ P ≠ 𝒪` (a small-order blacklist is forbidden — it admits
+  mixed-order points on which cofactored and cofactorless verification diverge).
+- **GR-29 / GR-29a** — all of GR-21..GR-28 are GR-4 "signature validity",
+  uniform-silent-drop (constant work, RI-1b); check order is size cap →
+  canonical+signature → only then GR-5 dedup, so an unverified record never evicts
+  a verified one.
+- **GR-30** — conformance is defined by the `records` vectors: reproduce every
+  positive vector byte-for-byte, reject every negative vector for its named clause.
 - **GR-11** — verified bandwidth is a per-client self-measurement (`vbw`), never a
   published or shared figure; un-probed claims count as low.
 - **GR-12** — the probe is a sealed round-trip with the measured relay as the

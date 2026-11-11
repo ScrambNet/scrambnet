@@ -228,11 +228,27 @@ adversary gains, not to pretend it away.
   exposing one hop's linkage within the live epoch — bounded and closable without
   a handshake (CH-5a). **Done.** **Effort L.**
 
-- **3.4 — Gossip-record signatures and canonical CBOR.** `I-1`
-  Canonical CBOR is signature-critical: two implementations that disagree on map
-  ordering reject each other's valid records. Pin the exact canonicalization,
-  mandate a strict Ed25519 verification profile, and provide cross-impl vectors.
-  **Done:** canonicalization pinned, vectors exist. **Effort S.** Parallelizable.
+- **3.4 — Gossip-record signatures and canonical CBOR. (DONE)** `I-1`
+  Canonical CBOR is signature-critical: two implementations that disagree on a
+  record's canonical bytes reject each other's valid records. Part 2 §2A
+  (GR-21..GR-30) pins both halves to the byte: the **canonical-CBOR profile**
+  (shortest-form, definite-length, four major types, ascending unsigned-integer
+  keys — which, because shortest-form makes bytewise order equal numeric order,
+  is totally pinned even for unknown keys — duplicate-key rejection, the inner
+  shape of keys 0–7, and *verify over the received bytes* rather than
+  re-canonicalize); and the **strict Ed25519 profile** (RFC 8032 cofactorless
+  `[S]B = R + [k]A`, canonical `S < L`, canonical point encodings, and
+  prime-order `A`/`R` tested by `[L]P = 𝒪 ∧ P ≠ 𝒪` — *not* a small-order
+  blacklist, which would admit the mixed-order points on which cofactored and
+  cofactorless verification diverge). An adversarial review found the `addrs`
+  shape unpinned, the prime-order test under-specified (a blacklist passes
+  small-order but splits on mixed-order), a vector realizability gap, and a
+  GR-2↔GR-24 signing-input contradiction; all fixed before landing. Reference
+  implementation `poc/gossip.py` (pure-Python, stdlib only, Ed25519 cross-checked
+  bit-for-bit against an independent library), cross-impl vectors in
+  `vectors.json` `records` (1 positive + 1 unknown-key + 13 negatives, each
+  tagged with the GR-clause it trips), `test_gossip.py` (12 tests, 89 total).
+  **Done:** canonicalization pinned, vectors exist. **Effort S.**
 
 ---
 
