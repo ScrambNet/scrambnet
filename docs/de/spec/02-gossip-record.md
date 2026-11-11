@@ -26,7 +26,7 @@ die es signiert, und die Karte des Netzes ist die überprüfbare Stichprobe, die
 | 4 | `bw` | uint | behauptete dauerhafte Bandbreite, kB/s — eine *Behauptung*, siehe GR-7 |
 | 5 | `created` | uint | Unix-Zeit, MUSS auf die Stunde abgerundet werden (GR-5) |
 | 6 | `expiry` | uint | Unix-Zeit, MUSS ≤ `created` + 7 Tage sein (s) |
-| 7 | `sig` | bytes(64) | Ed25519 über die kanonische Kodierung mit abwesendem Schlüssel 7 |
+| 7 | `sig` | bytes(64) | Ed25519 über die Signatureingabe von §2A (GR-24); das Kodierungs- und Verifikationsprofil ist §2A |
 
 - **GR-3.** Ein Relais DARF NICHT (MUST NOT) geografische oder jurisdiktionelle Behauptungen über
   sich selbst veröffentlichen. Clients schließen AS und Jurisdiktion aus `addrs` mit ihren eigenen Daten
@@ -38,6 +38,175 @@ die es signiert, und die Karte des Netzes ist die überprüfbare Stichprobe, die
 - **GR-5.** Die `created`-Rundung existiert, um das Clock-Skew-Fingerprinting von Relais zu stoppen.
   Clients MÜSSEN (MUST) zwei Einträge mit demselben `id` als ein Relais behandeln und
   nur das frischeste `created` behalten.
+
+## 2A. Kanonische Kodierung und das Verifikationsprofil
+
+GR-1 nennt „kanonisches CBOR (RFC 8949 §4.2.1)" und GR-4 verlangt Signatur-
+gültigkeit vor dem Speichern oder Weiterleiten, aber §4.2.1 lässt Kodierungs-Entscheidungen
+offen, und die Ed25519-Verifikation divergiert bekanntermaßen zwischen Bibliotheken (Chalkias et al.,
+*Taming the Many EdDSAs*; die Spaltung ZIP-215 vs. RFC 8032). Für ein I-1-Netz ist
+jede dieser Lücken tödlich: zwei Knoten, die über die kanonischen Bytes eines Eintrags uneins sind, oder
+darüber, ob eine Signatur gültig ist, verwerfen die gültigen Einträge des jeweils anderen (eine Partition) oder
+spalten sich an einem gezielt gebauten Eintrag (eine sicherheitsrelevante Split-View, die die
+ID-8/ID-10-Äquivokations- und PS-17-Steering-Bedrohungen speist). Dieser Abschnitt fixiert beides auf das Byte.
+Alle von GR-21..GR-28 sind Bestandteile der „Signaturgültigkeit", wie GR-4 den Begriff verwendet,
+und MÜSSEN (MUST) durchgesetzt werden, bevor ein Eintrag gespeichert oder weitergeleitet wird, mit GR-4s
+stillem uniformem Fehlschlag. Das gesamte Profil wird durch die `records`-Vektoren (GR-30) maschinell
+überprüfbar gemacht und in `poc/gossip.py` demonstriert, dessen Ed25519 bitgenau gegen eine
+unabhängige Bibliothek gegengeprüft wird.
+
+- **GR-21 (kürzeste Form, definite Länge, nur vier Typen).** Jede Ganzzahl und
+  jede Länge in einem Eintrag MUSS (MUST) den kürzesten CBOR-Kopf verwenden (bevorzugte
+  Serialisierung, RFC 8949 §4.2.1): ein Dekodierer MUSS (MUST) jeden nicht-kürzesten Kopf zurückweisen
+  (z. B. `0x18 0x0a` für `10`). Alle Maps, Arrays und Bytestrings MÜSSEN (MUST) von
+  definiter Länge sein; Items unbestimmter Länge MÜSSEN (MUST) zurückgewiesen werden. Die einzigen CBOR-Major-
+  Typen, die irgendwo in einem Eintrag erlaubt sind, sind unsigned Integer (major 0), Byte-
+  string (major 2), Array (major 4) und Map (major 5) — genau jene, die GR-2 verwendet.
+  Negative Ganzzahlen, Textstrings, Floats, Tags, Simple Values (einschließlich
+  `false`/`true`/`null`) und jeder andere Major-Typ oder Kopf MÜSSEN (MUST) zurückgewiesen werden.
+  Dies macht die Kanonisierung, zusammen mit GR-21a, **total**: jeder Bytestring
+  dekodiert entweder zu genau einem Eintrag oder wird zurückgewiesen (I-1).
+- **GR-21a (die Gestalt der Schlüssel 0–7 ist fixiert, nicht nur ihr CBOR-Typ).** Ein
+  Feld, dessen Wert ein zusammengesetzter Typ ist, ist eine Kanonisierungs-Mehrdeutigkeit, sofern nicht
+  seine innere Gestalt fixiert ist: zwei Implementierungen würden sich sonst an einem
+  signaturgültigen Eintrag spalten, dessen zusammengesetztes Feld die eine als wohlgeformt liest und die
+  andere nicht (Schlüssel 3 `addrs` ist der konkrete Fall — er wird nie krypto-dekodiert, also
+  rettet keine spätere Prüfung die Spaltung). Daher MÜSSEN (MUST) die Gestalten der bekannten Schlüssel
+  als Zurückweisungsprädikat durchgesetzt werden, nicht als Konvention behandelt: Schlüssel 0 `v` und Schlüssel
+  4 `bw`, Schlüssel 5 `created`, Schlüssel 6 `expiry` MÜSSEN (MUST) unsigned Integer sein (GR-21); Schlüssel
+  1 `id` und Schlüssel 2 `onion` MÜSSEN (MUST) Bytestrings von genau 32 Bytes sein; Schlüssel 7 `sig`
+  MUSS (MUST) ein Bytestring von genau 64 Bytes sein; Schlüssel 3 `addrs` MUSS (MUST) ein Array sein (das
+  leer sein DARF (MAY)), von dem jedes Element ein Array von genau zwei Items sein MUSS (MUST), Item
+  0 ein unsigned Integer (die Transport-id) und Item 1 ein Bytestring der Länge
+  `≤ N_addr = 256` (s) (der Endpunkt-Blob). Jede andere Gestalt eines bekannten Schlüssels MUSS (MUST)
+  als Kanonisierungsfehler zurückgewiesen werden (GR-23/GR-29). Unbekannte Schlüssel ≥ 8 sind
+  signiert-aber-ignoriert (GR-2) und DÜRFEN (MAY) jeden GR-21-legalen Wert beliebiger Gestalt tragen;
+  nur die Schlüssel 0–7 sind gestaltfixiert.
+- **GR-22 (aufsteigende Ganzzahl-Schlüsselordnung, für unbekannte Schlüssel voll fixiert).** Map-
+  Schlüssel MÜSSEN (MUST) unsigned Integer sein, in kürzester Form kodiert (GR-21), und MÜSSEN (MUST)
+  in streng aufsteigender numerischer Ordnung erscheinen. Weil die Schlüssel unsigned Integer in kürzester
+  Form sind, **stimmt** die bytelexikografische Ordnung des kodierten Schlüssels aus RFC 8949 §4.2.1
+  **für alle Schlüsselwerte genau mit der aufsteigenden numerischen Ordnung überein** (ein
+  Ein-Byte-Kopf `0x00`–`0x17` sortiert immer vor jedem Mehr-Byte-Kopf, und innerhalb
+  einer festen Breite ist die Big-Endian-Ordnung die numerische Ordnung); die §4.2.1-Feinheit „bytelexikografisch ≠
+  numerisch jenseits von 23" existiert nur für nicht-kürzeste Kodierungen, die GR-21
+  verbietet. Unbekannte Schlüssel ≥ 8 sind zur Vorwärtskompatibilität erlaubt (GR-2) und
+  MÜSSEN (MUST) nach derselben aufsteigend-numerischen Regel sortieren. Schlüssel MÜSSEN (MUST) eindeutig sein; eine Map,
+  die denselben Schlüssel zweimal enthält, MUSS (MUST) zurückgewiesen werden (die klassische Signatur-Umgehung,
+  bei der zwei Parser uneins sind, welches Duplikat gewinnt). Es gibt somit genau eine
+  legale Schlüsselordnung für jede Schlüsselmenge, bekannt oder unbekannt (I-1).
+- **GR-23 (verifiziere über die empfangenen Bytes; die Draht-Kodierung MUSS (MUST) bereits
+  kanonisch sein).** Ein Verifizierer MUSS (MUST) verlangen, dass die empfangenen Eintrags-Bytes die
+  kanonische Kodierung sind, die durch GR-21/GR-21a/GR-22 definiert ist, und MUSS (MUST) jeden Eintrag zurückweisen,
+  dessen empfangene Bytes nicht kanonisch sind — falsche Schlüsselordnung, nicht-kürzester Kopf,
+  unbestimmte Länge, ein unzulässiger Typ, ein Duplikat-Schlüssel, ein fehlgestaltetes bekanntes Feld
+  (GR-21a), ein Top-Level-Item, das keine Map (major 5) ist, oder irgendein nachlaufendes Byte
+  nach der Top-Level-Map. (Weil jeder Container von definiter Länge ist, GR-21, kann
+  der einzige Ort, an dem „nachlaufende Bytes" auftreten können, nach dem Top-Level-Item sein; eine
+  Implementierung DARF NICHT (MUST NOT) eine Prüfung auf innere nachlaufende Bytes erfinden, die einen
+  kanonischen Eintrag zurückweisen würde.) Der Verifizierer DARF NICHT (MUST NOT) neu kanonisieren und dann über die
+  neu kodierten Bytes verifizieren; er verifiziert die Signatur über **genau die empfangenen
+  Bytes** (GR-24). Dies ist es, was GR-2s „unbekannte Schlüssel sind von der Signatur abgedeckt, aber
+  für die Semantik ignoriert" total macht: die Kanonisierung ist über die **vollständige** Map einschließlich
+  der unbekannten Schlüssel definiert, die Ordnung der unbekannten ist fixiert (GR-22),
+  und ein Verifizierer muss niemals die Kodierung eines Schlüssels reproduzieren, die ein Signierer für einen von ihm nicht
+  verstandenen Schlüssel gewählt hat — er prüft nur, dass die Bytes, die er empfangen hat, selbst kanonisch sind.
+  Ein Knoten, der einen nicht-kanonischen Draht-Eintrag toleriert, wo ein anderer Knoten ihn zurückweist,
+  ist ein I-1-Defekt.
+- **GR-24 (die Signatureingabe ist bytegenau und domänengetrennt).** Die für GR-2 Schlüssel 7
+  signierte Nachricht ist
+
+  ```
+  "ScrambNet-gossip-v1" ‖ 0x00 ‖ canon( record without key 7 )
+  ```
+
+  wobei das Label genau die 19 ASCII-Bytes `ScrambNet-gossip-v1` ist, `0x00` ein
+  einzelnes Trenn-Byte ist und `canon(record without key 7)` die
+  GR-21/GR-21a/GR-22-kanonische Kodierung der Eintrags-Map mit **vollständig ausgelassenem
+  Schlüssel 7** ist — die Map-Header-Zählung spiegelt die verbleibenden Schlüssel wider (z. B. 7, nicht 8),
+  und Schlüssel 7 ist abwesend, **nicht** vorhanden-mit-leerem-Wert — einschließlich jedes
+  unbekannten Schlüssels ≥ 8 in aufsteigender Ordnung. Label-plus-Trenner ist ein
+  Domänentrennungs-Präfix (passend zur Suite-`0x01`-Label-Konvention von
+  `"e2e-content"`/`"box"`/`"tag"`), das vorhanden sein MUSS (MUST), sodass eine Eintrags-Signatur
+  niemals als Signatur über die Nachricht irgendeines anderen Protokolls oder einer anderen Version
+  umgedeutet werden kann. Die Signatur ist reines Ed25519 (RFC 8032, kein Pre-Hash) über diese genauen
+  Bytes. Zum Verifizieren rekonstruiert ein Knoten diese Signatureingabe aus dem empfangenen
+  kanonischen Eintrag (GR-23) mit entferntem Schlüssel 7 und prüft die Schlüssel-7-Signatur
+  dagegen unter dem öffentlichen Schlüssel `A = id` (GR-28). Dies ist die alleinige Definition der
+  Signatureingabe; GR-2s Schlüssel-7-Zeile verweist darauf.
+- **GR-25 (eine Verifikationsgleichung: RFC 8032 kofaktorlos).** Die Signatur-
+  verifikation MUSS (MUST) die kofaktorlose RFC-8032-Gleichung `[S]·B = R + [k]·A` verwenden,
+  wobei `k = SHA-512(R ‖ A ‖ M) mod L`, `B` der Ed25519-Basispunkt, `M` die
+  GR-24-Signatureingabe ist, und `R`, `A`, `S` aus der Signatur und `id` genommen werden.
+  Implementierungen DÜRFEN NICHT (MUST NOT) die kofaktorierte (`[8]`-multiplizierte, ZIP-215-artige)
+  Verifikationsgleichung verwenden und DÜRFEN NICHT (MUST NOT) eine Bibliothek verwenden, deren Akzeptanzmenge sich
+  von diesem Profil unterscheidet, es sei denn, sie ist so gekapselt, dass sie genau passt. ScrambNet verifiziert
+  Einträge einzeln (GR-4), also trifft das Batch-Verifikations-Motiv für eine kofaktorierte
+  Gleichung nicht zu; eine einzige fixierte Gleichung ist erforderlich, damit jeder Knoten
+  bitgenau über die Gültigkeit übereinstimmt (I-1). Dieses Verbot verbietet nur die `[8]`-
+  kofaktorierte *Verifikationsgleichung*; es verbietet **nicht** die Skalar-
+  multiplikationen, die GR-28 für die Untergruppen-Zugehörigkeit verwendet.
+- **GR-26 (kanonischer Skalar S).** Ein Eintrag MUSS (MUST) zurückgewiesen werden, es sei denn
+  `0 ≤ S < L`, wobei `L = 2^252 + 27742317777372353535851937790883648493` die
+  Ed25519-Gruppenordnung ist. Eine Signatur mit `S ≥ L` (ein nicht-reduzierter Skalar) ist die
+  klassische Ed25519-Malleabilität und MUSS (MUST) zurückgewiesen werden, selbst wenn die Arithmetik sonst
+  aufgehen würde, sodass keine zweite Kodierung derselben Signatur von einer
+  Bibliothek akzeptiert und von einer anderen zurückgewiesen wird (I-1).
+- **GR-27 (kanonische Punkt-Kodierungen für R und A).** Die 32-Byte-Kodierungen von `R`
+  (aus der Signatur) und `A` (die `id`) MÜSSEN (MUST) kanonisch sein: die kodierte
+  y-Koordinate MUSS (MUST) `y < p` erfüllen (`p = 2^255 − 19`), und eine Kodierung mit
+  `y ≥ p`, oder mit gesetztem Vorzeichen-Bit bei der nicht-kanonischen Kodierung von `x = 0`, MUSS (MUST)
+  zurückgewiesen werden. Eine nicht-kanonische Punkt-Kodierung ist ein zweiter Name für einen Punkt und ist
+  genau eine Eingabe, bei der Bibliotheken divergieren; sie zurückzuweisen hält die Akzeptanz-
+  menge total (I-1).
+- **GR-28 (`id` ist der öffentliche Schlüssel; A und R MÜSSEN (MUST) von Primordnung sein — getestet durch
+  `[L]·P`, nicht durch eine Blacklist).** GR-2 Schlüssel 1 `id` **ist** der öffentliche Ed25519-Schlüssel `A`
+  und der Name des Relais: die Verifikation verwendet ihn direkt, ohne Verzeichnis- oder Schlüssel-
+  Lookup (I-3, keine Autorität). Ein Eintrag MUSS (MUST) zurückgewiesen werden, es sei denn, sowohl `A` als auch `R`
+  dekodieren (GR-27) zu Punkten der **großen Untergruppe von Primordnung** — gleichbedeutend,
+  keiner von beiden darf ein Punkt kleiner Ordnung oder gemischter Ordnung sein. Diese Zugehörigkeit MUSS (MUST) als
+  `[L]·P = 𝒪` (die Identität) **und** `P ≠ 𝒪` getestet werden, berechnet durch Skalar-
+  multiplikation mit der Gruppenordnung `L`: die erste Bedingung lässt nur die
+  Identität und die Punkte der Ordnung `L` zu (da `L` prim ist, teilt sie keine Ordnung in {2,4,8}),
+  und die Bedingung `P ≠ 𝒪` weist dann die Identität selbst zurück. Eine
+  **Blacklist von Kodierungen kleiner Ordnung DARF NICHT (MUST NOT)** als Test verwendet werden: sie lässt
+  Punkte gemischter Ordnung zu (Ordnung `2L`/`4L`/`8L`, die nicht unter den acht
+  Kodierungen kleiner Ordnung sind), und ein `A` oder `R` gemischter Ordnung ist genau eine Eingabe,
+  bei der die kofaktorierten und kofaktorlosen Gleichungen divergieren — sodass eine
+  Nur-Blacklist-Implementierung eine Signatur akzeptieren würde, die ein konformer Knoten zurückweist (I-1). Nach
+  GR-26/GR-27/GR-28 ist die Akzeptanzmenge die eine strikte Menge, die jeder konforme
+  Knoten identisch berechnet. Ein Eintrag, dessen `id` kein gültiger kanonischer
+  Punkt von Primordnung ist, hat keinen verifizierbaren Signierer und MUSS (MUST) still verworfen werden (GR-4).
+- **GR-29 (dies sind GR-4-Prüfungen; der Fehlschlag ist still und uniform).** GR-21 bis
+  GR-28 sind Bestandteile der „Signaturgültigkeit", wie GR-4 den Begriff verwendet. Ein Knoten
+  MUSS (MUST) sie durchführen, bevor ein Eintrag gespeichert oder weitergeleitet wird, und MUSS (MUST) einen scheiternden
+  Eintrag still verwerfen, ohne beobachtbare Unterscheidung — durch Fehler, Antwort oder Timing —
+  zwischen einem Kanonisierungsfehler, einem fehlgestalteten Feld, einer ungültigen Signatur,
+  einem schlechten Punkt, einer Verletzung der Größenobergrenze (GR-1), Ablauf oder einem Zeitstempel-Rundungs-
+  fehler (GR-4/GR-5). Das uniforme stille Verwerfen ist die I-4-artige Eigenschaft, die GR-4 bereits
+  verlangt; die Konstant-Arbeit-Disziplin, die es gegenüber einem Timing-Beobachter aufrechterhält, ist ein
+  MUSS (MUST), durchgesetzt wie Teil 9 RI-1b es verlangt (ein Verwerfen, dessen Arbeit seinen Grund
+  verrät, ist nicht konform), kein bloßer Best-Effort.
+- **GR-29a (Prüfreihenfolge: ein Eintrag beweist sich selbst, bevor er den Zustand beeinflussen kann).**
+  Die Prüfungen MÜSSEN (MUST) in dieser Reihenfolge angewandt werden: (1) die GR-1-Größenobergrenze (ein Eintrag größer
+  als die Obergrenze wird ungelesen verworfen); (2) kanonische Kodierung und Feld-Gestalt
+  (GR-21/GR-21a/GR-22/GR-23) und Signaturgültigkeit (GR-24..GR-28); (3) erst dann
+  darf der Eintrag an der GR-5-Deduplizierung und Frische teilnehmen. Ein Eintrag, der (1)
+  oder (2) nicht besteht, DARF NICHT (MUST NOT) irgendeinen gespeicherten Eintrag verdrängen, ersetzen oder sonstwie beeinflussen.
+  Ohne diese Reihenfolge kann ein Relais, das vor dem Verifizieren dedupliziert, dazu gebracht werden, einen
+  ehrlichen, signierten Eintrag zugunsten eines gefälschten mit einem höheren `created` zu verwerfen
+  (der dann die Verifikation nicht besteht und verworfen wird, nachdem er bereits den guten
+  Eintrag verdrängt hat) — eine Dienstverweigerung, zu der GR-5 sonst einlüde.
+- **GR-30 (Konformität ist durch die records-Vektoren definiert).** Eine konforme
+  Implementierung MUSS (MUST) die kanonische Kodierung und die Signatureingabe jedes
+  positiven Eintrags-Vektors (Roadmap 3.2, `vectors.json`-Abschnitt `records`)
+  bytegenau reproduzieren, MUSS (MUST) jeden positiven Vektor verifizieren und MUSS (MUST) jeden negativen
+  Vektor **für die spezifische GR-Klausel, die der Vektor benennt**, zurückweisen. Einen Eintrag zu akzeptieren, den ein
+  Vektor als „reject" markiert, einen positiven Vektor zurückzuweisen oder einen negativen
+  Vektor aus dem falschen Grund zurückzuweisen, ist Nichtkonformität: es ist genau die Divergenz
+  (ein Eintrag, den ein Knoten akzeptiert und ein anderer zurückweist, oder umgekehrt), die dieser Abschnitt
+  zu verhindern existiert (I-1). Vektorkonformität bescheinigt Übereinstimmung über das
+  Akzeptier-/Zurückweis-Prädikat; sie bescheinigt kein Timing (GR-29, vgl. RI-1b).
 
 ## 3. Austausch und Abtastung
 

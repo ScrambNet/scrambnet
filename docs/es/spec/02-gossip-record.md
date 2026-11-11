@@ -26,7 +26,7 @@ que firma, y el mapa de la red es la muestra verificable que tenga cada cliente.
 | 4 | `bw` | uint | ancho de banda sostenido declarado, kB/s — una *afirmación*, ver GR-7 |
 | 5 | `created` | uint | tiempo unix, DEBE redondearse hacia abajo a la hora (GR-5) |
 | 6 | `expiry` | uint | tiempo unix, DEBE ser ≤ `created` + 7 días (s) |
-| 7 | `sig` | bytes(64) | Ed25519 sobre la codificación canónica con la clave 7 ausente |
+| 7 | `sig` | bytes(64) | Ed25519 sobre la entrada de firma de la §2A (GR-24); el perfil de codificación y verificación es la §2A |
 
 - **GR-3.** Un relé NO DEBE (MUST NOT) publicar afirmaciones geográficas o jurisdiccionales sobre
   sí mismo. Los clientes infieren el AS y la jurisdicción a partir de `addrs` con sus propios datos
@@ -38,6 +38,173 @@ que firma, y el mapa de la red es la muestra verificable que tenga cada cliente.
 - **GR-5.** El redondeo de `created` existe para frenar el fingerprinting de relés por deriva de
   reloj. Los clientes DEBEN (MUST) tratar dos registros con el mismo `id` como un solo relé y
   conservar solo el `created` más fresco.
+
+## 2A. Codificación canónica y perfil de verificación
+
+GR-1 nombra «CBOR canónico (RFC 8949 §4.2.1)» y GR-4 exige la validez de la firma antes
+de almacenar o reenviar, pero §4.2.1 deja abiertas elecciones de codificación y la
+verificación Ed25519 diverge célebremente entre bibliotecas (Chalkias et al.,
+*Taming the Many EdDSAs*; la escisión ZIP-215 frente a RFC 8032). Para una red I-1
+cualquiera de las dos lagunas es fatal: dos nodos que discrepan sobre los bytes canónicos de
+un registro, o sobre si una firma es válida, rechazan los registros válidos del otro (una
+partición) o se escinden ante un registro fabricado (una vista-escindida relevante para la
+seguridad que alimenta las amenazas de equivocación ID-8/ID-10 y de steering PS-17). Esta
+sección fija ambas al byte. Todas las de GR-21..GR-28 son constituyentes de la «validez de la
+firma» tal como GR-4 usa el término y DEBEN (MUST) imponerse antes de que un registro se
+almacene o reenvíe, con el fallo silencioso y uniforme de GR-4. Todo el perfil se vuelve
+comprobable mecánicamente mediante los vectores `records` (GR-30) y se demuestra en
+`poc/gossip.py`, cuyo Ed25519 se contrasta bit a bit contra una biblioteca independiente.
+
+- **GR-21 (forma más corta, longitud definida, solo cuatro tipos).** Todo entero y toda
+  longitud en un registro DEBE (MUST) usar la cabecera CBOR más corta (serialización
+  preferida, RFC 8949 §4.2.1): un decodificador DEBE (MUST) rechazar cualquier cabecera que no
+  sea la más corta (p. ej. `0x18 0x0a` para `10`). Todos los mapas, arrays y cadenas de bytes
+  DEBEN (MUST) ser de longitud definida; los ítems de longitud indefinida DEBEN (MUST)
+  rechazarse. Los únicos tipos mayores CBOR permitidos en cualquier lugar de un registro son
+  entero sin signo (mayor 0), cadena de bytes (mayor 2), array (mayor 4) y mapa (mayor 5) —
+  exactamente los que usa GR-2. Los enteros negativos, las cadenas de texto, los flotantes, las
+  etiquetas, los valores simples (incluidos `false`/`true`/`null`) y cualquier otro tipo mayor
+  o cabecera DEBEN (MUST) rechazarse. Esto, con GR-21a, hace la canonicalización **total**:
+  toda cadena de bytes o bien decodifica a exactamente un registro o bien se rechaza (I-1).
+- **GR-21a (la forma de las claves 0–7 está fijada, no solo su tipo CBOR).** Un campo cuyo
+  valor es un tipo compuesto es una ambigüedad de canonicalización a menos que su forma interna
+  esté fijada: dos implementaciones se escindirían, de otro modo, ante un registro con firma
+  válida cuyo campo compuesto una lee como bien formado y la otra no (la clave 3 `addrs` es el
+  caso vivo — nunca se cripto-decodifica, así que ninguna comprobación posterior rescata la
+  escisión). Por tanto, las formas de las claves conocidas DEBEN (MUST) imponerse como un
+  predicado de rechazo, no tratarse como convención: la clave 0 `v` y la clave 4 `bw`, la clave
+  5 `created`, la clave 6 `expiry` DEBEN (MUST) ser enteros sin signo (GR-21); la clave 1 `id`
+  y la clave 2 `onion` DEBEN (MUST) ser cadenas de bytes de exactamente 32 bytes; la clave 7
+  `sig` DEBE (MUST) ser una cadena de bytes de exactamente 64 bytes; la clave 3 `addrs`
+  DEBE (MUST) ser un array (que PUEDE (MAY) estar vacío) cada uno de cuyos elementos DEBE (MUST)
+  ser un array de exactamente dos ítems, el ítem 0 un entero sin signo (el id de transporte) y
+  el ítem 1 una cadena de bytes de longitud `≤ N_addr = 256` (s) (el blob de punto final).
+  Cualquier otra forma de una clave conocida DEBE (MUST) rechazarse como un fallo de
+  canonicalización (GR-23/GR-29). Las claves desconocidas ≥ 8 están firmadas-pero-ignoradas
+  (GR-2) y PUEDEN (MAY) llevar cualquier valor legal según GR-21 de cualquier forma; solo las
+  claves 0–7 tienen la forma fijada.
+- **GR-22 (orden ascendente de claves enteras, totalmente fijado para las claves desconocidas).**
+  Las claves del mapa DEBEN (MUST) ser enteros sin signo codificados en la forma más corta
+  (GR-21) y DEBEN (MUST) aparecer en orden numérico estrictamente ascendente. Como las claves
+  son enteros sin signo en forma más corta, el orden bytewise-lexicográfico de la clave
+  codificada de RFC 8949 §4.2.1 **coincide exactamente con el orden numérico ascendente para
+  todos los valores de clave** (una cabecera de un byte `0x00`–`0x17` siempre ordena antes que
+  cualquier cabecera multibyte, y dentro de un ancho fijo el orden big-endian es el orden
+  numérico); la sutileza «bytewise ≠ numérico más allá de 23» de §4.2.1 existe solo para las
+  codificaciones que no son la más corta, que GR-21 prohíbe. Las claves desconocidas ≥ 8 se
+  permiten por compatibilidad hacia adelante (GR-2) y DEBEN (MUST) ordenarse por esta misma
+  regla ascendente-numérica. Las claves DEBEN (MUST) ser únicas; un mapa que contenga la misma
+  clave dos veces DEBE (MUST) rechazarse (el clásico eludir-la-firma donde dos analizadores
+  discrepan sobre cuál duplicado gana). Hay así exactamente un orden de claves legal para
+  cualquier conjunto de claves, conocidas o desconocidas (I-1).
+- **GR-23 (verificar sobre los bytes recibidos; la codificación en el cable DEBE (MUST) ser ya
+  canónica).** Un verificador DEBE (MUST) exigir que los bytes del registro recibido sean la
+  codificación canónica definida por GR-21/GR-21a/GR-22 y DEBE (MUST) rechazar cualquier
+  registro cuyos bytes recibidos no sean canónicos — orden de claves erróneo, cabecera que no es
+  la más corta, longitud indefinida, un tipo no permitido, una clave duplicada, un campo
+  conocido mal formado (GR-21a), un ítem de nivel superior que no es un mapa (mayor 5), o
+  cualquier byte final tras el mapa de nivel superior. (Como todo contenedor es de longitud
+  definida, GR-21, el único lugar donde pueden aparecer «bytes finales» es tras el ítem de nivel
+  superior; una implementación NO DEBE (MUST NOT) inventar una comprobación de bytes-finales-
+  internos que rechazaría un registro canónico.) El verificador NO DEBE (MUST NOT)
+  re-canonicalizar y luego verificar sobre los bytes re-codificados; verifica la firma sobre
+  **exactamente los bytes recibidos** (GR-24). Esto es lo que hace total la máxima de GR-2 «las
+  claves desconocidas están cubiertas por la firma pero se ignoran para la semántica»: la
+  canonicalización se define sobre el mapa **completo**, incluidas las claves desconocidas, el
+  orden de las desconocidas está fijado (GR-22), y un verificador nunca necesita reproducir la
+  codificación que un firmante dio a una clave que no entiende — solo comprueba que los bytes
+  que recibió son ellos mismos canónicos. Un nodo que tolera un registro no canónico en el cable
+  donde otro nodo lo rechaza es un defecto I-1.
+- **GR-24 (la entrada de firma es byte-exacta y está separada por dominio).** El mensaje firmado
+  para la clave 7 de GR-2 es
+
+  ```
+  "ScrambNet-gossip-v1" ‖ 0x00 ‖ canon( record without key 7 )
+  ```
+
+  donde la etiqueta es exactamente los 19 bytes ASCII `ScrambNet-gossip-v1`, `0x00` es un único
+  byte separador, y `canon(record without key 7)` es la codificación canónica
+  GR-21/GR-21a/GR-22 del mapa del registro con **la clave 7 omitida por completo** — el conteo
+  de la cabecera del mapa refleja las claves restantes (p. ej. 7, no 8), y la clave 7 está
+  ausente, **no** presente-con-un-valor-vacío — incluida toda clave desconocida ≥ 8 en orden
+  ascendente. La etiqueta-más-separador es un prefijo de separación de dominio (que coincide con
+  la convención de etiqueta suite-`0x01` de `"e2e-content"`/`"box"`/`"tag"`) que DEBE (MUST)
+  estar presente, de modo que la firma de un registro nunca pueda reinterpretarse como una firma
+  sobre el mensaje de otro protocolo u otra versión. La firma es Ed25519 puro (RFC 8032, sin
+  pre-hash) sobre estos bytes exactos. Para verificar, un nodo reconstruye esta entrada de firma
+  a partir del registro canónico recibido (GR-23) con la clave 7 eliminada y comprueba la firma
+  de la clave 7 contra ella bajo la clave pública `A = id` (GR-28). Esta es la única definición
+  de la entrada de firma; la fila de la clave 7 de GR-2 se remite a ella.
+- **GR-25 (una ecuación de verificación: RFC 8032 sin cofactor).** La verificación de la firma
+  DEBE (MUST) usar la ecuación sin cofactor de RFC 8032 `[S]·B = R + [k]·A`, donde
+  `k = SHA-512(R ‖ A ‖ M) mod L`, `B` es el punto base de Ed25519, `M` es la entrada de firma de
+  GR-24, y `R`, `A`, `S` se toman de la firma y de `id`. Las implementaciones NO DEBEN (MUST
+  NOT) usar la ecuación de verificación con cofactor (multiplicada por `[8]`, estilo ZIP-215), y
+  NO DEBEN (MUST NOT) usar una biblioteca cuyo conjunto de aceptación difiera de este perfil a
+  menos que se envuelva para coincidir exactamente. ScrambNet verifica los registros de uno en
+  uno (GR-4), así que el motivo de la verificación por lotes para una ecuación con cofactor no
+  aplica; se requiere una única ecuación fijada para que cada nodo coincida bit a bit en la
+  validez (I-1). Esta prohibición prohíbe solo la *ecuación de verificación* con cofactor `[8]`;
+  **no** prohíbe las multiplicaciones escalares que GR-28 usa para la pertenencia al subgrupo.
+- **GR-26 (escalar canónico S).** Un registro DEBE (MUST) rechazarse a menos que `0 ≤ S < L`,
+  donde `L = 2^252 + 27742317777372353535851937790883648493` es el orden del grupo Ed25519. Una
+  firma con `S ≥ L` (un escalar no reducido) es la clásica maleabilidad de Ed25519 y DEBE (MUST)
+  rechazarse incluso si la aritmética comprobase de otro modo, de modo que ninguna segunda
+  codificación de la misma firma sea aceptada por una biblioteca y rechazada por otra (I-1).
+- **GR-27 (codificaciones canónicas de puntos para R y A).** Las codificaciones de 32 bytes de
+  `R` (de la firma) y `A` (el `id`) DEBEN (MUST) ser canónicas: la coordenada y codificada
+  DEBE (MUST) satisfacer `y < p` (`p = 2^255 − 19`), y una codificación con `y ≥ p`, o con el
+  bit de signo puesto en la codificación no canónica de `x = 0`, DEBE (MUST) rechazarse. Una
+  codificación de punto no canónica es un segundo nombre para un punto y es exactamente una
+  entrada sobre la que las bibliotecas divergen; rechazarla mantiene total el conjunto de
+  aceptación (I-1).
+- **GR-28 (`id` es la clave pública; A y R DEBEN (MUST) ser de orden primo — probado por `[L]·P`,
+  no una blacklist).** La clave 1 `id` de GR-2 **es** la clave pública Ed25519 `A` y el nombre
+  del relé: la verificación la usa directamente, sin directorio ni búsqueda de clave (I-3, sin
+  autoridad). Un registro DEBE (MUST) rechazarse a menos que tanto `A` como `R` decodifiquen
+  (GR-27) a puntos del **subgrupo grande de orden primo** — equivalentemente, ninguno puede ser
+  un punto de orden pequeño ni de orden mixto. Esta pertenencia DEBE (MUST) probarse como
+  `[L]·P = 𝒪` (la identidad) **y** `P ≠ 𝒪`, calculada por multiplicación escalar por el orden
+  del grupo `L`: la primera condición admite solo la identidad y los puntos de orden `L` (como
+  `L` es primo, ningún orden en {2,4,8} lo divide), y la condición `P ≠ 𝒪` rechaza entonces la
+  identidad misma. Una **blacklist** de codificaciones de orden pequeño **NO DEBE (MUST NOT)**
+  usarse como la prueba: admite puntos de orden mixto (orden `2L`/`4L`/`8L`, que no están entre
+  las ocho codificaciones de orden pequeño), y un `A` o `R` de orden mixto es precisamente una
+  entrada sobre la que las ecuaciones con cofactor y sin cofactor divergen — así que una
+  implementación de solo-blacklist aceptaría una firma que un nodo conforme rechaza (I-1). Tras
+  GR-26/GR-27/GR-28 el conjunto de aceptación es el único conjunto estricto que todo nodo
+  conforme calcula idénticamente. Un registro cuyo `id` no es un punto canónico válido de orden
+  primo no tiene firmante verificable y DEBE (MUST) descartarse en silencio (GR-4).
+- **GR-29 (estas son comprobaciones de GR-4; el fallo es silencioso y uniforme).** GR-21 hasta
+  GR-28 son constituyentes de la «validez de la firma» tal como GR-4 usa el término. Un nodo
+  DEBE (MUST) realizarlas antes de almacenar o reenviar un registro, y DEBE (MUST) descartar un
+  registro que falle en silencio sin distinción observable — por error, respuesta o tiempo —
+  entre un fallo de canonicalización, un campo mal formado, una firma inválida, un punto
+  erróneo, una violación del tope de tamaño (GR-1), la expiración o un fallo de redondeo de
+  marca de tiempo (GR-4/GR-5). El descarte silencioso uniforme es la propiedad al estilo de I-4
+  que GR-4 ya exige; la disciplina de trabajo constante que la hace sostenerse frente a un
+  observador de tiempos es un DEBE (MUST), impuesta como exige RI-1b de la Parte 9 (un descarte
+  cuyo trabajo delata su razón no es conforme), no un mejor esfuerzo.
+- **GR-29a (orden de comprobación: un registro se prueba a sí mismo antes de poder afectar al
+  estado).** Las comprobaciones DEBEN (MUST) aplicarse en este orden: (1) el tope de tamaño de
+  GR-1 (un registro mayor que el tope se descarta sin leer); (2) la codificación canónica y la
+  forma del campo (GR-21/GR-21a/GR-22/GR-23) y la validez de la firma (GR-24..GR-28); (3) solo
+  entonces el registro puede participar en la deduplicación y la frescura de GR-5. Un registro
+  que falla (1) o (2) NO DEBE (MUST NOT) desalojar, reemplazar ni afectar de otro modo a ningún
+  registro almacenado. Sin este orden, un relé que deduplica antes de verificar puede ser
+  inducido a descartar un registro honesto y firmado en favor de uno falsificado que porta un
+  `created` mayor (que luego falla la verificación y se descarta, habiendo ya desalojado el
+  registro bueno) — una denegación de servicio que GR-5 invitaría de otro modo.
+- **GR-30 (la conformidad se define por los vectores records).** Una implementación conforme
+  DEBE (MUST) reproducir la codificación canónica y la entrada de firma de cada vector de
+  registro positivo (hoja de ruta 3.2, sección `records` de `vectors.json`) byte a byte,
+  DEBE (MUST) verificar cada vector positivo, y DEBE (MUST) rechazar cada vector negativo **por
+  la cláusula GR específica que el vector nombra**. Aceptar un registro que un vector marca como
+  «rechazar», rechazar un vector positivo, o rechazar un vector negativo por la razón
+  equivocada, es no-conformidad: es exactamente la divergencia (un registro que un nodo acepta y
+  otro rechaza, o viceversa) que esta sección existe para prevenir (I-1). La conformidad de
+  vectores certifica el acuerdo sobre el predicado de aceptar/rechazar; no certifica el tiempo
+  (GR-29, cf. RI-1b).
 
 ## 3. Intercambio y muestreo
 

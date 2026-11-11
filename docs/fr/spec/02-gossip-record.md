@@ -27,7 +27,7 @@ qu'il signe, et la carte du réseau est l'échantillon vérifiable que chaque cl
 | 4 | `bw` | uint | bande passante soutenue annoncée, ko/s — une *annonce*, voir GR-7 |
 | 5 | `created` | uint | temps unix, DOIT (MUST) être arrondi à l'heure inférieure (GR-5) |
 | 6 | `expiry` | uint | temps unix, DOIT (MUST) être ≤ `created` + 7 jours (s) |
-| 7 | `sig` | bytes(64) | Ed25519 sur l'encodage canonique avec la clé 7 absente |
+| 7 | `sig` | bytes(64) | Ed25519 sur l'entrée de signature de la §2A (GR-24) ; le profil d'encodage et de vérification est la §2A |
 
 - **GR-3.** Un relais NE DOIT PAS (MUST NOT) publier d'affirmations géographiques ou juridictionnelles sur
   lui-même. Les clients infèrent l'AS et la juridiction depuis `addrs` avec leurs propres données
@@ -39,6 +39,197 @@ qu'il signe, et la carte du réseau est l'échantillon vérifiable que chaque cl
 - **GR-5.** L'arrondi de `created` existe pour empêcher le profilage des relais par dérive d'horloge.
   Les clients DOIVENT (MUST) traiter deux enregistrements de même `id` comme un seul relais et
   ne garder que le `created` le plus frais.
+
+## 2A. Encodage canonique et profil de vérification
+
+GR-1 nomme le « CBOR canonique (RFC 8949 §4.2.1) » et GR-4 exige la validité de la
+signature avant stockage ou retransmission, mais §4.2.1 laisse ouverts des choix
+d'encodage et la vérification Ed25519 diverge notoirement entre bibliothèques
+(Chalkias et al., *Taming the Many EdDSAs* ; la scission ZIP-215 contre RFC 8032).
+Pour un réseau I-1, chacun de ces écarts est fatal : deux nœuds en désaccord sur les
+octets canoniques d'un enregistrement, ou sur la validité d'une signature, se
+rejettent mutuellement des enregistrements valides (une partition) ou se scindent sur
+un enregistrement forgé (une divergence de vue pertinente pour la sécurité, qui
+alimente les menaces d'équivocation ID-8/ID-10 et de pilotage PS-17). Cette section
+fixe les deux à l'octet près. Tous les GR-21..GR-28 sont des constituants de la
+« validité de la signature » au sens où GR-4 emploie ce terme et DOIVENT (MUST) être
+appliqués avant qu'un enregistrement ne soit stocké ou retransmis, avec l'échec
+silencieux et uniforme de GR-4. Le profil entier est rendu mécaniquement vérifiable
+par les vecteurs `records` (GR-30) et démontré dans `poc/gossip.py`, dont l'Ed25519
+est recoupé bit pour bit contre une bibliothèque indépendante.
+
+- **GR-21 (forme la plus courte, longueur définie, quatre types seulement).** Chaque
+  entier et chaque longueur dans un enregistrement DOIT (MUST) utiliser la tête CBOR
+  la plus courte (sérialisation préférée, RFC 8949 §4.2.1) : un décodeur DOIT (MUST)
+  rejeter toute tête non la plus courte (p. ex. `0x18 0x0a` pour `10`). Toutes les
+  cartes, tableaux et chaînes d'octets DOIVENT (MUST) être de longueur définie ; les
+  éléments de longueur indéfinie DOIVENT (MUST) être rejetés. Les seuls types majeurs
+  CBOR permis où que ce soit dans un enregistrement sont l'entier non signé (majeur
+  0), la chaîne d'octets (majeur 2), le tableau (majeur 4) et la carte (majeur 5) —
+  exactement ceux qu'emploie GR-2. Les entiers négatifs, les chaînes de texte, les
+  flottants, les étiquettes, les valeurs simples (y compris `false`/`true`/`null`) et
+  tout autre type majeur ou tête DOIVENT (MUST) être rejetés. Ceci, avec GR-21a, rend
+  la canonicalisation **totale** : toute chaîne d'octets soit décode exactement vers
+  un enregistrement, soit est rejetée (I-1).
+- **GR-21a (la forme des clés 0–7 est fixée, pas seulement leur type CBOR).** Un champ
+  dont la valeur est un type composite est une ambiguïté de canonicalisation à moins
+  que sa forme interne ne soit fixée : deux implémentations se scinderaient sinon sur
+  un enregistrement à signature valide dont l'une lit le champ composite comme bien
+  formé et l'autre non (la clé 3 `addrs` est le cas vivant — elle n'est jamais
+  décodée cryptographiquement, donc aucune vérification ultérieure ne rattrape la
+  scission). Par conséquent les formes des clés connues DOIVENT (MUST) être appliquées
+  comme un prédicat de rejet, non traitées comme une convention : la clé 0 `v` et la
+  clé 4 `bw`, la clé 5 `created`, la clé 6 `expiry` DOIVENT (MUST) être des entiers
+  non signés (GR-21) ; la clé 1 `id` et la clé 2 `onion` DOIVENT (MUST) être des
+  chaînes d'octets de exactement 32 octets ; la clé 7 `sig` DOIT (MUST) être une
+  chaîne d'octets de exactement 64 octets ; la clé 3 `addrs` DOIT (MUST) être un
+  tableau (qui PEUT (MAY) être vide) dont chaque élément DOIT (MUST) être un tableau
+  de exactement deux items, l'item 0 un entier non signé (l'id de transport) et l'item
+  1 une chaîne d'octets de longueur `≤ N_addr = 256` (s) (le blob de point d'accès).
+  Toute autre forme d'une clé connue DOIT (MUST) être rejetée comme un échec de
+  canonicalisation (GR-23/GR-29). Les clés inconnues ≥ 8 sont signées-mais-ignorées
+  (GR-2) et PEUVENT (MAY) porter n'importe quelle valeur légale selon GR-21, de
+  n'importe quelle forme ; seules les clés 0–7 ont leur forme fixée.
+- **GR-22 (ordre des clés entières ascendant, totalement fixé pour les clés
+  inconnues).** Les clés de carte DOIVENT (MUST) être des entiers non signés encodés
+  dans la forme la plus courte (GR-21) et DOIVENT (MUST) apparaître dans un ordre
+  numérique strictement ascendant. Parce que les clés sont des entiers non signés en
+  forme la plus courte, l'ordre lexicographique octet par octet de la clé encodée de
+  RFC 8949 §4.2.1 **coïncide exactement avec l'ordre numérique ascendant pour toutes
+  les valeurs de clé** (une tête d'un octet `0x00`–`0x17` se trie toujours avant toute
+  tête multi-octets, et à largeur fixe l'ordre gros-boutien est l'ordre numérique) ;
+  la subtilité §4.2.1 « octet par octet ≠ numérique au-delà de 23 » n'existe que pour
+  les encodages non les plus courts, que GR-21 interdit. Les clés inconnues ≥ 8 sont
+  permises pour la compatibilité ascendante (GR-2) et DOIVENT (MUST) se trier selon
+  cette même règle numérique-ascendante. Les clés DOIVENT (MUST) être uniques ; une
+  carte contenant deux fois la même clé DOIT (MUST) être rejetée (le contournement de
+  signature classique où deux analyseurs sont en désaccord sur quel doublon l'emporte).
+  Il existe donc exactement un ordre de clés légal pour tout ensemble de clés, connues
+  ou inconnues (I-1).
+- **GR-23 (vérifier sur les octets reçus ; l'encodage du fil DOIT déjà être
+  canonique).** Un vérificateur DOIT (MUST) exiger que les octets de l'enregistrement
+  reçu soient l'encodage canonique défini par GR-21/GR-21a/GR-22 et DOIT (MUST)
+  rejeter tout enregistrement dont les octets reçus ne sont pas canoniques — mauvais
+  ordre de clés, tête non la plus courte, longueur indéfinie, un type interdit, une
+  clé en doublon, un champ connu mal formé (GR-21a), un item de premier niveau qui
+  n'est pas une carte (majeur 5), ou tout octet en traîne après la carte de premier
+  niveau. (Parce que chaque conteneur est de longueur définie, GR-21, le seul endroit
+  où des « octets en traîne » peuvent survenir est après l'item de premier niveau ;
+  une implémentation NE DOIT PAS (MUST NOT) inventer une vérification d'octets en
+  traîne internes qui rejetterait un enregistrement canonique.) Le vérificateur NE
+  DOIT PAS (MUST NOT) re-canonicaliser puis vérifier sur les octets ré-encodés ; il
+  vérifie la signature sur **exactement les octets reçus** (GR-24). C'est ce qui rend
+  total le « les clés inconnues sont couvertes par la signature mais ignorées pour la
+  sémantique » de GR-2 : la canonicalisation est définie sur la carte **complète** y
+  compris les clés inconnues, l'ordre des inconnues est fixé (GR-22), et un
+  vérificateur n'a jamais besoin de reproduire l'encodage par un signataire d'une clé
+  qu'il ne comprend pas — il vérifie seulement que les octets qu'il a reçus sont
+  eux-mêmes canoniques. Un nœud qui tolère un enregistrement non canonique sur le fil
+  là où un autre nœud le rejette est un défaut I-1.
+- **GR-24 (l'entrée de signature est exacte à l'octet et séparée par domaine).** Le
+  message signé pour la clé 7 de GR-2 est
+
+  ```
+  "ScrambNet-gossip-v1" ‖ 0x00 ‖ canon( record without key 7 )
+  ```
+
+  où l'étiquette est exactement les 19 octets ASCII `ScrambNet-gossip-v1`, `0x00` est
+  un unique octet séparateur, et `canon(record without key 7)` est l'encodage
+  canonique GR-21/GR-21a/GR-22 de la carte de l'enregistrement avec la **clé 7 entièrement
+  omise** — le décompte de l'en-tête de carte reflète les clés restantes (p. ex. 7, non
+  8), et la clé 7 est absente, **non** présente-avec-une-valeur-vide — y compris
+  chaque clé inconnue ≥ 8 dans l'ordre ascendant. L'étiquette-plus-séparateur est un
+  préfixe de séparation de domaine (correspondant à la convention d'étiquette
+  suite-`0x01` de `"e2e-content"`/`"box"`/`"tag"`) qui DOIT (MUST) être présent, de
+  sorte qu'une signature d'enregistrement ne puisse jamais être réinterprétée comme
+  une signature sur le message d'un autre protocole ou d'une autre version. La
+  signature est de l'Ed25519 pur (RFC 8032, sans pré-hachage) sur ces octets exacts.
+  Pour vérifier, un nœud reconstruit cette entrée de signature à partir de
+  l'enregistrement canonique reçu (GR-23) avec la clé 7 retirée et vérifie la signature
+  de la clé 7 contre elle sous la clé publique `A = id` (GR-28). C'est la seule
+  définition de l'entrée de signature ; la ligne de la clé 7 de GR-2 s'y réfère.
+- **GR-25 (une seule équation de vérification : RFC 8032 sans cofacteur).** La
+  vérification de signature DOIT (MUST) utiliser l'équation sans cofacteur de RFC 8032
+  `[S]·B = R + [k]·A`, où `k = SHA-512(R ‖ A ‖ M) mod L`, `B` est le point de base
+  Ed25519, `M` est l'entrée de signature GR-24, et `R`, `A`, `S` sont pris de la
+  signature et de `id`. Les implémentations NE DOIVENT PAS (MUST NOT) utiliser
+  l'équation de vérification avec cofacteur (multipliée par `[8]`, à la ZIP-215), et
+  NE DOIVENT PAS (MUST NOT) utiliser une bibliothèque dont l'ensemble d'acceptation
+  diffère de ce profil à moins qu'elle ne soit enveloppée pour correspondre
+  exactement. ScrambNet vérifie les enregistrements un à un (GR-4), donc le motif de
+  vérification par lots pour une équation avec cofacteur ne s'applique pas ; une seule
+  équation fixée est requise pour que chaque nœud s'accorde bit pour bit sur la
+  validité (I-1). Cette interdiction interdit seulement l'*équation de vérification*
+  avec cofacteur par `[8]` ; elle n'interdit **pas** les multiplications scalaires
+  qu'emploie GR-28 pour l'appartenance au sous-groupe.
+- **GR-26 (scalaire canonique S).** Un enregistrement DOIT (MUST) être rejeté sauf si
+  `0 ≤ S < L`, où `L = 2^252 + 27742317777372353535851937790883648493` est l'ordre
+  du groupe Ed25519. Une signature avec `S ≥ L` (un scalaire non réduit) est la
+  malléabilité Ed25519 classique et DOIT (MUST) être rejetée même si l'arithmétique
+  passerait par ailleurs, de sorte qu'aucun second encodage de la même signature ne
+  soit accepté par une bibliothèque et rejeté par une autre (I-1).
+- **GR-27 (encodages de points canoniques pour R et A).** Les encodages de 32 octets
+  de `R` (depuis la signature) et de `A` (le `id`) DOIVENT (MUST) être canoniques :
+  la coordonnée y encodée DOIT (MUST) satisfaire `y < p` (`p = 2^255 − 19`), et un
+  encodage avec `y ≥ p`, ou avec le bit de signe positionné sur l'encodage non
+  canonique de `x = 0`, DOIT (MUST) être rejeté. Un encodage de point non canonique
+  est un second nom pour un point et est exactement une entrée sur laquelle les
+  bibliothèques divergent ; le rejeter garde l'ensemble d'acceptation total (I-1).
+- **GR-28 (`id` est la clé publique ; A et R DOIVENT être d'ordre premier — testés par
+  `[L]·P`, non une liste de blocage).** La clé 1 `id` de GR-2 **est** la clé publique
+  Ed25519 `A` et le nom du relais : la vérification l'utilise directement, sans
+  annuaire ni consultation de clé (I-3, pas d'autorité). Un enregistrement DOIT (MUST)
+  être rejeté sauf si `A` et `R` décodent tous deux (GR-27) vers des points du **grand
+  sous-groupe d'ordre premier** — de façon équivalente, aucun des deux ne peut être un
+  point de petit ordre ou d'ordre mixte. Cette appartenance DOIT (MUST) être testée
+  comme `[L]·P = 𝒪` (l'identité) **et** `P ≠ 𝒪`, calculée par multiplication scalaire
+  par l'ordre du groupe `L` : la première condition n'admet que l'identité et les
+  points d'ordre `L` (puisque `L` est premier, aucun ordre dans {2,4,8} ne le divise),
+  et la condition `P ≠ 𝒪` rejette ensuite l'identité elle-même. Une **liste de blocage**
+  d'encodages de petit ordre **NE DOIT PAS (MUST NOT)** être utilisée comme test :
+  elle admet les points d'ordre mixte (ordre `2L`/`4L`/`8L`, qui ne sont pas parmi les
+  huit encodages de petit ordre), et un `A` ou `R` d'ordre mixte est précisément une
+  entrée sur laquelle les équations avec et sans cofacteur divergent — donc une
+  implémentation à liste de blocage seule accepterait une signature qu'un nœud
+  conforme rejette (I-1). Après GR-26/GR-27/GR-28 l'ensemble d'acceptation est l'unique
+  ensemble strict que chaque nœud conforme calcule identiquement. Un enregistrement
+  dont l'`id` n'est pas un point canonique d'ordre premier valide n'a aucun signataire
+  vérifiable et DOIT (MUST) être écarté silencieusement (GR-4).
+- **GR-29 (ce sont des vérifications de GR-4 ; l'échec est silencieux et uniforme).**
+  GR-21 à GR-28 sont des constituants de la « validité de la signature » au sens où
+  GR-4 emploie ce terme. Un nœud DOIT (MUST) les effectuer avant de stocker ou de
+  retransmettre un enregistrement, et DOIT (MUST) écarter un enregistrement en échec
+  silencieusement sans distinction observable — par erreur, par réponse ou par
+  temporisation — entre un échec de canonicalisation, un champ mal formé, une signature
+  invalide, un mauvais point, une violation du plafond de taille (GR-1), une expiration
+  ou un échec d'arrondi d'horodatage (GR-4/GR-5). L'écart silencieux uniforme est la
+  propriété de saveur I-4 que GR-4 exige déjà ; la discipline de travail constant qui
+  la fait tenir contre un observateur de temporisation est un DOIT (MUST), appliquée
+  comme l'exige RI-1b de la Partie 9 (un écart dont le travail trahit sa raison est non
+  conforme), non un effort au mieux.
+- **GR-29a (ordre des vérifications : un enregistrement se prouve avant de pouvoir
+  affecter l'état).** Les vérifications DOIVENT (MUST) être appliquées dans cet ordre :
+  (1) le plafond de taille GR-1 (un enregistrement plus grand que le plafond est écarté
+  sans être lu) ; (2) l'encodage canonique et la forme des champs
+  (GR-21/GR-21a/GR-22/GR-23) et la validité de la signature (GR-24..GR-28) ; (3)
+  seulement alors l'enregistrement peut-il participer à la déduplication et à la
+  fraîcheur GR-5. Un enregistrement qui échoue à (1) ou (2) NE DOIT PAS (MUST NOT)
+  évincer, remplacer ou autrement affecter un enregistrement stocké. Sans cet ordre un
+  relais qui déduplique avant de vérifier peut être amené à jeter un enregistrement
+  honnête et signé au profit d'un faux portant un `created` plus élevé (qui échoue
+  ensuite la vérification et est écarté, ayant déjà évincé le bon enregistrement) — un
+  déni de service que GR-5 inviterait sinon.
+- **GR-30 (la conformité est définie par les vecteurs records).** Une implémentation
+  conforme DOIT (MUST) reproduire l'encodage canonique et l'entrée de signature de
+  chaque vecteur d'enregistrement positif (feuille de route 3.2, section `records` de
+  `vectors.json`) octet pour octet, DOIT (MUST) vérifier chaque vecteur positif, et
+  DOIT (MUST) rejeter chaque vecteur négatif **pour la clause GR spécifique que le
+  vecteur nomme**. Accepter un enregistrement qu'un vecteur marque « rejeter »,
+  rejeter un vecteur positif, ou rejeter un vecteur négatif pour la mauvaise raison,
+  est une non-conformité : c'est exactement la divergence (un enregistrement qu'un nœud
+  accepte et qu'un autre rejette, ou vice versa) que cette section existe pour
+  empêcher (I-1). La conformité aux vecteurs certifie l'accord sur le prédicat
+  d'acceptation/rejet ; elle ne certifie pas la temporisation (GR-29, cf. RI-1b).
 
 ## 3. Échange et échantillonnage
 
