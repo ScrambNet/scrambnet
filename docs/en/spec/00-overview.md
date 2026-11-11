@@ -11,7 +11,8 @@ not a decision. Attack it through the issues; change it through PRs.
   (circuit handshake, Part 1 §5), `GR-n`
   (gossip record, Part 2), `PS-n` (path selection, Part 3), `RZ-n` (rendezvous,
   Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
-  Part 8). Issues and PRs reference requirements by number.
+  Part 8), `RI-n` (reference-implementation requirements, Part 9). Issues and PRs
+  reference requirements by number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
 - A conforming implementation implements every MUST of every part it claims.
@@ -84,6 +85,13 @@ planned upgrade, not an emergency.
    authority — a reproducible content-addressed artifact, a permissionless
    transparency log, declared trust-on-first-use, and the error rate the map
    admits and feeds to the simulator (OP-1 distribution, roadmap 2.3).
+7. [Part 9 — Reference-implementation requirements](09-reference-implementation.md):
+   what a real node MUST do that the proof-of-concept toy omits — constant-time
+   field and X25519 arithmetic, CSPRNG and fork-safety discipline, nonce and
+   replay state across restarts and snapshot restores, a misuse-resistant
+   fail-closed API, and memory zeroization — each `RI-n` tied to the threat and
+   the invariant it protects, on the principle that an information-theoretic floor
+   is only as unconditional as the code that computes it (roadmap 3.1).
 
 Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
 mode framing.

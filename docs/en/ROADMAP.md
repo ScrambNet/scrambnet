@@ -183,15 +183,24 @@ adversary gains, not to pretend it away.
 
 ## Tier 3 — Harden the constructions for a real implementation
 
-- **3.1 — Reference-implementation crypto requirements.** `[soundness]`
-  What a real node must do that the toy omits, each tied to a threat:
-  **constant-time GF(2⁸)** (the PoC's table lookups are a cache-timing channel on
-  secret share bytes — a timing leak would undermine the very floor the project
-  sells), **CSPRNG discipline** (the floor is exactly as strong as the coefficient
-  RNG), nonce/key-rotation management across restarts, replay-cache persistence,
-  misuse-resistance (the API must refuse plaintext-without-AEAD — which the PoC
-  itself currently does), and memory zeroization. **Done:** a threat-linked
-  checklist an implementer must satisfy. **Effort L.**
+- **3.1 — Reference-implementation crypto requirements. (DONE)** `[soundness]`
+  What a real node must do that the toy omits, each tied to a threat, is now
+  spec **Part 9** (`RI-1..RI-12`), built on one principle: an information-theoretic
+  floor is only as unconditional as the code that computes it, so a timing or
+  memory-disclosure side channel that reveals sub-`k` secret bytes is a break of
+  I-2 itself, not a permitted computational one. Covers **constant-time GF(2⁸)**
+  extended to the recovered secret's whole lifetime (the PoC's table lookups are a
+  cache-timing channel on secret share bytes), **CSPRNG discipline** incl.
+  fork/clone/snapshot-safety (the floor is exactly as strong as the coefficient
+  RNG, SA-3), nonce + onion-static rotation across restarts **and snapshot
+  restores**, replay-cache persistence (two caches, two retention windows),
+  misuse-resistance (the API MUST refuse plaintext-without-AEAD and fail closed in
+  constant time), the real-node Sphinx layer (constant-time X25519, keyless
+  ephemeral, all-zero-secret rejection), and memory zeroization (zeroizable storage
+  first, since a bare erase is impossible for CPython `bytes`). An adversarial
+  review found two conforming-but-insecure paths (a recovered-secret timing leak
+  past the field ops; nonce reuse after a snapshot restore) and a Python-impossible
+  zeroization MUST; all three fixed before publication. **Done.** **Effort L.**
 
 - **3.2 — Formal test vectors and cross-implementation conformance.** `I-1`
   Expand `vectors.json` to cover every keyed construction (HKDF PRK, box ids
