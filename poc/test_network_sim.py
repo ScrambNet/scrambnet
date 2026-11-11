@@ -142,6 +142,37 @@ class SteeringAttackAndPS12Defense(unittest.TestCase):
                  if ns.detect_steering(self._steering(80, 0.20)))
         self.assertGreater(tp, 290)       # ~all
 
+    def test_detector_catches_multi_group_evasion(self):
+        """A red-team evaded the first detector (which keyed on 'one giant AS')
+        by collapsing the honest pool into a FEW ASes instead of one. The fixed
+        detector keys on the singleton fraction (the adversary's fake-distinct
+        relays, which it cannot avoid), so it catches the effective steering
+        regime (honest_groups 1..5, a 10-100% content break) regardless of how
+        the honest pool is grouped."""
+        for g in (1, 2, 3, 5):
+            caught = 0
+            for _ in range(200):
+                net = self._honest(80, 0.40)
+                ns.make_steering_map(net, honest_groups=g)
+                if ns.detect_steering(net):
+                    caught += 1
+            self.assertGreater(caught, 190,
+                               f"multi-group steering g={g} evaded the detector")
+
+    def test_detector_no_false_positive_under_inference_noise(self):
+        """Inference noise also creates singletons; the detector must not mistake
+        a noisy honest map for steering. The 'few crowded ASes' clause keeps it
+        quiet even at heavy error."""
+        for err in (0.1, 0.2, 0.4):
+            fp = 0
+            for _ in range(200):
+                net = ns.Network.random(80, n_as=26, n_juris=5,
+                                        adversary_relays=16, adversary_as=3,
+                                        infer_error=err)
+                if ns.detect_steering(net):
+                    fp += 1
+            self.assertLess(fp, 10, f"too many false positives at error {err}")
+
     def test_ps12_defense_blocks_the_break(self):
         """With PS-12, the steering map yields a 'steering-anomaly' (the client
         falls back) instead of compromised circuits -- zero content breaks."""

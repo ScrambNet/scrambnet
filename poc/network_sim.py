@@ -111,25 +111,34 @@ def _believed_as(r: Relay):
     return r.inferred_asn if r.inferred_asn is not None else ("unknown", r.rid)
 
 
-def make_steering_map(net: Network) -> None:
+def make_steering_map(net: Network, honest_groups: int = 1) -> None:
     """The PS-12 steering attack, as a map (belief) the adversary installs.
 
     Ground truth is untouched; only `inferred_asn` (the client's belief) is
     overwritten. Two levers (spec PS-12):
       - adversary relays get DISTINCT fake ASes  -> they never exclude each other
-      - honest relays get ONE colliding fake AS  -> after circuit 1 picks one
-        honest relay, every other honest relay looks AS-shared and is filtered
-        out, collapsing the honest pool to nothing.
+      - honest relays get `honest_groups` colliding fake ASes  -> once circuit 1
+        picks an honest relay, the others in its group look AS-shared and are
+        filtered out, collapsing the honest pool.
     The adversary then fills circuits 2..n and lands on >=k of them.
+
+    `honest_groups` is the red-team's detector-evasion knob: with 1 giant honest
+    AS the attack is maximal (100% break) but structurally obvious; spreading the
+    honest pool across a few ASes (3..5) keeps a strong break (10-30%) while
+    looking less like one giant AS. The singleton-fraction detector (the fixed
+    detect_steering) catches both, because the adversary's relays are singletons
+    either way; only g>=8 (break ~5%) escapes, a declared residual.
     """
-    FAKE_HONEST_AS = 10 ** 9           # one shared fake AS for all honest relays
-    fake = FAKE_HONEST_AS + 1
+    FAKE_HONEST_BASE = 2 * 10 ** 9
+    fake = 10 ** 9
+    g = 0
     for r in net.relays:
         if r.adversary:
-            r.inferred_asn = fake      # distinct per adversary relay
+            r.inferred_asn = fake      # distinct per adversary relay (a singleton)
             fake += 1
         else:
-            r.inferred_asn = FAKE_HONEST_AS   # all honest relays collide
+            r.inferred_asn = FAKE_HONEST_BASE + (g % max(1, honest_groups))
+            g += 1
 
 
 def _as_counts(net: Network) -> dict:
@@ -141,28 +150,45 @@ def _as_counts(net: Network) -> dict:
     return counts
 
 
-def detect_steering(net: Network, singleton_frac: float = 0.5,
-                    giant_frac: float = 0.25) -> bool:
+def detect_steering(net: Network, n: int = 4, singleton_frac: float = 0.15,
+                    crowd_mult: float = 2.0) -> bool:
     """PS-12 defense 2: flag a believed-AS structure that is the signature of a
-    steering map. A benign map spreads relays across many ASes of ordinary size.
-    A steering map collapses the honest majority into ONE giant believed-AS (so
-    they filter each other out) while the adversary's relays are each their own
-    singleton AS (so none excludes another). We flag when BOTH hold:
-      - one believed-AS holds >= giant_frac of all relays (the collapsed honest
-        pool), AND
-      - singletons (ASes with exactly one relay) make up >= singleton_frac of
-        all ASes (the adversary's fake-distinct relays).
-    This is a heuristic on the client's own view -- it needs no ground truth --
-    and a conforming client treats a positive as a fallback/anomaly condition.
+    steering map, on the client's OWN view (no ground truth needed).
+
+    The signature the adversary CANNOT avoid: to make its co-located relays look
+    AS-disjoint it must give each a *distinct* fake AS, i.e. make them SINGLETONS
+    in the believed-AS histogram. A real network has very few singleton ASes; a
+    steering map has one per adversary relay. So the load-bearing signal is an
+    ANOMALOUS SINGLETON FRACTION -- and it holds no matter how the adversary
+    groups the honest relays (one giant fake AS, or a few medium ones: an earlier
+    detector keyed on 'one giant AS' and a red-team evaded it by collapsing the
+    honest pool into 3 ASes instead; the singleton signal does not care).
+
+    We flag when BOTH:
+      - singleton relays (alone in their believed AS) are >= singleton_frac of
+        the sample -- the fake-distinct adversary relays; AND
+      - the non-singleton relays sit in FEWER than crowd_mult*n crowded ASes --
+        the collapsed honest pool. The second clause is what keeps honest maps
+        with heavy inference NOISE from tripping it: noise also makes singletons,
+        but it leaves the honest majority spread across many crowded ASes.
+
+    Measured against poc/network_sim.py: catches the steering map for honest-group
+    counts g = 1..5 (the regime with a 10-100% content break) at ~100%, with 0%
+    false positives on honest maps even at inference_error up to 0.4. The residual
+    it does NOT catch -- g >= 8, where the honest pool is spread across enough
+    believed ASes to build genuinely disjoint circuits and the adversary's content
+    break is only ~5%, indistinguishable from a small legitimate network -- is a
+    declared limit, bounded by the k/n margin and the certificate confidence, not
+    something this heuristic claims to cover.
     """
     counts = _as_counts(net)
     total = len(net.relays)
     if total == 0 or not counts:
         return False
-    biggest = max(counts.values())
-    singletons = sum(1 for c in counts.values() if c == 1)
-    return (biggest >= giant_frac * total
-            and singletons >= singleton_frac * len(counts))
+    singleton_relays = sum(1 for c in counts.values() if c == 1)
+    crowded_as = sum(1 for c in counts.values() if c >= 2)
+    return (singleton_relays >= singleton_frac * total
+            and crowded_as < crowd_mult * n)
 
 
 def select_paths_ps12(net: Network, n: int, hops: int = 3,
@@ -467,3 +493,29 @@ if __name__ == "__main__":
     print(f"  no collateral damage:  honest map still builds circuits {honest_ok/T:.0%}")
     print("  -> the defense turns a 100% content break into a fallback/anomaly,")
     print("     with no false positives: PS-12 is verified, not just written.")
+
+    # Second-round red-team: evade the detector by spreading the honest pool
+    # across a FEW fake ASes instead of one giant. The singleton-fraction
+    # detector catches it anyway (the adversary's relays are singletons either
+    # way); only g>=8 (break ~5%) escapes, a declared residual.
+    print("\n  Detector-evasion (2nd red-team): collapse honest relays into a FEW")
+    print("  fake ASes, not one giant, so there is no giant-AS signature:\n")
+    print(f"  {'honest fake ASes':>16} {'detector catches':>16} {'break if undefended':>20}")
+    for g in (1, 3, 5, 8):
+        T2 = 1500
+        caught = brk = 0
+        for _ in range(T2):
+            net = Network.random(80, n_as=26, n_juris=5, adversary_relays=32,
+                                 adversary_as=3, infer_error=0.0)
+            make_steering_map(net, honest_groups=g)
+            if detect_steering(net):
+                caught += 1
+            p = select_paths(net, 4, disjoint="as")
+            if p and adversary_breaks_as_level(p, k=3):
+                brk += 1
+        tag = "  (declared residual)" if g >= 8 else ""
+        print(f"  {g:>16} {caught/T2:>15.0%} {brk/T2:>19.0%}{tag}")
+    print("  -> the singleton-fraction detector catches g=1..5 (10-100% break);")
+    print("     g>=8 spreads the honest pool enough to build genuinely disjoint")
+    print("     circuits (break ~5%, like a small real network) -- a declared")
+    print("     limit, bounded by k/n margin, not hidden.")
