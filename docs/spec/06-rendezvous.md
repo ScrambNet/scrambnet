@@ -35,8 +35,10 @@ behind its own circuits. Nobody ever delivers *to* a person.
 
   Derivations (HKDF-BLAKE2s, suite 0x01): the SP-7 tag key for this pair is
   `K_tag = HKDF(kpair, "tag")`; box identifiers are
-  `box_id(epoch) = PRF(kpair, "box" ‖ epoch)` truncated to 16 bytes, with
-  `epoch = floor(unix_time / 86400)` (s).
+  `box_id(drop, epoch) = PRF(kpair, "box" ‖ drop_index ‖ epoch)` truncated to
+  16 bytes, with `epoch = floor(unix_time / 86400)` (s). The drop index MUST
+  enter the derivation: with a single id per epoch, two colluding drops could
+  link the pair's boxes within that epoch.
 - **RZ-4.** Cards travel out of band (QR code, printed string, a friend) or
   over an existing ScrambNet channel. One contact is the floor, as in GR-10.
 

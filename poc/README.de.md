@@ -1,6 +1,7 @@
 # Dispersionskern — Referenz-PoC
 
-Ausführbarer Begleiter zu [Teil 1 der Spezifikation](../docs/spec/01-share-packet.md).
+Ausführbarer Begleiter zu den Teilen [1](../docs/spec/01-share-packet.md) und
+[6](../docs/spec/06-rendezvous.md) der Spezifikation.
 Reines Python 3, nur Standardbibliothek, geschrieben, um gelesen und
 angegriffen zu werden: eine ausführbare Spezifikation, nicht der künftige
 Knoten.
@@ -23,6 +24,8 @@ Ausführen:
 
     python3 dispersal.py        # Demo
     python3 test_dispersal.py   # Tests, einschließlich vectors.json
+    python3 rendezvous.py       # Demo Teil 6: Drops und Polling
+    python3 test_rendezvous.py  # Tests Teil 6
 
 `vectors.json` enthält Vektoren für andere Implementierungen: wer sie
 reproduziert, interoperiert auf dieser Schicht.

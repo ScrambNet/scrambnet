@@ -1,6 +1,7 @@
 # Cœur de dispersion — PoC de référence
 
-Compagnon exécutable de la [Partie 1 de la spécification](../docs/spec/01-share-packet.md).
+Compagnon exécutable des Parties [1](../docs/spec/01-share-packet.md) et
+[6](../docs/spec/06-rendezvous.md) de la spécification.
 Python 3 pur, bibliothèque standard uniquement, écrit pour être lu et
 attaqué : une spécification exécutable, pas le futur nœud.
 
@@ -22,6 +23,8 @@ Exécution :
 
     python3 dispersal.py        # démonstration
     python3 test_dispersal.py   # tests, y compris vectors.json
+    python3 rendezvous.py       # démonstration Partie 6 : drops et sondage
+    python3 test_rendezvous.py  # tests Partie 6
 
 `vectors.json` contient des vecteurs pour d'autres implémentations : qui les
 reproduit interopère à cette couche.

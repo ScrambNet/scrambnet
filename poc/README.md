@@ -1,6 +1,7 @@
 # Dispersal core — reference PoC
 
-Executable companion to [spec Part 1](../docs/spec/01-share-packet.md). Pure
+Executable companion to spec [Part 1](../docs/spec/01-share-packet.md) and
+[Part 6](../docs/spec/06-rendezvous.md). Pure
 Python 3, standard library only, written to be read and attacked: this is an
 executable specification, not the future node.
 
@@ -22,6 +23,8 @@ Run:
 
     python3 dispersal.py        # demo
     python3 test_dispersal.py   # test suite, includes vectors.json
+    python3 rendezvous.py       # Part 6 demo: drops, disciplined polling
+    python3 test_rendezvous.py  # Part 6 test suite
 
 `vectors.json` carries cross-implementation vectors: an implementation that
 matches them interoperates at this layer.

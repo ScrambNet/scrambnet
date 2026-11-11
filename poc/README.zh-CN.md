@@ -1,6 +1,6 @@
 # 分散核心 — 参考 PoC
 
-[规范第 1 部分](../docs/spec/01-share-packet.md)的可执行伴侣。纯 Python 3，
+[规范第 1 部分](../docs/spec/01-share-packet.md)与[第 6 部分](../docs/spec/06-rendezvous.md)的可执行伴侣。纯 Python 3，
 仅用标准库，为被阅读和被攻击而写：这是一份可执行的规范，不是未来的节点。
 
 它演示了什么：
@@ -18,6 +18,8 @@
 
     python3 dispersal.py        # 演示
     python3 test_dispersal.py   # 测试，含 vectors.json
+    python3 rendezvous.py       # 第 6 部分演示：信箱与轮询
+    python3 test_rendezvous.py  # 第 6 部分测试
 
 `vectors.json` 携带跨实现测试向量：能复现它们的实现即可在这一层互操作。
 

@@ -1,6 +1,7 @@
 # Núcleo de dispersión — PoC de referencia
 
-Compañero ejecutable de la [Parte 1 de la especificación](../docs/spec/01-share-packet.md).
+Compañero ejecutable de las Partes [1](../docs/spec/01-share-packet.md) y
+[6](../docs/spec/06-rendezvous.md) de la especificación.
 Python 3 puro, solo biblioteca estándar, escrito para ser leído y atacado:
 es una especificación ejecutable, no el futuro nodo.
 
@@ -22,6 +23,8 @@ Ejecución:
 
     python3 dispersal.py        # demostración
     python3 test_dispersal.py   # pruebas, incluye vectors.json
+    python3 rendezvous.py       # demostración Parte 6: drops y sondeo
+    python3 test_rendezvous.py  # pruebas Parte 6
 
 `vectors.json` contiene vectores para otras implementaciones: quien los
 reproduce interopera en esta capa.

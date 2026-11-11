@@ -1,6 +1,7 @@
 # Cuore di dispersione — PoC di riferimento
 
-Compagno eseguibile della [Parte 1 della specifica](../docs/spec/01-share-packet.md).
+Compagno eseguibile delle Parti [1](../docs/spec/01-share-packet.md) e
+[6](../docs/spec/06-rendezvous.md) della specifica.
 Python 3 puro, solo libreria standard, scritto per essere letto e attaccato:
 è una specifica eseguibile, non il futuro nodo.
 
@@ -22,6 +23,8 @@ Esecuzione:
 
     python3 dispersal.py        # dimostrazione
     python3 test_dispersal.py   # test, inclusi i vettori di vectors.json
+    python3 rendezvous.py       # dimostrazione Parte 6: drop e polling
+    python3 test_rendezvous.py  # test Parte 6
 
 `vectors.json` contiene vettori per altre implementazioni: chi li riproduce
 interopera a questo livello.
