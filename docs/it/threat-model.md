@@ -8,7 +8,7 @@
 | Avversario | Capacità | Risposta della rete | Esito |
 |---|---|---|---|
 | Osservatore locale (il tuo ISP, il Wi-Fi dell'ufficio) | Osservare il tuo traffico | Vede un normale flusso TLS verso un normale indirizzo | **Protetto** |
-| Censore nazionale | Bloccare IP, confrontare impronte DPI, enumerare i ponti | Trasporti camaleonte; ponti distribuiti lungo il grafo sociale con livelli di fiducia in stile Lox | **Protetto** (una corsa agli armamenti, ma sostenibile) |
+| Censore nazionale | Bloccare IP, confrontare impronte DPI, enumerare i ponti | Trasporti camaleonte (Parte 4); ponti distribuiti lungo il grafo sociale con livelli di fiducia in stile Lox | **Raggiungibilità: contesa, può arrivare a zero** — una corsa agli armamenti che non promettiamo di vincere; degrada L1→L4 e può fallire del tutto in un blackout totale (Parte 4 CT-18a). **Contenuto sotto `k`: Protetto incondizionatamente (I-2), indipendente dal trasporto.** |
 | Relay malevolo su un percorso | Osservare ciò che lo attraversa | Vede un salto di una quota; i pacchetti Sphinx sono identici ovunque | **Protetto** |
 | Operatore di guardia *e* uscita di un circuito | Correlare i tempi di entrata/uscita | Quel circuito porta una quota, non il messaggio; le guardie sono stabili per mesi; la modalità paranoica aggiunge ritardi di mixing | **Mitigato** |
 | Avversario a `k`-percorsi (tiene guardia+uscita su `k` degli `n` percorsi di quota simultaneamente) | Correlazione temporale completa più cattura delle quote | La selezione dei percorsi impone guardie, AS e giurisdizioni disgiunti, rendendo le `k` posizioni simultanee un problema di occupazione | **Mitigato** — questo è il rischio residuo per progetto; alza `n`, `k` a piacere |

@@ -8,7 +8,7 @@
 | Adversario | Capacidad | Respuesta de la red | Resultado |
 |---|---|---|---|
 | Observador local (tu ISP, un Wi-Fi de oficina) | Observar tu tráfico | Ve un flujo TLS corriente hacia una dirección corriente | **Protegido** |
-| Censor nacional | Bloquear IPs, cotejar huellas de DPI, enumerar puentes | Transportes camaleón; puentes distribuidos por el grafo social con niveles de confianza al estilo Lox | **Protegido** (una carrera armamentística, pero sostenible) |
+| Censor nacional | Bloquear IPs, cotejar huellas de DPI, enumerar puentes | Transportes camaleón (Parte 4); puentes distribuidos por el grafo social con niveles de confianza al estilo Lox | **Alcanzabilidad: disputada, puede llegar a cero** — una carrera armamentística que no prometemos ganar; degrada L1→L4 y puede fallar por completo en un apagón total (Parte 4 CT-18a). **Contenido por debajo de `k`: Protegido incondicionalmente (I-2), independiente del transporte.** |
 | Relé malicioso en una ruta | Observar lo que lo atraviesa | Ve un salto de una parte; los paquetes Sphinx son idénticos en todas partes | **Protegido** |
 | Operador de la guardia *y* la salida de un circuito | Correlacionar la temporización entrada/salida | Ese circuito lleva una parte, no el mensaje; las guardias son estables durante meses; el modo paranoico añade retardos de mezcla | **Mitigado** |
 | Adversario de `k` rutas (posee guardia+salida en `k` de las `n` rutas de parte a la vez) | Correlación de temporización completa más captura de partes | La selección de rutas impone guardias, AS y jurisdicciones disjuntos, lo que hace de `k` posiciones simultáneas un problema de ocupación | **Mitigado** — este es el riesgo residual de diseño; sube `n`, `k` a tu gusto |

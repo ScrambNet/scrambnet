@@ -375,14 +375,34 @@ fix it.
 
 ## Tier 5 — The layers still unwritten
 
-- **5.1 — Chameleon transports (Part 4, OP-7).** `[arms race]`
-  A transport threat model and an honest realism assessment: uTLS fingerprint
-  drift, ECH's 2026 deployment reality, active probing, flow correlation. The
-  "blocking me costs more than it earns" economic argument has real historical
-  counter-examples — name them, and ask the uncomfortable question of whether a
-  pseudonymous volunteer project has the *sustained-maintenance* capacity an arms
-  race demands. Resolve whether share-dispersal across diverse covers *helps*
-  (more cover types) or *hurts* (more fingerprints to get wrong). **Effort L.**
+- **5.1 — Chameleon transports (Part 4, OP-7). (DONE)** `[arms race]`
+  Written as spec **Part 4** (`CT-1..CT-20`): a transport threat model + an
+  explicitly anti-triumphal realism assessment. The uncomfortable question —
+  *does a pseudonymous volunteer project have the sustained-maintenance capacity
+  a transport arms race demands?* — is answered **"no, not reliably"** (the owner
+  chose the hard honesty register), and that answer is turned into the design
+  rationale: nothing load-bearing sits on mimicry, and the one defensible claim is
+  narrow — **the I-2 floor does not depend on the transport (CT-16); a transport
+  buys reachability, which may fail to zero without content being revealed.** The
+  share-dispersal-across-covers question is resolved (CT-15): diversity buys
+  *availability*, not *camouflage*, and adds a cross-cover correlation surface —
+  sell it as reachability, never camouflage (CT-15a). An adversarial review that
+  fact-checked the 2026 claims against citable sources found and fixed: (C-1) the
+  threat-model "sustainable arms race" row **contradicted this part's thesis** —
+  rewritten in all six languages to split reachability (contested, may reach zero)
+  from content (unconditional); (D-1) **TLS-in-TLS detection** was missing, the
+  marquee attack on nested circumvention — added as CT-6a; (B-3) the ladder's
+  terminal case (total shutdown + no mesh = zero delivery) was unconceded — added
+  as CT-18a ("survivable *for confidentiality*, not for delivery"); (A-2) the
+  fingerprint clause targeted the retired JA3 — corrected to **JA4** (sets +
+  GREASE, not order); plus the entropy/fully-encrypted-traffic detector (CT-6),
+  the OP-7 bootstrap dependency of the pre-shared secret (CT-10a), and ECH's
+  DNS-dependence (CT-11). A factual guard: the review asserted "ECH = RFC 9849
+  (Mar 2026)" but a web check could not confirm publication, so the part cites the
+  IETF work **without pinning an unconfirmed RFC number** — accurate-and-vague over
+  precise-and-wrong. **Follow-up the user flagged (memory): revisit a
+  randomized/steganographic cover design with no third-party dependency, tested
+  against the entropy-detection wall.** **Effort L.**
 
 - **5.2 — Blackout / mixed-mesh link diversity (Part 5, OP-6).** `[research risk]`
   The largest unwritten design: phones as battery-bound leaves, dual-radio

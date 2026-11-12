@@ -13,7 +13,8 @@ not a decision. Attack it through the issues; change it through PRs.
   Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
   Part 8), `RI-n` (reference-implementation requirements, Part 9), `RB-n`
   (reproducible build and supply chain, Part 10), `UG-n` (update governance,
-  Part 11). Issues and PRs reference requirements by number.
+  Part 11), `CT-n` (chameleon transports, Part 4). Issues and PRs reference
+  requirements by number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
 - A conforming implementation implements every MUST of every part it claims.
@@ -110,6 +111,15 @@ planned upgrade, not an emergency.
    self-verifying opt-in refuse-to-run. Carries its central residual openly: no
    push means no forced patch — a vulnerable or compromised client may never adopt
    the fix (`UG-n`, roadmap 4.1 / OP-8).
+10. [Part 4 — Chameleon transports](04-chameleon-transports.md): the transport
+   threat model and an honest realism assessment — the part most likely to rot.
+   It makes no claim to win the censorship arms race; its one claim is that the
+   I-2 content floor does not depend on the transport at all (`CT-16`): a
+   transport buys *reachability*, which is allowed to fail down the L1→L4 ladder
+   and, at a total shutdown with no mesh, to zero, without content below `k` ever
+   being revealed. Covers the 2026 censor (JA4 fingerprinting, active probing,
+   entropy/TLS-in-TLS flow detection, ECH's DNS-dependent reality, protocol
+   whitelisting), the uTLS maintenance treadmill, and the verdict that multi-cover
+   dispersal buys availability, not camouflage (`CT-n`, roadmap 5.1 / OP-7).
 
-Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
-mode framing.
+Planned, not yet drafted: Part 5 — blackout mode framing.

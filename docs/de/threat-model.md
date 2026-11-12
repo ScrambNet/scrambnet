@@ -8,7 +8,7 @@
 | Gegner | Fähigkeit | Antwort des Netzes | Ergebnis |
 |---|---|---|---|
 | Lokaler Beobachter (dein ISP, ein Büro-WLAN) | Deinen Verkehr beobachten | Sieht einen gewöhnlichen TLS-Fluss zu einer gewöhnlichen Adresse | **Geschützt** |
-| Nationaler Zensor | IPs blockieren, DPI-Fingerabdrücke abgleichen, Brücken aufzählen | Chamäleon-Transporte; Brücken über den sozialen Graphen mit Lox-artigen Vertrauensstufen verteilt | **Geschützt** (ein Wettrüsten, aber ein tragbares) |
+| Nationaler Zensor | IPs blockieren, DPI-Fingerabdrücke abgleichen, Brücken aufzählen | Chamäleon-Transporte (Teil 4); Brücken über den sozialen Graphen mit Lox-artigen Vertrauensstufen verteilt | **Erreichbarkeit: umkämpft, kann auf null fallen** — ein Wettrüsten, dessen Sieg wir nicht versprechen; es degradiert L1→L4 und kann bei einer vollständigen Abschaltung ganz ausfallen (Teil 4 CT-18a). **Inhalt unterhalb von `k`: bedingungslos geschützt (I-2), unabhängig vom Transport.** |
 | Bösartiges Relais auf einem Pfad | Beobachten, was es durchquert | Sieht einen Hop eines Anteils; Sphinx-Pakete sind überall identisch | **Geschützt** |
 | Betreiber von Wächter *und* Ausgang eines Circuits | Eingang/Ausgang-Timing korrelieren | Dieser Circuit trägt einen Anteil, nicht die Nachricht; Wächter sind monatelang stabil; der paranoide Modus fügt Mix-Verzögerungen hinzu | **Gemindert** |
 | `k`-Pfad-Gegner (hält Wächter+Ausgang auf `k` der `n` Anteil-Pfade gleichzeitig) | Vollständige Timing-Korrelation plus Anteil-Erfassung | Die Pfadauswahl erzwingt disjunkte Wächter, ASe, Jurisdiktionen, was gleichzeitige `k` Positionen zu einem Besetzungsproblem macht | **Gemindert** — dies ist das entworfene Restrisiko; erhöhe `n`, `k` nach Geschmack |

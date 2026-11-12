@@ -8,7 +8,7 @@
 | Adversary | Capability | Network response | Outcome |
 |---|---|---|---|
 | Local observer (your ISP, an office Wi-Fi) | Watch your traffic | Sees an ordinary TLS flow to an ordinary address | **Protected** |
-| National censor | Block IPs, match DPI fingerprints, enumerate bridges | Chameleon transports; bridges distributed along the social graph with Lox-style trust levels | **Protected** (an arms race, but a sustainable one) |
+| National censor | Block IPs, match DPI fingerprints, enumerate bridges | Chameleon transports (Part 4); bridges distributed along the social graph with Lox-style trust levels | **Reachability: contested, may reach zero** — an arms race we do not promise to win; it degrades L1→L4 and can fail entirely at a total shutdown (Part 4 CT-18a). **Content below `k`: Protected unconditionally (I-2), independent of transport.** |
 | Malicious relay on a path | Observe what crosses it | Sees one hop of one share; Sphinx packets are identical everywhere | **Protected** |
 | Operator of guard *and* exit of one circuit | Correlate entry/exit timing | That circuit carries one share, not the message; guards are stable for months; paranoid mode adds mixing delays | **Mitigated** |
 | `k`-path adversary (holds guard+exit on `k` of the `n` share paths simultaneously) | Full timing correlation plus share capture | Path selection enforces disjoint guards, ASes, jurisdictions, making simultaneous `k` positions an occupation problem | **Mitigated** — this is the designed residual risk; raise `n`, `k` to taste |
