@@ -1,5 +1,12 @@
 # ScrambNet — Roadmap
 
+> This English roadmap is the only one maintained; it is a living work document,
+> not a status dashboard. The authoritative, up-to-date progress lives in the
+> [GitHub milestones](https://github.com/ScrambNet/scrambnet/milestones) (one per
+> tier) and their issues — state belongs in the tool that computes it, not in six
+> hand-synced copies. Translated roadmaps were removed for that reason; the
+> per-language READMEs link here.
+
 **Status: living document.** This is the work plan, not a promise of dates — a
 pseudonymous volunteer project moves when hands are free. It is ordered by
 dependency and honesty: the items that could prove the project *wrong* come

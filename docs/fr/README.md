@@ -2,7 +2,7 @@
 
 - [Architecture](architecture.md)
 - [Modèle de menace](threat-model.md)
-- [Feuille de route](ROADMAP.md)
+- [Feuille de route](../en/ROADMAP.md) (en anglais ; l'état à jour se trouve dans les [milestones GitHub](https://github.com/ScrambNet/scrambnet/milestones))
 - [Comparaison](COMPARISON.md)
 - [Politique de sécurité](SECURITY.md)
 - [Contribuer](CONTRIBUTING.md)
