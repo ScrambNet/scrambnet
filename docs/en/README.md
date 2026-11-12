@@ -15,6 +15,12 @@
 - [`03-path-selection`](spec/03-path-selection.md)
 - [`06-rendezvous`](spec/06-rendezvous.md)
 
+## Design rationale
+
+- [`bootstrap-op7`](design/bootstrap-op7.md) — first-contact bootstrap (OP-7): a
+  candidate construction architected and attacked twice, with the honest verdict that
+  it reduces, not solves, the problem. Not normative.
+
 ## Other languages
 
 [Italiano](../it/) · [Español](../es/) · [Deutsch](../de/) · [Français](../fr/) · [中文](../zh-CN/)

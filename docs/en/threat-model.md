@@ -80,6 +80,17 @@ language here; discuss it there, in the one issue, so no discussion is split.
 6. **Blackout addressing.** Identity-based routing over mesh store-and-forward without a
    DHT reachable from inside the blackout.
 7. **Bootstrap with zero contacts** for the social-graph bridge distribution.
+   Explored in draft by [design/bootstrap-op7.md](design/bootstrap-op7.md)
+   (`BT-1..BT-13`): a candidate turning one out-of-band secret seed into expansion
+   over untrusted public infrastructure, architected and attacked twice. The honest
+   result is that it **reduces** OP-7, it does not solve it — the content floor (I-2)
+   never rode the bootstrap and is untouched, but reachability concedes all three
+   adversaries by name (the active-enumerating censor reduces to the first-contact
+   eclipse of `OP-2`; the DPI censor keeps a flow-shape classifier of the bootstrap
+   choreography; the global passive observer is conceded at greater salience than
+   steady-state traffic), and two single points survive one layer down (the public
+   substrate's own join, and the social graph a zero-contact user is not yet in). The
+   true base case is an out-of-band human seed. OP-7 stays open.
 8. **Update governance.** How a client comes to run a newer release without a kill switch.
    Addressed in draft by [spec Part 11](spec/11-update-governance.md) (`UG-1..UG-9`): the
    answer came out **minimalist** — no authoritative signer set and no push of any kind
