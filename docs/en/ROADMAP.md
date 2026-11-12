@@ -404,17 +404,33 @@ fix it.
   randomized/steganographic cover design with no third-party dependency, tested
   against the entropy-detection wall.** **Effort L.**
 
-- **5.2 — Blackout / mixed-mesh link diversity (Part 5, OP-6).** `[research risk]`
-  The largest unwritten design: phones as battery-bound leaves, dual-radio
-  PCs/SBCs as an 802.11s backbone, and **dispersal across independent gateways**
-  extending I-3 to the physical neighborhood exit. The hard parts: addressing
-  without global reachability; verifying gateway independence when the AS map is
-  unreachable inside a blackout and location is self-declared (OP-1 recurs in
-  radio space); whether the 2048-byte Sphinx packet survives hours-long
-  store-and-forward or needs its own framing. And the irreducible residual to
-  state, not solve: **a mesh node in a hot blackout is a physically locatable
-  act** no overlay can hide — so mesh participation is always an explicit opt-in.
-  **Effort XL.**
+- **5.2 — Blackout / mixed-mesh link diversity (Part 5, OP-6). (DONE — partial, as flagged)** `[research risk]`
+  Written as spec **Part 5** (`BL-1..BL-21`), returned honestly as the *partial*
+  result an XL research-risk item was licensed to be: a solid mixed-network model
+  (the mesh is a layer, not a mode — losing an uplink is one more hop to a gateway)
+  and one genuinely load-bearing idea — **independent-gateway dispersal** (BL-5),
+  the `n` shares leaving through independent gateways to extend I-3 to the physical
+  exit — sold strictly as an **availability** property (BL-16, the CT-16 analogue),
+  the mesh never moving the I-2 floor. Two technical forks resolved with reasoned
+  verdicts: the 2048-byte Sphinx packet does **not** survive hours-long
+  store-and-forward (epoch/replay/metadata), so blackout needs its own DTN-style
+  envelope (BL-12); gateway independence **cannot** be verified inside a blackout
+  (the AS map is unreachable), so it is a declared bounded-trust estimate (BL-6,
+  BL-21) — OP-1 recurring in radio space. An adversarial review (hunting hidden
+  anonymity overclaims) confirmed no overclaim and caught, before landing: the
+  **radio-layer identity** leak was un-modeled — MAC/probe/RF-fingerprint are
+  persistent device pseudonyms the overlay id-rotation cannot touch, arguably worse
+  than locatability — added as **BL-18a**; radio source-mixing was mis-sold as
+  origin-hiding and mis-attributed to GR-8 — demoted to anti-eclipse availability
+  (BL-15); the DTN envelope re-creates Part 4's CT-6a nesting surface — conceded
+  (BL-13); the zero-gateway-with-live-mesh seam — closed with the three explicit
+  delivery states (BL-17). The irreducible residual the roadmap said to *state, not
+  solve* — **a mesh node in a hot blackout is a physically locatable act no overlay
+  hides** — is BL-18, at full strength; mesh participation is always an explicit,
+  informed opt-in (BL-3). Owner chose the state-only register (declare the risk, no
+  operational steering). The honest ledger: I-2 preserved cleanly, I-4/SP-7 on the
+  bytes only (the radio re-links co-located shares), I-3 extended-but-estimated.
+  **This is the last roadmap work item.** **Effort XL.**
 
 ---
 

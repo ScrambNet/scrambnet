@@ -13,8 +13,9 @@ not a decision. Attack it through the issues; change it through PRs.
   Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
   Part 8), `RI-n` (reference-implementation requirements, Part 9), `RB-n`
   (reproducible build and supply chain, Part 10), `UG-n` (update governance,
-  Part 11), `CT-n` (chameleon transports, Part 4). Issues and PRs reference
-  requirements by number.
+  Part 11), `CT-n` (chameleon transports, Part 4), `BL-n` (blackout and
+  mixed-mesh link diversity, Part 5). Issues and PRs reference requirements by
+  number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
 - A conforming implementation implements every MUST of every part it claims.
@@ -121,5 +122,14 @@ planned upgrade, not an emergency.
    entropy/TLS-in-TLS flow detection, ECH's DNS-dependent reality, protocol
    whitelisting), the uTLS maintenance treadmill, and the verdict that multi-cover
    dispersal buys availability, not camouflage (`CT-n`, roadmap 5.1 / OP-7).
-
-Planned, not yet drafted: Part 5 — blackout mode framing.
+11. [Part 5 — Blackout and mixed-mesh link diversity](05-blackout-mesh.md): the
+   largest unwritten design, returned as an honest *partial* result. The mesh is
+   a layer, not a mode: losing an uplink is one more hop to a neighbour gateway,
+   and the `n` shares SHOULD leave through independent gateways, extending I-3 to
+   the physical exit — as an *availability* property (`BL-16`), the mesh never
+   moving the I-2 floor. Carries three residuals at full strength: gateway
+   independence is unverifiable inside a blackout (`BL-6`), a mesh node is
+   physically locatable (`BL-18`), and it exposes a radio-layer identity the
+   overlay cannot rotate (`BL-18a`). Needs its own store-and-forward envelope
+   (`BL-12`); consistent with Part 4's CT-18a — no neighbour, no delivery
+   (`BL-n`, roadmap 5.2 / OP-6).
