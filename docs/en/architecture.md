@@ -160,6 +160,11 @@ none required:
 Nobody must be visible to participate; nobody pays for those who cannot afford
 visibility. The suggested default for the safe is to contribute.
 
+Before running any role, read [OPERATORS.md](OPERATORS.md): an honest,
+plain-language brief on exactly what each role reveals and cannot reveal, and the
+project's abuse-handling posture — why the network cannot read or target content
+by design, and why that inability is a security property, not an evasion.
+
 ## Prior art this design composes
 
 | Piece | Year | Role here |

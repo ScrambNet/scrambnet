@@ -340,15 +340,29 @@ fix it.
   flooding); both corrected and verified before landing. **Done:** defended
   parameters with the residual stated in numbers; 108 PoC tests. **Effort M.**
 
-- **4.4 — Operator exposure and the neutrality posture.** `[politically fraught]`
-  An honest (not legal-advice) brief on what running each role reveals and risks,
-  leaning on the true claim that a drop stores unreadable noise and a relay
-  forwards fixed-size noise with no clear-web exit; plus a written abuse-handling
-  posture — what the project will and will not do when the network is used for
-  harm, given that it *cannot* read or target content by design, and why that
-  inability is a security property, not an evasion. **Done:** each role has a
-  plain-language exposure statement; the posture is consistent with the
-  neutrality clause and introduces no moderation lever. **Effort M.**
+- **4.4 — Operator exposure and the neutrality posture. (DONE)** `[politically fraught]`
+  Written as a new standalone brief `docs/<lang>/OPERATORS.md` (informative, six
+  languages), linked from architecture.md. A per-role exposure statement (pure
+  client, guard, middle, drop, bridge, mesh node/gateway, and the deliberately
+  *absent* clear-web exit), each in a sees / provably-cannot-see / honest-residual
+  shape; plus the four-move abuse-handling posture built entirely on the true
+  inability to read or target content (the inability as a security property; what
+  the project genuinely can do; what it refuses to build and why — a lever for
+  "abuse" is the same lever for "dissent", the `I-3`-forbidden single point; and
+  the honest cost — the network cannot prevent harm by design, like post/TLS but
+  *stronger*, no off-switch for anyone against anyone including the project). An
+  adversarial review hunting for evasion and a smuggled moderation lever confirmed
+  **no neutrality violation, no lever, no legal-inference leak**, and caught three
+  accuracy flaws fixed before landing: (C1) "cannot reconstruct without `k`" was
+  the exact overclaim the repo already broke in `ID-8a` — rebound to "below `k`
+  captured positions" with disjointness-is-believed (`OP-1`/`PS-11`) and steering
+  reaches content at ~15% (`PS-12`); (H1) the multi-role operator / "intersection
+  attack on itself" was omitted — added; (H2) content-blind was conflated with
+  delivery-neutral — separated (`RZ-15` is a delivery lever a content-blind drop
+  still has). Owner chose the maximally-honest register for the harm-enabling
+  statement. **Done:** each role has a plain-language exposure statement; the
+  posture introduces no moderation lever and is consistent with §Neutrality.
+  **Effort M.**
 
 ---
 
