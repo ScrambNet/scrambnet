@@ -326,7 +326,102 @@ OP-6), so even the last rung is an explicit, dangerous opt-in, not a guarantee.
   map's measured error rate (ID-12), so the user and the simulator can treat an
   out-of-date mimic as the fingerprint it is rather than silently trust it.
 
-## 11. Requirements introduced here
+## 11. An explored-and-rejected design: the QUIC polymorphic transport
+
+This section records a concrete transport design that was architected, red-teamed,
+and **rejected before any mechanism was committed**. It is kept, not deleted, for the
+same reason the inference dataset keeps PS-11/PS-12 and ID-8a: a design attacked and
+dropped is a result, and recording *why* it failed stops the project — and the next
+reader — from re-proposing it. None of the `CT-n` below are normative; the design does
+not ship. The three failures were verified against primary sources, not asserted.
+
+**The design.** A *polymorphic* transport whose polymorphism is **selection over a
+small set of real, as-deployed common-protocol templates** (never per-byte
+randomization — CT-6 already makes randomness a brighter signal), with the mimic
+target class chosen to be **QUIC / HTTP-3**: a high-population datagram protocol, on
+the premise that hiding in the QUIC crowd evades the entropy heuristic and that per-
+connection template selection keyed from a pre-shared bridge secret resists template-
+pinning. The endpoint would be a **real H3 origin** run by the operator, so an active
+probe (CT-5) meets a real website and learns nothing covert (CT-10 model).
+
+**Why it was rejected — three failures, each verified:**
+
+- **The entropy-evasion rationale is a category error over a false premise.** The
+  "fully-encrypted-traffic" detector it claimed to evade (USENIX Security 2023, Wu et
+  al.) operates on the **first TCP packet** (a bits-per-byte popcount test and
+  printable-ASCII prefix rules); it is not a QUIC detector, so a QUIC transport neither
+  evades nor needs to evade it. And the sub-premise — "real QUIC is already high-
+  entropy, so we blend in" — is false for the part a cheap classifier reads first: QUIC
+  v1 header protection masks only the first byte's low bits and the packet number
+  (RFC 9001 §5.4), while the long-header **version** (the fixed `0x00000001` in 2026),
+  the connection-ID length bytes, and the token length are **cleartext**, and the
+  Initial packet's payload is AEAD-sealed under a key derived from a **public** salt and
+  the cleartext destination connection ID (RFC 9001 §5.2) — so any observer can decrypt
+  the ClientHello. A QUIC Initial is a **rich fingerprint surface**, not a wall of
+  random bytes. The real QUIC threat is Initial / ClientHello fingerprinting (the JA4
+  family, including its QUIC variant, plus transport parameters), which CT-3 already
+  names — not entropy.
+
+- **The covert selector survives one packet.** Keying the template from the QUIC
+  Destination Connection ID the client picks was unworkable: RFC 9000 §7.2 requires
+  that first client DCID to be **"a value that cannot be predicted"** (the opposite of
+  a deterministic key-derivation), at least 8 bytes, and the client uses it **only
+  until the server responds** — after the server's first Initial (and immediately on a
+  Retry, before the handshake even completes), the connection ID is server-chosen. A
+  per-connection selector living in a field the protocol overwrites within one round
+  trip is not a selector. (A pre-shared secret already gives both parties the template
+  index; routing it through an observable field bought nothing and risked a divergence
+  from as-deployed QUIC, which is itself a fingerprint under CT-8.)
+
+- **QUIC / UDP is the *first* thing a national censor blocks, and cheaply.** This is
+  the decisive one, because it concerns the exact user this network exists for. Russia,
+  on 2022-03-04, dropped **all** international QUIC with a UDP/443 filter (first packet
+  ≥ 1001 bytes carrying the QUIC v1 version header → the 4-tuple dropped for 420 s),
+  later narrowing to QUIC-SNI filtering, still live in 2026; Iran, in a 2025 pre-
+  shutdown scan, went from one blocked QUIC domain to roughly nine thousand (≈ 100 %)
+  via complete UDP-Initial drops. Because browsers fall back to TCP automatically,
+  blocking UDP/443 carries almost no collateral — so it is done **early**. Choosing
+  QUIC therefore trades a non-existent win against the entropy heuristic for a *faster*
+  real loss against UDP-blocking and protocol whitelisting (CT-7b). QUIC is not
+  unusable — QUIC v2 evades Russia's version-1-only filter, and the H3 herd is real —
+  but it is at best **one declared-defeasible template on CT-9a herd-size grounds, where
+  UDP is not already dropped**, never the anchor. A TCP/HTTP-2 mimic of an allowed
+  destination survives strictly more of the regimes this part is written for.
+
+**Three residuals that outlived the QUIC design and bind any future polymorphic
+transport, QUIC or not:**
+
+- **Crowd membership is a handshake property, never a flow property — and must never be
+  sold as camouflage.** "Stand in the crowd" hides the handshake bytes; it does **not**
+  hide the flow shape (packet-size sequence, timing, burst structure, per-message
+  `n`-share volume), which remains ScrambNet-shaped and is exactly what CT-6 / CT-12
+  classify on. Any claim that crowd membership makes a flow unobservable is the
+  camouflage overclaim CT-15a forbids, in a new costume.
+
+- **The real-website probe answer is not only a pool-thinning cost (CT-10b); it is a new
+  deanonymization surface and a new legal surface.** An operator's public site and its
+  covert channel share one address, one certificate, one endpoint, so covert-load
+  congestion turns the public site into a timing oracle on the operator (the
+  non-rotatable-identity problem of BL-18a, recurring at the transport layer), and
+  running real hosted content carries an abuse/takedown exposure that the "carries
+  packets, not opinions" posture of the threat model and OPERATORS.md does not cover.
+  Both must be declared by any design that answers a probe with a real service.
+
+- **Per-connection selection over a small template set is itself a population-level
+  fingerprint.** A uniform `1/T` choice over `T` templates does not match the market-
+  share-skewed, geographically and temporally varying distribution of real client
+  stacks, so the *selection distribution* — learnable by aggregating many connections —
+  becomes the ScrambNet signature the polymorphism was meant to remove. A future design
+  MUST weight the mix toward the real population and still declare the residual that the
+  weighted mix is a global constant across clients, which mimicry cannot close.
+
+The useful negative result is the same one the threat model already carries: the
+binding constraint on this network's reachability is not handshake camouflage but
+**endpoint discovery and enumeration (CT-7 / CT-7a → OP-7)**, which no transport
+mimicry addresses. A perfect chameleon still arrives at an address a censor can learn
+and block wholesale. That is the bootstrap front line, declared open.
+
+## 12. Requirements introduced here
 
 - **CT-1 / CT-2 / CT-3 / CT-4 / CT-5** — declare-what-you-resist; passive DPI; JA4
   TLS fingerprinting (sets + GREASE, not order); SNI/ECH inspection; active probing.

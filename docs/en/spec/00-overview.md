@@ -121,7 +121,12 @@ planned upgrade, not an emergency.
    being revealed. Covers the 2026 censor (JA4 fingerprinting, active probing,
    entropy/TLS-in-TLS flow detection, ECH's DNS-dependent reality, protocol
    whitelisting), the uTLS maintenance treadmill, and the verdict that multi-cover
-   dispersal buys availability, not camouflage (`CT-n`, roadmap 5.1 / OP-7).
+   dispersal buys availability, not camouflage. Carries one explored-and-rejected
+   design openly (§11): a QUIC polymorphic transport, dropped before any mechanism
+   shipped because QUIC's cleartext Initial is a fingerprint rather than the entropy
+   it was meant to hide in, its connection-ID selector is overwritten within one round
+   trip, and QUIC/UDP is a national censor's cheapest first block — leaving the binding
+   constraint where it already was, endpoint discovery (`CT-n`, roadmap 5.1 / OP-7).
 11. [Part 5 — Blackout and mixed-mesh link diversity](05-blackout-mesh.md): the
    largest unwritten design, returned as an honest *partial* result. The mesh is
    a layer, not a mode: losing an uplink is one more hop to a neighbour gateway,

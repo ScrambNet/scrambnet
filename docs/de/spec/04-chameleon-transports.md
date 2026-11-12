@@ -371,7 +371,117 @@ ausdrückliches, gefährliches Opt-in ist, keine Garantie.
   und der Simulator eine veraltete Nachahmung als den Fingerabdruck behandeln können,
   der sie ist, statt ihr stillschweigend zu vertrauen.
 
-## 11. Hier eingeführte Anforderungen
+## 11. Ein erkundetes und verworfenes Design: der polymorphe QUIC-Transport
+
+Dieser Abschnitt hält ein konkretes Transport-Design fest, das architektiert,
+rotgeteamt und **verworfen wurde, bevor irgendein Mechanismus festgelegt war**. Es
+wird aufbewahrt, nicht gelöscht, aus demselben Grund, aus dem der Inferenz-Datensatz
+PS-11/PS-12 und ID-8a aufbewahrt: Ein angegriffenes und fallengelassenes Design ist
+ein Ergebnis, und festzuhalten, *warum* es scheiterte, hält das Projekt — und den
+nächsten Leser — davon ab, es erneut vorzuschlagen. Keine der `CT-n` unten ist
+normativ; das Design wird nicht ausgeliefert. Die drei Fehlschläge wurden gegen
+Primärquellen verifiziert, nicht behauptet.
+
+**Das Design.** Ein *polymorpher* Transport, dessen Polymorphismus eine **Auswahl
+über eine kleine Menge echter, wie-bereitgestellter Templates verbreiteter Protokolle**
+ist (niemals Per-Byte-Randomisierung — CT-6 macht Zufälligkeit bereits zu einem
+helleren Signal), wobei die Nachahmungs-Zielklasse **QUIC / HTTP-3** sein sollte: ein
+populationsstarkes Datagramm-Protokoll, unter der Prämisse, dass das Verstecken in der
+QUIC-Menge die Entropie-Heuristik umgeht und dass eine aus einem vorab geteilten
+Brücken-Geheimnis abgeleitete Pro-Verbindungs-Template-Auswahl dem Template-Pinning
+widersteht. Der Endpunkt wäre ein **echter H3-Origin**, betrieben vom Betreiber, sodass
+eine aktive Sonde (CT-5) auf eine echte Website trifft und nichts Verdecktes erfährt
+(CT-10-Modell).
+
+**Warum es verworfen wurde — drei Fehlschläge, jeder verifiziert:**
+
+- **Die Entropie-Umgehungs-Begründung ist ein Kategorienfehler über einer falschen
+  Prämisse.** Der "Vollständig-verschlüsselter-Verkehr"-Detektor, den sie zu umgehen
+  behauptete (USENIX Security 2023, Wu et al.), operiert auf dem **ersten TCP-Paket**
+  (ein Bits-pro-Byte-Popcount-Test und Regeln für druckbare-ASCII-Präfixe); er ist kein
+  QUIC-Detektor, sodass ein QUIC-Transport ihn weder umgeht noch umgehen muss. Und die
+  Unter-Prämisse — "echtes QUIC ist bereits hochentropisch, also mischen wir uns
+  darunter" — ist falsch für genau den Teil, den ein billiger Klassifikator zuerst
+  liest: QUIC-v1-Header-Schutz maskiert nur die niederwertigen Bits des ersten Bytes
+  und die Paketnummer (RFC 9001 §5.4), während die **Version** des Long-Headers (die
+  feste `0x00000001` in 2026), die Längen-Bytes der Connection-ID und die Token-Länge
+  **Klartext** sind, und die Nutzlast des Initial-Pakets ist AEAD-versiegelt unter einem
+  Schlüssel, der aus einem **öffentlichen** Salt und der Klartext-Destination-Connection-ID
+  abgeleitet wird (RFC 9001 §5.2) — sodass jeder Beobachter den ClientHello entschlüsseln
+  kann. Ein QUIC-Initial ist eine **reiche Fingerabdruck-Fläche**, keine Wand aus
+  Zufallsbytes. Die reale QUIC-Bedrohung ist Initial-/ClientHello-Fingerabdruck (die
+  JA4-Familie, einschließlich ihrer QUIC-Variante, plus Transport-Parameter), die CT-3
+  bereits benennt — nicht Entropie.
+
+- **Der verdeckte Selektor überlebt ein Paket.** Die Template-Auswahl aus der
+  QUIC-Destination-Connection-ID abzuleiten, die der Client wählt, war undurchführbar:
+  RFC 9000 §7.2 verlangt, dass diese erste Client-DCID **"ein Wert, der nicht
+  vorhergesagt werden kann"** ist (das Gegenteil einer deterministischen
+  Schlüsselableitung), mindestens 8 Bytes lang, und der Client nutzt sie **nur, bis der
+  Server antwortet** — nach dem ersten Initial des Servers (und sofort bei einem Retry,
+  noch bevor der Handshake überhaupt abgeschlossen ist) ist die Connection-ID
+  server-gewählt. Ein Pro-Verbindungs-Selektor, der in einem Feld lebt, das das
+  Protokoll innerhalb eines Roundtrips überschreibt, ist kein Selektor. (Ein vorab
+  geteiltes Geheimnis gibt beiden Parteien den Template-Index bereits; ihn durch ein
+  beobachtbares Feld zu routen brachte nichts ein und riskierte eine Abweichung vom
+  wie-bereitgestellten QUIC, die selbst ein Fingerabdruck unter CT-8 ist.)
+
+- **QUIC / UDP ist das *erste*, was ein nationaler Zensor blockiert, und das billig.**
+  Dies ist der entscheidende, weil er genau den Nutzer betrifft, für den dieses Netzwerk
+  existiert. Russland ließ am 2022-03-04 **sämtliches** internationales QUIC mit einem
+  UDP/443-Filter fallen (erstes Paket ≥ 1001 Bytes, das den QUIC-v1-Versions-Header
+  trägt → das 4-Tupel für 420 s verworfen), später verengt auf QUIC-SNI-Filterung, in
+  2026 noch aktiv; Iran ging in einem Pre-Shutdown-Scan von 2025 von einer blockierten
+  QUIC-Domain auf rund neuntausend (≈ 100 %) über vollständige UDP-Initial-Verwürfe.
+  Weil Browser automatisch auf TCP zurückfallen, trägt das Blockieren von UDP/443 fast
+  kein Kollateral — also wird es **früh** getan. QUIC zu wählen tauscht daher einen
+  nicht-existenten Gewinn gegen die Entropie-Heuristik gegen einen *schnelleren* realen
+  Verlust gegen UDP-Blockierung und Protokoll-Whitelisting (CT-7b) ein. QUIC ist nicht
+  unbrauchbar — QUIC v2 umgeht Russlands Nur-Version-1-Filter, und die H3-Herde ist real
+  —, aber es ist bestenfalls **ein als widerlegbar deklariertes Template aus Gründen der
+  CT-9a-Herdengröße, dort, wo UDP nicht bereits verworfen wird**, niemals der Anker. Ein
+  TCP/HTTP-2-Nachahmer eines erlaubten Ziels überlebt strikt mehr der Regimes, für die
+  dieser Teil geschrieben ist.
+
+**Drei Residuen, die das QUIC-Design überlebten und jeden künftigen polymorphen
+Transport binden, QUIC oder nicht:**
+
+- **Mengenzugehörigkeit ist eine Handshake-Eigenschaft, niemals eine Fluss-Eigenschaft
+  — und darf niemals als Tarnung verkauft werden.** "In der Menge stehen" verbirgt die
+  Handshake-Bytes; es verbirgt **nicht** die Flussform (Paketgrößen-Sequenz, Timing,
+  Burst-Struktur, Pro-Nachricht-`n`-Anteils-Volumen), die ScrambNet-förmig bleibt und
+  genau das ist, worauf CT-6 / CT-12 klassifizieren. Jede Behauptung, dass
+  Mengenzugehörigkeit einen Fluss unbeobachtbar macht, ist die Tarnungs-Überhöhung, die
+  CT-15a verbietet, in einem neuen Kostüm.
+
+- **Die Echte-Website-Sonden-Antwort ist nicht nur eine Pool-Ausdünnungs-Kosten
+  (CT-10b); sie ist eine neue Deanonymisierungs-Fläche und eine neue rechtliche Fläche.**
+  Die öffentliche Seite eines Betreibers und ihr verdeckter Kanal teilen eine Adresse,
+  ein Zertifikat, einen Endpunkt, sodass Verdeckt-Last-Stau die öffentliche Seite in ein
+  Timing-Orakel auf den Betreiber verwandelt (das Problem der nicht-rotierbaren Identität
+  von BL-18a, das auf der Transportschicht wiederkehrt), und der Betrieb echter
+  gehosteter Inhalte trägt eine Missbrauchs-/Takedown-Exposition, die die
+  "trägt-Pakete-keine-Meinungen"-Haltung des Bedrohungsmodells und von OPERATORS.md nicht
+  abdeckt. Beide MÜSSEN von jedem Design deklariert werden, das eine Sonde mit einem
+  echten Dienst beantwortet.
+
+- **Pro-Verbindungs-Auswahl über eine kleine Template-Menge ist selbst ein
+  Populations-Ebene-Fingerabdruck.** Eine uniforme `1/T`-Wahl über `T` Templates passt
+  nicht zur marktanteils-verzerrten, geografisch und zeitlich variierenden Verteilung
+  realer Client-Stacks, sodass die *Auswahl-Verteilung* — lernbar durch Aggregation
+  vieler Verbindungen — zur ScrambNet-Signatur wird, die der Polymorphismus entfernen
+  sollte. Ein künftiges Design MUSS (MUST) die Mischung zur realen Population hin
+  gewichten und dennoch das Residuum deklarieren, dass die gewichtete Mischung eine
+  globale Konstante über Clients hinweg ist, die Nachahmung nicht schließen kann.
+
+Das nützliche negative Resultat ist dasselbe, das das Bedrohungsmodell bereits trägt:
+Die bindende Beschränkung der Erreichbarkeit dieses Netzwerks ist nicht die
+Handshake-Tarnung, sondern **Endpunkt-Entdeckung und -Aufzählung (CT-7 / CT-7a →
+OP-7)**, die keine Transport-Nachahmung adressiert. Ein perfektes Chamäleon kommt
+dennoch an einer Adresse an, die ein Zensor erlernen und en gros blockieren kann. Das
+ist die Bootstrap-Frontlinie, als offen deklariert.
+
+## 12. Hier eingeführte Anforderungen
 
 - **CT-1 / CT-2 / CT-3 / CT-4 / CT-5** — erkläre-was-du-widerstehst; passives DPI;
   JA4-TLS-Fingerabdruck (Mengen + GREASE, nicht Reihenfolge); SNI/ECH-Inspektion;

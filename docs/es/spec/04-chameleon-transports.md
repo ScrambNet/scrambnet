@@ -318,7 +318,111 @@ peldaño es un opt-in explícito y peligroso, no una garantía.
   tasa de error medida del mapa (ID-12), de modo que el usuario y el simulador puedan tratar una
   imitación desactualizada como la huella que es en lugar de confiar silenciosamente en ella.
 
-## 11. Requisitos introducidos aquí
+## 11. Un diseño explorado y rechazado: el transporte polimórfico QUIC
+
+Esta sección registra un diseño de transporte concreto que fue arquitecturado, sometido a
+equipo rojo y **rechazado antes de comprometer mecanismo alguno**. Se conserva, no se
+borra, por la misma razón por la que el conjunto de datos de inferencia conserva
+PS-11/PS-12 e ID-8a: un diseño atacado y descartado es un resultado, y registrar *por qué*
+falló impide al proyecto —y al próximo lector— volver a proponerlo. Ninguno de los `CT-n`
+de abajo es normativo; el diseño no se despliega. Los tres fallos se verificaron contra
+fuentes primarias, no se afirmaron.
+
+**El diseño.** Un transporte *polimórfico* cuyo polimorfismo es una **selección sobre un
+pequeño conjunto de plantillas reales, tal como se despliegan, de protocolos comunes**
+(nunca aleatorización por byte —CT-6 ya hace de la aleatoriedad una señal más brillante),
+con la clase de objetivo de imitación elegida como **QUIC / HTTP-3**: un protocolo de
+datagramas de alta población, sobre la premisa de que esconderse en la multitud de QUIC
+evade la heurística de entropía y de que la selección de plantilla por conexión,
+derivada de un secreto de puente precompartido, resiste el anclaje de plantilla. El
+extremo sería un **origen H3 real** ejecutado por el operador, de modo que un sondeo
+activo (CT-5) se encuentra con un sitio web real y no aprende nada encubierto (el modelo
+de CT-10).
+
+**Por qué fue rechazado —tres fallos, cada uno verificado:**
+
+- **El argumento de evasión de entropía es un error de categoría sobre una premisa
+  falsa.** El detector de "tráfico totalmente cifrado" que afirmaba evadir (USENIX
+  Security 2023, Wu et al.) opera sobre el **primer paquete TCP** (una prueba de popcount
+  de bits por byte y reglas de prefijo ASCII imprimible); no es un detector de QUIC, así
+  que un transporte QUIC ni lo evade ni necesita evadirlo. Y la subpremisa —"el QUIC real
+  es ya de alta entropía, así que nos mezclamos"— es falsa para la parte que un
+  clasificador barato lee primero: la protección de cabecera de QUIC v1 enmascara solo los
+  bits bajos del primer byte y el número de paquete (RFC 9001 §5.4), mientras que la
+  **versión** de cabecera larga (el fijo `0x00000001` en 2026), los bytes de longitud del
+  ID de conexión y la longitud del token son **texto claro**, y la carga útil del paquete
+  Initial está sellada con AEAD bajo una clave derivada de una sal **pública** y del ID de
+  conexión de destino en texto claro (RFC 9001 §5.2) —así que cualquier observador puede
+  descifrar el ClientHello. Un Initial de QUIC es una **superficie de huella rica**, no un
+  muro de bytes aleatorios. La amenaza real de QUIC es el cotejo de huella del Initial /
+  ClientHello (la familia JA4, incluida su variante QUIC, más los parámetros de
+  transporte), que CT-3 ya nombra —no la entropía.
+
+- **El selector encubierto sobrevive un paquete.** Derivar la plantilla del ID de conexión
+  de destino (Destination Connection ID) de QUIC que el cliente elige era inviable: RFC
+  9000 §7.2 exige que ese primer DCID del cliente sea **"un valor que no pueda predecirse"**
+  (lo opuesto a una derivación de clave determinista), de al menos 8 bytes, y el cliente lo
+  usa **solo hasta que el servidor responde** —tras el primer Initial del servidor (e
+  inmediatamente ante un Retry, antes incluso de que el handshake se complete), el ID de
+  conexión lo elige el servidor. Un selector por conexión que vive en un campo que el
+  protocolo sobrescribe en una ida y vuelta no es un selector. (Un secreto precompartido ya
+  da a ambas partes el índice de plantilla; enrutarlo a través de un campo observable no
+  compraba nada y arriesgaba una divergencia del QUIC tal como se despliega, que es en sí
+  misma una huella bajo CT-8.)
+
+- **QUIC / UDP es lo *primero* que bloquea un censor nacional, y de forma barata.** Este es
+  el decisivo, porque concierne al usuario exacto para el que existe esta red. Rusia, el
+  2022-03-04, descartó **todo** el QUIC internacional con un filtro de UDP/443 (primer
+  paquete ≥ 1001 bytes portando la cabecera de versión de QUIC v1 → la 4-tupla descartada
+  durante 420 s), estrechándose después a filtrado de QUIC-SNI, aún vivo en 2026; Irán, en
+  un barrido previo al apagón de 2025, pasó de un dominio QUIC bloqueado a aproximadamente
+  nueve mil (≈ 100 %) mediante descartes completos de UDP-Initial. Como los navegadores
+  recaen en TCP automáticamente, bloquear UDP/443 casi no acarrea daño colateral —así que
+  se hace **temprano**. Elegir QUIC cambia por tanto una victoria inexistente contra la
+  heurística de entropía por una pérdida real *más rápida* contra el bloqueo de UDP y la
+  lista blanca de protocolos (CT-7b). QUIC no es inservible —QUIC v2 evade el filtro
+  solo-de-versión-1 de Rusia, y la manada H3 es real— pero es a lo sumo **una plantilla
+  declarada-refutable por razones de tamaño de manada de CT-9a, donde el UDP no está ya
+  descartado**, nunca el ancla. Una imitación de TCP/HTTP-2 de un destino permitido
+  sobrevive a estrictamente más de los regímenes para los que está escrita esta parte.
+
+**Tres residuos que sobrevivieron al diseño QUIC y vinculan a cualquier transporte
+polimórfico futuro, QUIC o no:**
+
+- **La pertenencia a la multitud es una propiedad del handshake, nunca una propiedad del
+  flujo —y nunca debe venderse como camuflaje.** "Estar de pie en la multitud" oculta los
+  bytes del handshake; **no** oculta la forma del flujo (secuencia de tamaños de paquete,
+  tiempos, estructura de ráfagas, volumen de `n` partes por mensaje), que sigue teniendo
+  forma de ScrambNet y es exactamente lo que CT-6 / CT-12 clasifican. Cualquier afirmación
+  de que la pertenencia a la multitud hace un flujo inobservable es la sobreafirmación de
+  camuflaje que CT-15a prohíbe, con un disfraz nuevo.
+
+- **La respuesta del sondeo con sitio web real no es solo un costo de adelgazamiento del
+  fondo (CT-10b); es una nueva superficie de desanonimización y una nueva superficie
+  legal.** El sitio público de un operador y su canal encubierto comparten una dirección,
+  un certificado, un extremo, así que la congestión de carga encubierta convierte el sitio
+  público en un oráculo de tiempos sobre el operador (el problema de identidad-no-rotable de
+  BL-18a, recurrente en la capa de transporte), y ejecutar contenido alojado real acarrea
+  una exposición a abuso/retirada que la postura de "porta paquetes, no opiniones" del
+  modelo de amenazas y de OPERATORS.md no cubre. Ambas deben declararse en cualquier diseño
+  que responda a un sondeo con un servicio real.
+
+- **La selección por conexión sobre un pequeño conjunto de plantillas es en sí misma una
+  huella a nivel de población.** Una elección uniforme `1/T` sobre `T` plantillas no coincide
+  con la distribución —sesgada por cuota de mercado y variable geográfica y temporalmente— de
+  las pilas de cliente reales, así que la *distribución de selección* —aprendible agregando
+  muchas conexiones— se convierte en la firma de ScrambNet que el polimorfismo pretendía
+  eliminar. Un diseño futuro DEBE (MUST) ponderar la mezcla hacia la población real y aun así
+  declarar el residuo de que la mezcla ponderada es una constante global entre clientes, que
+  el mimetismo no puede cerrar.
+
+El resultado negativo útil es el mismo que el modelo de amenazas ya porta: la restricción
+vinculante sobre la alcanzabilidad de esta red no es el camuflaje del handshake sino el
+**descubrimiento y la enumeración de extremos (CT-7 / CT-7a → OP-7)**, que ningún mimetismo
+de transporte aborda. Un camaleón perfecto aun así llega a una dirección que un censor puede
+aprender y bloquear al por mayor. Esa es la línea del frente de arranque, declarada abierta.
+
+## 12. Requisitos introducidos aquí
 
 - **CT-1 / CT-2 / CT-3 / CT-4 / CT-5** — declara-lo-que-resistes; DPI pasivo; fingerprinting TLS JA4
   (conjuntos + GREASE, no orden); inspección de SNI/ECH; sondeo activo.

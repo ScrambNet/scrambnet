@@ -356,7 +356,117 @@ pericoloso, non una garanzia.
   l'utente e il simulatore possano trattare una mimica obsoleta come l'impronta che è
   anziché fidarsene silenziosamente.
 
-## 11. Requisiti introdotti qui
+## 11. Un design esplorato e rifiutato: il trasporto polimorfico QUIC
+
+Questa sezione registra un design di trasporto concreto che è stato architettato,
+sottoposto a red-team e **rifiutato prima che alcun meccanismo fosse impegnato**. È
+conservato, non cancellato, per la stessa ragione per cui il dataset di inferenza
+conserva PS-11/PS-12 e ID-8a: un design attaccato e lasciato cadere è un risultato, e
+registrare *perché* ha fallito impedisce al progetto — e al prossimo lettore — di
+riproporlo. Nessuno dei `CT-n` qui sotto è normativo; il design non viene dispiegato.
+I tre fallimenti sono stati verificati contro fonti primarie, non asseriti.
+
+**Il design.** Un trasporto *polimorfico* il cui polimorfismo è una **selezione su un
+piccolo insieme di template di protocollo comune reali, come effettivamente
+dispiegati** (mai randomizzazione byte-per-byte — CT-6 rende già la casualità un
+segnale più luminoso), con la classe di bersaglio di mimica scelta come **QUIC /
+HTTP-3**: un protocollo a datagrammi ad alta popolazione, sulla premessa che
+nascondersi nel gregge di QUIC eluda l'euristica dell'entropia e che una selezione di
+template per-connessione derivata da un segreto di ponte pre-condiviso resista al
+template-pinning. L'endpoint sarebbe un'**origin H3 reale** gestita dall'operatore,
+così che un probe attivo (CT-5) incontri un sito web reale e non apprenda nulla di
+nascosto (modello CT-10).
+
+**Perché è stato rifiutato — tre fallimenti, ciascuno verificato:**
+
+- **La motivazione dell'elusione-dell'entropia è un errore di categoria su una premessa
+  falsa.** Il rilevatore di "traffico-completamente-cifrato" che affermava di eludere
+  (USENIX Security 2023, Wu et al.) opera sul **primo pacchetto TCP** (un test di
+  popcount bit-per-byte e regole di prefisso ASCII-stampabile); non è un rilevatore di
+  QUIC, quindi un trasporto QUIC né lo elude né ha bisogno di eluderlo. E la
+  sotto-premessa — "il QUIC reale è già ad alta entropia, quindi ci confondiamo" — è
+  falsa per la parte che un classificatore a buon mercato legge per prima: la protezione
+  dell'header di QUIC v1 maschera solo i bit bassi del primo byte e il numero di
+  pacchetto (RFC 9001 §5.4), mentre la **versione** dell'header lungo (il fisso
+  `0x00000001` nel 2026), i byte di lunghezza del connection-ID e la lunghezza del token
+  sono **in chiaro**, e il payload del pacchetto Initial è sigillato AEAD sotto una
+  chiave derivata da un salt **pubblico** e dal connection ID di destinazione in chiaro
+  (RFC 9001 §5.2) — quindi qualunque osservatore può decifrare il ClientHello. Un
+  Initial di QUIC è una **ricca superficie di impronta**, non un muro di byte casuali.
+  La minaccia reale di QUIC è il fingerprinting dell'Initial / ClientHello (la famiglia
+  JA4, inclusa la sua variante QUIC, più i parametri di trasporto), che CT-3 già
+  nomina — non l'entropia.
+
+- **Il selettore nascosto sopravvive a un pacchetto.** Derivare il template dal
+  Destination Connection ID di QUIC che il client sceglie era impraticabile: RFC 9000
+  §7.2 richiede che quel primo DCID del client sia **"un valore che non può essere
+  predetto"** (l'opposto di una derivazione-di-chiave deterministica), lungo almeno 8
+  byte, e il client lo usa **solo finché il server non risponde** — dopo il primo
+  Initial del server (e immediatamente su un Retry, prima ancora che l'handshake sia
+  completato), il connection ID è scelto dal server. Un selettore per-connessione che
+  vive in un campo che il protocollo sovrascrive entro un round trip non è un selettore.
+  (Un segreto pre-condiviso dà già a entrambe le parti l'indice del template;
+  instradarlo attraverso un campo osservabile non comprava nulla e rischiava una
+  divergenza dal QUIC come-effettivamente-dispiegato, che è essa stessa un'impronta
+  sotto CT-8.)
+
+- **QUIC / UDP è la *prima* cosa che un censore nazionale blocca, e a buon mercato.**
+  Questo è quello decisivo, perché riguarda l'utente esatto per cui questa rete esiste.
+  La Russia, il 2022-03-04, ha scartato **tutto** il QUIC internazionale con un filtro
+  UDP/443 (primo pacchetto ≥ 1001 byte che porta l'header di versione di QUIC v1 → la
+  4-tupla scartata per 420 s), restringendo poi a un filtraggio di QUIC-SNI, ancora
+  attivo nel 2026; l'Iran, in una scansione pre-shutdown del 2025, è passato da un
+  dominio QUIC bloccato a circa novemila (≈ 100 %) tramite scarti completi dell'Initial
+  UDP. Poiché i browser ripiegano automaticamente su TCP, bloccare UDP/443 porta quasi
+  nessun collaterale — quindi lo si fa **presto**. Scegliere QUIC baratta perciò una
+  vittoria inesistente contro l'euristica dell'entropia per una perdita reale *più
+  rapida* contro il blocco di UDP e il whitelisting di protocollo (CT-7b). QUIC non è
+  inutilizzabile — QUIC v2 elude il filtro-solo-versione-1 della Russia, e il gregge H3
+  è reale — ma è nel migliore dei casi **un template dichiarato-confutabile per ragioni
+  di dimensione-del-gregge di CT-9a, dove UDP non è già scartato**, mai l'ancora. Una
+  mimica TCP/HTTP-2 di una destinazione consentita sopravvive a strettamente più dei
+  regimi per cui questa parte è scritta.
+
+**Tre residui che sono sopravvissuti al design QUIC e vincolano qualunque futuro
+trasporto polimorfico, QUIC o no:**
+
+- **L'appartenenza al gregge è una proprietà dell'handshake, mai una proprietà del
+  flusso — e non deve mai essere venduta come camuffamento.** "Sta' nel gregge" nasconde
+  i byte dell'handshake; **non** nasconde la forma del flusso (sequenza di
+  dimensioni-di-pacchetto, timing, struttura delle raffiche, volume per-messaggio di
+  `n` quote), che resta ScrambNet-sagomato ed è esattamente ciò su cui CT-6 / CT-12
+  classificano. Qualunque affermazione che l'appartenenza al gregge renda un flusso
+  non-osservabile è l'eccesso di rivendicazione del camuffamento che CT-15a vieta, in un
+  nuovo costume.
+
+- **La risposta del probe con sito-web-reale non è solo un costo di assottigliamento del
+  pool (CT-10b); è una nuova superficie di deanonimizzazione e una nuova superficie
+  legale.** Il sito pubblico di un operatore e il suo canale nascosto condividono un
+  indirizzo, un certificato, un endpoint, quindi la congestione da carico-nascosto
+  trasforma il sito pubblico in un oracolo di timing sull'operatore (il problema
+  dell'identità-non-ruotabile di BL-18a, ricorrente allo strato di trasporto), e gestire
+  contenuto reale ospitato porta un'esposizione ad abuso/rimozione che la postura
+  "trasporta pacchetti, non opinioni" del modello di minaccia e di OPERATORS.md non
+  copre. Entrambe devono essere dichiarate da qualunque design che risponda a un probe
+  con un servizio reale.
+
+- **La selezione per-connessione su un piccolo insieme di template è essa stessa
+  un'impronta a livello di popolazione.** Una scelta uniforme `1/T` su `T` template non
+  combacia con la distribuzione sbilanciata per quota-di-mercato, variabile
+  geograficamente e temporalmente, degli stack client reali, quindi la *distribuzione di
+  selezione* — apprendibile aggregando molte connessioni — diventa la firma ScrambNet
+  che il polimorfismo doveva rimuovere. Un design futuro DEVE (MUST) pesare la mescolanza
+  verso la popolazione reale e comunque dichiarare il residuo che la mescolanza pesata è
+  una costante globale attraverso i client, che la mimica non può chiudere.
+
+Il risultato negativo utile è lo stesso che il modello di minaccia porta già: il vincolo
+portante sulla raggiungibilità di questa rete non è il camuffamento dell'handshake ma
+**la scoperta e l'enumerazione di endpoint (CT-7 / CT-7a → OP-7)**, che nessuna mimica
+di trasporto affronta. Un camaleonte perfetto arriva comunque a un indirizzo che un
+censore può apprendere e bloccare all'ingrosso. Quella è la prima linea del bootstrap,
+dichiarata aperta.
+
+## 12. Requisiti introdotti qui
 
 - **CT-1 / CT-2 / CT-3 / CT-4 / CT-5** — dichiara-a-cosa-resisti; DPI passivo;
   fingerprinting TLS JA4 (insiemi + GREASE, non ordine); ispezione SNI/ECH; probing
