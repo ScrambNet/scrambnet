@@ -12,8 +12,8 @@ not a decision. Attack it through the issues; change it through PRs.
   (gossip record, Part 2), `PS-n` (path selection, Part 3), `RZ-n` (rendezvous,
   Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
   Part 8), `RI-n` (reference-implementation requirements, Part 9), `RB-n`
-  (reproducible build and supply chain, Part 10). Issues and PRs
-  reference requirements by number.
+  (reproducible build and supply chain, Part 10), `UG-n` (update governance,
+  Part 11). Issues and PRs reference requirements by number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
 - A conforming implementation implements every MUST of every part it claims.
@@ -101,6 +101,15 @@ planned upgrade, not an emergency.
    faithfully-reproduced source, a reproducibly-miscompiling compiler, and the
    reduction to OP-2 for the user who cannot rebuild). Seam with item 4.1: same
    trust anchor, separate signer sets (roadmap 4.2).
+9. [Part 11 — Update governance](11-update-governance.md): how a client comes to
+   run a *newer* binary without trusting whoever released it — no authoritative
+   signer set and no push of any kind (two owner-bound decisions). Permissionless
+   log-append announcement, pull/gossip discovery, manual opt-in adoption bound to
+   reproduction and freshness, a reproducible-downgrade defense, a permissionless
+   forceless known-bad report (never an authoritative revocation), and
+   self-verifying opt-in refuse-to-run. Carries its central residual openly: no
+   push means no forced patch — a vulnerable or compromised client may never adopt
+   the fix (`UG-n`, roadmap 4.1 / OP-8).
 
 Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
 mode framing.

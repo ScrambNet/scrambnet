@@ -267,17 +267,36 @@ while changing it breaks no one. The expensive mistake is to ship a reference
 node with an ad-hoc update story and then need an authority-shaped migration to
 fix it.
 
-- **4.1 — Update governance without a kill switch (OP-8).** `[most important non-crypto item]`
-  A design-decision record fixing the *shape*: reproducible builds are the trust
-  anchor; signatures only *locate* a build; update adoption is client-local and
-  opt-in, never a push. The hard 80% is human, not cryptographic — *who* signs,
-  how they are chosen and replaced pseudonymously, and how a quorum avoids quietly
-  becoming the directory authority I-3 forbids. **The strongest answer may be
-  minimalist:** reproducible builds + cross-published hashes + *no* auto-update
-  and *no* authoritative signer set, because every signer set is a coercion
-  target. **Done:** the document survives a hostile reading hunting for the
-  back-door authority; the I-3 self-audit names the untrusted substitute for
-  every party. **Effort L.**
+- **4.1 — Update governance without a kill switch (OP-8). (DONE)** `[most important non-crypto item]`
+  Written as spec **Part 11** (`UG-1..UG-9`). The project owner took the two
+  outward-committing decisions the roadmap flagged, and they came out **minimalist**,
+  as predicted: **no authoritative signer set** (releases are reproducible builds +
+  cross-published hashes + a freshness index; signatures only *locate* per RB-2,
+  never authorize) and **no push of any kind** (adoption is manual, client-local,
+  opt-in; the weaker notify-of-availability path explicitly rejected). The part:
+  permissionless log-append announcement with no signer roster (UG-2), a release
+  line owned by no party — `line_id` a reproduction-verifiable manifest chain from a
+  genesis (UG-2c), pull/gossip discovery that never fetches in reaction to a peer
+  signal (UG-3c), a four-gate manual-adoption checklist with no signature gate
+  (UG-4a), the reproducible-downgrade defense (UG-5), split-view/index-equivocation
+  on freshness (UG-6), and a permissionless, RB-10a-disciplined, **forceless**
+  known-bad report that is never an authoritative revocation (UG-8). An adversarial
+  review found and fixed before landing: (C1) the "release line" primitive was
+  undefined and would have smuggled in a repo authority → UG-2c; (H1) the known-bad
+  channel dropped RB-10a's anti-stuffing discipline → DoS-by-defamation censoring
+  honest patches → UG-8 reuses RB-10a + a vulnerability report may annotate but
+  never gate an offer; (H2) for the modal phone three of four known-bad classes
+  reduce to OP-2, not one → disclosed in §10.2; (H3) the compromised-RCE client
+  provably may never hear the patch → §10.1 stated at full strength; plus the
+  offer/install mechanical boundary (UG-4c) and the pull-vs-react boundary (UG-3c).
+  The sharpest result: the review showed the blanket "never refuse to run" was
+  over-broad (a false non-reproduction proof is *impossible*, ID-8a.3), so a
+  **self-verifying, opt-in refuse-to-run** was added (UG-8b) — authority-free (the
+  client's own rebuild) and not a push, the run-time analogue of RB-7a; the owner
+  confirmed it. **Done:** the document survives a hostile reading hunting for the
+  back-door authority; the one I-3-flagged party (the vulnerability-class known-bad
+  signaler) is kept clean by stripping it of all force, and the central residual —
+  no push means no forced patch — is carried openly as §10.1. **Effort L.**
 
 - **4.2 — Reproducible-build pipeline and supply chain. (DONE)** `I-1, I-3`
   Written as spec **Part 10** (`RB-1..RB-18`): content-pinned toolchain across the

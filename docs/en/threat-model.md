@@ -80,8 +80,16 @@ language here; discuss it there, in the one issue, so no discussion is split.
 6. **Blackout addressing.** Identity-based routing over mesh store-and-forward without a
    DHT reachable from inside the blackout.
 7. **Bootstrap with zero contacts** for the social-graph bridge distribution.
-8. **Update governance.** Multi-signature releases across jurisdictions: how many signers,
-   how chosen, how replaced — without creating the committee that becomes the kill switch.
+8. **Update governance.** How a client comes to run a newer release without a kill switch.
+   Addressed in draft by [spec Part 11](spec/11-update-governance.md) (`UG-1..UG-9`): the
+   answer came out **minimalist** — no authoritative signer set and no push of any kind
+   (reproducible builds + cross-published hashes + a freshness index; signatures only
+   locate, never authorize). What stays open is the residual Part 11 §10 declares rather
+   than solves: no push means **no forced patch**, so a vulnerable — or already
+   compromised — client may never adopt the fix, and revocation of a reviewed-but-malicious
+   release reduces to public review (`I-1`) and `OP-2`. The hard part was never "how many
+   signers" but conceding that refusing both an authority and a push buys patch-latency as
+   its price.
 9. **Dead-drop metadata and economics.** A drop sees deposit times and polling cadence for
    a box within one epoch (spec Part 6). Polling distributions and decoy cost on metered
    connections, deletion semantics, deposit pricing against flooding, storage incentives:
