@@ -319,13 +319,26 @@ fix it.
   the tagged source, via a procedure naming no trusted singleton; the residuals a
   hostile reader pushes on are declared, not hidden. **Effort L.**
 
-- **4.3 — Dead-drop economics and retrieval metadata (OP-9).**
-  Simulate a flooding attack with a price tag (client puzzles vs the RZ-7 caps),
-  honest about the gap that a puzzle hard enough to deter a botnet may be
-  unaffordable on the cheap phone the project claims to serve. Simulate the
-  polling discipline (RZ-9) against a drop that *profiles* a box, and its cost on
-  metered mobile. **Done:** defended parameters with the residual stated in
-  numbers. **Effort M.**
+- **4.3 — Dead-drop economics and retrieval metadata (OP-9). (DONE)**
+  Simulated in `poc/dropecon_sim.py` (`test_dropecon_sim.py` locks the figures),
+  recorded as Part 6 §8–§9 (RZ-15, RZ-16/16a/16b + a numbered residual). The
+  result is honest and uncomfortable: **neither the RZ-7 cap nor a puzzle defends
+  delivery.** No puzzle hardness is both botnet-deterring and phone-affordable
+  (the ~25 000× ARM-vs-GPU gap; at the last phone-affordable `z=20` a GPU still
+  refills a box ~1.7×10⁸/hr), AND the cap bounds only *storage*: a phone-class
+  flooder buries honest mail past the 8-slot retrieval window in ~17 s, inside one
+  900 s poll (RZ-15). Delivery-flooding is therefore a **declared residual** — it
+  needs a deposit *admission* control the project has not yet built (owner chose
+  to declare the residual now rather than design admission in 4.3's scope). The
+  polling side splits into two leaks with two knobs (RZ-16): the online-pattern
+  leak is defended **free** by strict schedule independence, measured by a **tail**
+  statistic (a mean is too blunt — it passes a half-reactive schedule); the
+  which-box leak costs real bytes (decoys), and the mandatory poll floor is
+  ~212 MB/month across 4 drops (Sphinx-priced, not raw slots). An adversarial
+  review caught the first draft's numbers **wrong by 25–143×** (gpu/botnet refill
+  rates) and its central claim backwards (it credited the cap with carrying
+  flooding); both corrected and verified before landing. **Done:** defended
+  parameters with the residual stated in numbers; 108 PoC tests. **Effort M.**
 
 - **4.4 — Operator exposure and the neutrality posture.** `[politically fraught]`
   An honest (not legal-advice) brief on what running each role reveals and risks,

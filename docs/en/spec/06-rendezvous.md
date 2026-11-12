@@ -58,7 +58,8 @@ behind its own circuits. Nobody ever delivers *to* a person.
 - **RZ-7.** Deposits are fire-and-forget. The drop MUST NOT emit any response
   that distinguishes success, unknown box, or full box (silent uniformity, as
   GR-4). Storage rules: fixed slots of 1840 B, at most `64` (s) slots per box,
-  slot expiry `7` days (s), oldest-first eviction.
+  slot expiry `7` days (s), oldest-first eviction. The cap bounds **storage**,
+  not **delivery** under flooding — see RZ-15.
 
 ## 5. Retrieval
 
@@ -73,7 +74,9 @@ behind its own circuits. Nobody ever delivers *to* a person.
   box ids at the same cadence. A retrieval response is always exactly `b = 8`
   (s) slots, padded with dummy slots indistinguishable from real ones. The
   drop learns a box's polling cadence and deposit times within one epoch —
-  that is the designed residual, bounded by RZ-10 and attacked in OP-9.
+  that is the designed residual, bounded by RZ-10 and now priced in RZ-16: the
+  schedule's independence MUST be strict (RZ-16a) and the decoy/byte cost is
+  quantified (RZ-16b).
 - **RZ-10 (epochs).** `box_id` rotates per epoch. A drop MUST NOT be able to
   link the same pair's boxes across epochs; nothing in the retrieval protocol
   may carry a value stable across epochs.
@@ -86,8 +89,11 @@ behind its own circuits. Nobody ever delivers *to* a person.
   card has expired, the pair re-exchanges out of band: one contact is the
   floor, again.
 - **RZ-12.** Anyone holding a card can fill its boxes. The per-box cap (RZ-7)
-  bounds flooding damage to one relationship; deposit pricing (client
-  puzzles?) and drop storage economics are open (OP-9).
+  bounds flooding damage **to one relationship's storage**, but not that
+  relationship's **delivery** — RZ-15 shows a phone-class flooder denies
+  retrieval inside one poll period, and that deposit pricing (client puzzles)
+  cannot close the gap; the sufficient defense (deposit admission) is an
+  unresolved OP-9 residual. Drop storage incentives remain open (OP-9).
 
 ## 7. Key derivation and epoch boundaries
 
@@ -121,9 +127,84 @@ behind its own circuits. Nobody ever delivers *to* a person.
   `poc/rendezvous.py` (`epochs_to_poll`, test
   `test_deposit_before_boundary_polled_after_boundary`).
 
-## 8. What this part does not decide
+## 8. Economics and retrieval metadata, priced (OP-9)
+
+Roadmap item 4.3 put numbers to the two OP-9 questions RZ-7/RZ-9 left open —
+flooding and polling-metadata — with the simulator `poc/dropecon_sim.py`
+(`test_dropecon_sim.py` locks the figures). The honest result is that one of
+the two defenses the project hoped for does **not** hold; §9 carries that as a
+declared residual rather than hiding it.
+
+- **RZ-15 (flooding: neither the cap nor a puzzle defends *delivery*; it is a
+  declared residual). [normative]** The RZ-7 per-box cap bounds **storage** to
+  `BOX_CAP × SLOT_BYTES = 115 KiB` per `(pair, drop, epoch)` box, a ceiling
+  independent of attacker budget. It does **not** bound **delivery**. Because a
+  poll returns only the `B_SLOTS = 8` oldest surviving slots (RZ-8) and deposits
+  evict oldest-first (RZ-7), an attacker who buries a fresh honest slot behind
+  `≥ 8` newer junk slots denies its retrieval **without even reaching the cap** —
+  and the simulator shows a **phone-class** flooder (`2 × 10⁶ H/s`) does this in
+  `~17 s`, far inside one `POLL_PERIOD = 900 s` poll, at every usable puzzle
+  hardness. A deposit-side proof-of-work puzzle does not rescue this: no hardness
+  `z` is both botnet-deterring and phone-affordable — the ARM-vs-GPU gap is
+  `~25 000×`, so at `z = 20` (the last phone-affordable point, `0.52 s/deposit`)
+  a single GPU still refills a box `~1.7 × 10⁸` times/hour, while forcing a GPU
+  to `1 s/deposit` costs the phone `~9.5 hours/deposit`. A puzzle MAY be required
+  at low hardness (`z ≤ 20` (s)) as a trivial-refill speed bump, but is **not**
+  relied on. `n = 4, k = 3` dispersal only raises the bar to flooding
+  `≥ n − k + 1 = 2` of a pair's drops at once. **Delivery-flooding therefore has
+  no sufficient defense in this part:** it needs a deposit **admission** control
+  the project has not yet designed (a candidate direction, not a decision: a
+  per-relationship admission token derived from the card, so only a card-holder
+  deposits and only at a bounded rate). Until that exists, delivery-flooding is a
+  declared OP-9 residual, quantified in §9.
+
+- **RZ-16 (polling metadata: two leaks, two knobs). [normative]** A profiling
+  drop's within-epoch observation (bounded across epochs by RZ-10) decomposes
+  into two leaks with two independent defenses, and the simulator prices both.
+  - **RZ-16a (online-pattern leak — defended free by strict independence).
+    [normative]** Whether the recipient *reacted* to a deposit is the only
+    user-identifying leak, and it is defended by making the poll schedule
+    **strictly independent** of deposits and user activity (RZ-9): the schedule
+    MUST NOT be advanced, triggered, or reshaped by a deposit or an app event, so
+    the `deposit → next-poll` latency stays at the schedule's own
+    inspection-paradox mean (`≈ 467 s` for `POLL_PERIOD = 900, POLL_JITTER = 300`)
+    and is uncorrelated with deposit time. A drop detects a violation not by the
+    mean (too blunt — a half-reactive schedule still reads near-independent on the
+    mean) but by the **tail** `P[latency < 60 s]`, which the simulator shows
+    rising from noise at independence to a clear signal by a `5 %` reactive
+    fraction. This defense is **mandatory and free in bytes**.
+  - **RZ-16b (which-box leak — defended by decoys at a real byte cost). [normative]**
+    Which of several held boxes is the recipient's real one is defended by decoy
+    polls at a multiplier `r` (s: `r = 1`), a question RZ-2/RZ-10 unlinkability
+    already largely answers, so the marginal privacy per byte is low. Each poll
+    rides Sphinx — `B_SLOTS + 1 = 9` packets of `2048 B` over the metered entry
+    hop, `~18.4 KiB`, not the raw slot bytes — so across `d = 4` drops at the
+    RZ-9 cadence the standing cost is `~212 MB/month` at `r = 0` (before the
+    deposit/send side) and `~425 MB/month` at the `r = 1` default. `r = 0` is an
+    explicit low-data mode. Demonstrated in `poc/dropecon_sim.py` (Scenario B).
+
+## 9. What this part does not decide (the declared OP-9 residual)
 
 Retrieval metadata minimization (smarter-than-polling retrieval, PIR-style
-tricks and their real costs), deletion semantics, deposit pricing, drop
-incentives (OP-9); drop-set independence verification (OP-1); polling over
-the mesh during blackout (OP-6). Numbered issues exist for each.
+tricks and their real costs), deletion semantics, and drop incentives (why a
+relay stores a stranger's noise) remain genuinely open (OP-9); drop-set
+independence verification (OP-1); polling over the mesh during blackout (OP-6).
+Numbered issues exist for each. Three results from §8 are carried openly as
+declared residuals, with the numbers that prove them:
+
+- **Delivery-flooding has no sufficient defense here.** Neither the RZ-7 cap
+  (storage-only) nor a proof-of-work puzzle (no phone-affordable,
+  botnet-deterring hardness exists — the `~25 000×` ARM-vs-GPU gap) stops an
+  attacker burying honest mail past the 8-slot retrieval window in `~17 s`, well
+  inside a 900 s poll, with phone-class hardware (RZ-15). It needs an admission
+  control the project has not yet built; until then it is a declared residual.
+- **The within-epoch profiling floor is real.** Strict independence (RZ-16a)
+  removes the only user-identifying leak, but a drop still learns the public
+  RZ-9 cadence and the deposit times into boxes it holds; decoys reach only the
+  which-box question (RZ-16b). A colluding multi-box drop can also correlate
+  *deposit* timestamps across its boxes even under perfect poll independence —
+  RZ-2/RZ-10 unlinkability covers identifiers, not deposit *timing*.
+- **The RZ-9 polling baseline is heavy for the mobile target.** Even with decoys
+  off (`r = 0`), the mandatory fixed-cadence polling across `d = 4` drops costs
+  `~212 MB/month` (RZ-16b) — the price of the online-pattern defense, paid in
+  bytes, before any message is sent.
