@@ -279,15 +279,26 @@ fix it.
   back-door authority; the I-3 self-audit names the untrusted substitute for
   every party. **Effort L.**
 
-- **4.2 — Reproducible-build pipeline and supply chain.** `I-1, I-3`
-  Design (ready for when the Rust node starts): toolchain pinning, a hermetic or
-  Nix-style build, a `rebuild-and-compare` a stranger can run, cross-published
-  attestations, a minimal and vendored dependency tree, and the explicit
-  reconciliation of "contributors must be pseudonymous (no identity-bound signing
-  keys)" with "verify the artifact" — all trust flows through reproducibility,
-  none through author identity. **Done:** two parties on different machines
-  produce hash-identical artifacts from the tagged source, via a procedure naming
-  no trusted singleton. **Effort L.**
+- **4.2 — Reproducible-build pipeline and supply chain. (DONE)** `I-1, I-3`
+  Written as spec **Part 10** (`RB-1..RB-18`): content-pinned toolchain across the
+  whole compile surface (RB-3), a hermetic offline build with `SOURCE_DATE_EPOCH`
+  derived from the tagged commit (RB-4), a minimal/vendored/content-pinned
+  dependency tree (RB-5), a normative toolchain-versioned nondeterminism hazard set
+  (RB-6), a stranger's `rebuild-and-compare` (RB-7), and the explicit
+  reconciliation of pseudonymity with verify-the-artifact — all trust flows through
+  reproducibility, none through author identity (RB-12). An adversarial review
+  (measuring Part 10 against the bar Part 8 already set for the same trust problems)
+  found and fixed: no clause for the **non-rebuilding modal user** (added RB-7b +
+  §10.5, the reduction to OP-2); a **reproducible-downgrade** seam gap 4.1 could not
+  close later (added RB-8a/RB-9a freshness index); RB-10 corroboration smuggling a
+  **sybil-votable majority** (imported GR-20/PS-10 "count only verified"); and RB-18
+  conflating **provenance with honesty** (split: pinned = provenance, not safe).
+  Spawned **OP-10** (dependency-author honesty without self-declaration — the fourth
+  mask of the project's recurring independence problem, threat-model §Open
+  problems). Seam with 4.1 kept separate by citation (RB-2, §9, mirrors ID-11/11a).
+  **Done:** two parties on different machines produce hash-identical artifacts from
+  the tagged source, via a procedure naming no trusted singleton; the residuals a
+  hostile reader pushes on are declared, not hidden. **Effort L.**
 
 - **4.3 — Dead-drop economics and retrieval metadata (OP-9).**
   Simulate a flooding attack with a price tag (client puzzles vs the RZ-7 caps),

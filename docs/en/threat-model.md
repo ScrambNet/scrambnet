@@ -86,3 +86,16 @@ language here; discuss it there, in the one issue, so no discussion is split.
    a box within one epoch (spec Part 6). Polling distributions and decoy cost on metered
    connections, deletion semantics, deposit pricing against flooding, storage incentives:
    what does each defense cost, and what does each leak?
+10. **Dependency-author honesty without self-declaration.** Reproducible builds
+    ([spec Part 10](spec/10-reproducible-build.md)) prove a binary matches its public
+    source, never that the source is honest (RB-12b): a backdoor in a pinned dependency is
+    reproduced faithfully for every rebuilder and reproduction is blind to it (RB §10.1).
+    You cannot verify a pseudonymous crate author is honest — or that two crates have
+    *independent* authors — from anything they self-declare. This is the same problem that
+    appears for **relays** (OP-1, path disjointness), **release signers** (OP-8,
+    jurisdictional diversity), and **mesh gateways** (OP-6, physical independence): verifying
+    a party's independence or honesty without trusting its self-declaration. The honest
+    answer here, as there, may be a *bounded, declared residual* — public review (I-1),
+    audit, and a minimized dependency surface that bounds the attack rather than a
+    cryptographic check that removes it. It is the software-supply-chain face of the project's
+    deepest recurring problem, not a new orphan.

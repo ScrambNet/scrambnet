@@ -11,7 +11,8 @@ not a decision. Attack it through the issues; change it through PRs.
   (circuit handshake, Part 1 §5), `GR-n`
   (gossip record, Part 2), `PS-n` (path selection, Part 3), `RZ-n` (rendezvous,
   Part 6), `SA-n` (security argument, Part 7), `ID-n` (inference dataset,
-  Part 8), `RI-n` (reference-implementation requirements, Part 9). Issues and PRs
+  Part 8), `RI-n` (reference-implementation requirements, Part 9), `RB-n`
+  (reproducible build and supply chain, Part 10). Issues and PRs
   reference requirements by number.
 - `OP-n` references point to the open problems list in
   [threat-model.md](../threat-model.md#open-problems).
@@ -92,6 +93,14 @@ planned upgrade, not an emergency.
    fail-closed API, and memory zeroization — each `RI-n` tied to the threat and
    the invariant it protects, on the principle that an information-theoretic floor
    is only as unconditional as the code that computes it (roadmap 3.1).
+8. [Part 10 — Reproducible build and supply chain](10-reproducible-build.md): how
+   a party trusts a binary without trusting whoever built it — reproduction, not
+   signature, as the arbiter — against pseudonymous contributors with no
+   identity-bound keys; content-pinned toolchain and dependencies, a hermetic
+   build, a stranger's rebuild-and-compare, and the honest residuals (a backdoor in
+   faithfully-reproduced source, a reproducibly-miscompiling compiler, and the
+   reduction to OP-2 for the user who cannot rebuild). Seam with item 4.1: same
+   trust anchor, separate signer sets (roadmap 4.2).
 
 Planned, not yet drafted: Part 4 — chameleon transports; Part 5 — blackout
 mode framing.
